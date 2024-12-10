@@ -1,74 +1,64 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Home</title>
-    <style>
-        /* Reset default styles */
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        /* Body styling */
-        body {
-            font-family: 'Arial', sans-serif;
-            background-color: #121212; /* Dark background */
-            color: #e0e0e0; /* Light text color */
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-        }
-
-        /* Container styling */
-        .container {
-            max-width: 800px;
-            padding: 2rem;
-            background-color: #1e1e1e; /* Slightly lighter dark background */
-            border-radius: 8px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
-            text-align: center;
-        }
-
-        /* Basic typography */
-        h1 {
-            font-size: 2.5rem;
-            color: #ffffff; /* White heading */
-            margin-bottom: 1rem;
-        }
-        
-        p {
-            line-height: 1.6;
-            margin-bottom: 1rem;
-            color: #cccccc; /* Light grey text for readability */
-        }
-
-        /* Button styling */
-        .button {
-            display: inline-block;
-            padding: 0.75rem 1.5rem;
-            margin-top: 1rem;
-            font-size: 1rem;
-            color: #121212; /* Dark text on button */
-            background-color: #bb86fc; /* Accent color */
-            border-radius: 4px;
-            text-decoration: none;
-            transition: background-color 0.3s;
-        }
-
-        .button:hover {
-            background-color: #9a67ea; /* Slightly darker hover color */
-        }
-    </style>
+<!DOCTYPE html> <!-- Document type declaration for HTML5 -->
+<html lang="en"> <!-- Start of the HTML document with language attribute set to English -->
+<head> <!-- Head section containing metadata and external resources -->
+    <meta charset="UTF-8"> <!-- Character encoding declaration for UTF-8 -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"> <!-- Viewport meta tag for responsive design -->
+    <title>MGS</title> <!-- Title of the HTML document -->
+    <link rel="stylesheet" href="styles.css"> <!-- Link to an external CSS file for styling -->
 </head>
-<body>
-    <div class="container">
-        <h1>Grayden Scovil</h1>
-        <p>Work in progres..........look away</p>
-        <a href="#" class="button">Click the button</a>
+<body> <!-- Body section containing the visible content of the HTML document -->
+    <div class="splash-screen" id="splash-screen"> <!-- Splash screen div with ID for styling and JavaScript -->
+        <div class="splash-logo">Marvin Grayden Scovil</div> <!-- Splash screen logo div -->
     </div>
+    <header> <!-- Header section for page header content -->
+        <h1 id="main-title">MGS | Home</h1> <!-- Main title heading with ID for styling -->
+    </header>
+    <nav> <!-- Navigation section containing navigation links -->
+        <a href="#home">Home</a> <!-- Link to the home section -->
+        <a href="#about">About</a> <!-- Link to the about section -->
+        <a href="#projects">Projects</a> <!-- Link to the projects section -->
+        <a href="#contact">Contact</a> <!-- Link to the contact section -->
+    </nav>
+    <main> <!-- Main section containing the main content of the webpage -->
+        <section class="section" id="home"> <!-- Section for home content with ID for navigation -->
+            <h1>Home</h1> <!-- Heading for the home section -->
+            <p>Welcome to my portfolio. Here you can learn more about my work and projects.</p> <!-- Paragraph describing the home section -->
+        </section>
+        <section class="section" id="about"> <!-- Section for about content with ID for navigation -->
+            <h1>About</h1> <!-- Heading for the about section -->
+            <p>Hello! I'm Marvin Grayden Scovil, an aspiring aerospace engineer. Here you will find information about my projects, skills, and how to contact me. Explore my work and feel free to reach out with any questions or opportunities.</p> <!-- Paragraph describing the about section -->
+        </section>
+        <section class="section" id="projects"> <!-- Section for projects content with ID for navigation -->
+            <h1>Projects</h1> <!-- Heading for the projects section -->
+            <div class="projects-grid"> <!-- Grid container for projects -->
+                <div class="card"> <!-- Individual card for project 1 -->
+                    <h3>Project Title 1</h3> <!-- Title of project 1 -->
+                    <p>Description of the project. Details about the technologies used, challenges faced, and accomplishments.</p> <!-- Description of project 1 -->
+                </div>
+                <div class="card"> <!-- Individual card for project 2 -->
+                    <h3>Project Title 2</h3> <!-- Title of project 2 -->
+                    <p>Description of the project. Details about the technologies used, challenges faced, and accomplishments.</p> <!-- Description of project 2 -->
+                </div>
+                <div class="card"> <!-- Individual card for project 3 -->
+                    <h3>Project Title 3</h3> <!-- Title of project 3 -->
+                    <p>Description of the project. Details about the technologies used, challenges faced, and accomplishments.</p> <!-- Description of project 3 -->
+                </div>
+            </div>
+        </section>
+        <section class="section" id="contact"> <!-- Section for contact information with ID for navigation -->
+            <h1>Contact</h1> <!-- Heading for the contact section -->
+            <div class="contact-info"> <!-- Container for contact information -->
+                <p>Email: gscovil9@gmail.com</p> <!-- Email address -->
+                <p>LinkedIn: <a href="https://www.linkedin.com/in/gscovil/" target="_blank">linkedin.com/in/gscovil</a></p> <!-- LinkedIn profile link -->
+                <p>GitHub: github.com/Shadowpatriot9</p> <!-- GitHub profile link -->
+            </div>
+        </section>
+    </main>
+    <footer> <!-- Footer section at the bottom of the webpage -->
+        <p>&copy; 2024 Marvin Grayden Scovil</p> <!-- Copyright notice with name and year -->
+    </footer>
+
+    <!-- External JavaScript file -->
+    <script src="script.js" defer></script> <!-- Link to an external JavaScript file with defer attribute for asynchronous loading -->
 </body>
 </html>
