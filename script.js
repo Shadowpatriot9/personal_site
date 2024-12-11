@@ -4,7 +4,7 @@ document.addEventListener("DOMContentLoaded", () => {
     setTimeout(() => {
         splash.style.opacity = 0; // Fade out
         splash.style.pointerEvents = "none"; // Disable interactions
-    }, 3000); // 3-second delay
+    }, 500); // 3-second delay
 });
 
 // Smooth Scroll for Navigation Links
