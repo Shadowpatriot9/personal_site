@@ -84,6 +84,14 @@ main {
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
 }
 
+#contact .contact-info p {
+    margin: 1px 0;
+}
+
+#contact h1 {
+    margin-bottom: 7px;
+}
+
 /* Footer */
 footer {
     background-color: #222;
