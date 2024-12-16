@@ -92,13 +92,25 @@ main {
     margin-bottom: 7px;
 }
 
+.main-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+    gap: 10px;
+}
+
 /* Footer */
 footer {
     background-color: #222;
     color: white;
     text-align: center;
     padding: 10px 0;
-    margin-top: 20px;
+    margin: 0 auto;
+    width: 250px;
+    height: 25px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 25px;
 }
 
 /* Responsive Design */

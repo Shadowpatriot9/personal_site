@@ -11,46 +11,52 @@
 
 <!-- Body section containing the visible content of the HTML document -->
 <body> 
-    <!-- Splash screen div with ID for styling and JavaScript -->
+    <!-- Splash Screen -->
     <div class="splash-screen" id="splash-screen"> 
         <div class="splash-logo">Marvin Grayden Scovil</div> <!-- Splash screen logo div -->
     </div>
 
-    <!-- Header section for page header content -->
+    <!-- Title -->
     <header> 
         <h1 id="main-title">MGS</h1> <!-- Main title heading with ID for styling -->
     </header>
 
-    <!-- Main section containing the main content of the webpage -->
+    <!-- Main -->
     <main> 
-        <!-- Section for about content with ID for navigation -->
-        <section class="section" id="about"> 
-            <h1>About</h1> <!-- Heading for the about section -->
-            <p>Hi.</p> <!-- Paragraph describing the about section -->
-        </section>
+        <div class="main-grid">
+            <!-- About Section -->
+            <section class="section" id="about"> 
+                <h1>About</h1> <!-- Heading for the about section -->
+                <p>Hi.</p> <!-- Paragraph describing the about section -->
+            </section>
+            
+            <!-- Contact Section -->
+            <section class="section" id="contact"> 
+                <h1>Contact</h1> <!-- Heading for the contact section -->
+                <div class="contact-info"> <!-- Container for contact information -->
+                    <p> Email: gscovil9@gmail.com</p> <!-- Email address -->
+                    <p> LinkedIn: <a href="https://www.linkedin.com/in/gscovil/" target="_blank">linkedin.com/in/gscovil</a></p> <!-- LinkedIn profile link -->
+                    <p> GitHub: <a href="github.com/Shadowpatriot9" target="_blank">github.com/Shadowpatriot9</a> <!-- GitHub profile link -->
+                </div>
+            </section>
+        </div>
 
-        <!-- Section for projects content with ID for navigation -->
+        <!-- Projects Section -->
         <section class="section" id="projects"> 
             <h1>Projects</h1> <!-- Heading for the projects section -->
             <div class="projects-grid"> <!-- Grid container for projects -->
                 <div class="card"> <!-- Individual card for project 1 -->
                     <h3>1</h3> <!-- Title of project 1 -->
-                    <p>may just turn this to GH or something....or maybe stuff outside of GH?.</p> <!-- Description of project 1 -->
+                    <p>
+                        may just turn this to GH or something....or maybe stuff outside of GH?.
+                    </p> 
                 </div>
                 <div class="card"> <!-- Individual card for project 2 -->
                     <h3>2</h3> <!-- Title of project 2 -->
-                    <p>same deal</p> <!-- Description of project 2 -->
+                    <p>
+                        same deal
+                    </p> <!-- Description of project 2 -->
                 </div>
-            </div>
-        </section>
-
-        <!-- Section for contact information with ID for navigation -->
-        <section class="section" id="contact"> 
-            <h1>Contact</h1> <!-- Heading for the contact section -->
-            <div class="contact-info"> <!-- Container for contact information -->
-                <p> Email: gscovil9@gmail.com</p> <!-- Email address -->
-                <p> LinkedIn: <a href="https://www.linkedin.com/in/gscovil/" target="_blank">linkedin.com/in/gscovil</a></p> <!-- LinkedIn profile link -->
-                <p> GitHub: <a href="github.com/Shadowpatriot9" target="_blank">github.com/Shadowpatriot9</a> <!-- GitHub profile link -->
             </div>
         </section>
     </main>
