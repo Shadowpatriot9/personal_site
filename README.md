@@ -4,9 +4,9 @@
 This is my personal site for both where I routinely edit and host my site. I do my best to make sure the info is up to date but understand that an out of date version may be posted so please verify the dates of the latest commits to verify the information.
 
 ## Link
-The link is found on the right panel under the 'About' section of the repo, but in case you want it here too; here you go :)
-<br>
-Link: https://shadowpatriot9.github.io/Personal-Site/
+The link is under the 'About' section on the right panel of the repo, <br>
+but in case you want it here too; here you go :) <br>
+Link: https://shadowpatriot9.github.io/Personal_Site
 
 <br>
 
