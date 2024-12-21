@@ -16,26 +16,6 @@ body {
 }
 
 /**************************************/
-/* Splash Screen */
-/**************************************/
-
-.splash-screen {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: #333;
-    color: white;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 2rem;
-    z-index: 1000;
-    transition: opacity 0.5s ease, pointer-events 0.5s ease;
-}
-
-/**************************************/
 /* Header */
 /**************************************/
 
@@ -95,21 +75,11 @@ main h1 {
 }
 
 /**************************************/
-/* Highlighter Animation */
+/* Section | Contact */
 /**************************************/
 
-.section-header {
-    position: relative;
-    transition: color 0.4s, background-color 0.4s; 
-    border-radius: 10px;
-    padding-left: 5px;
-    padding-right: 5px;
-    max-width: fit-content;
-}
-  
-.highlighted {
-    color: #ffffff; 
-    background-color: #3d3d3d; 
+#contact .contact-info p {
+    margin: 1px 0;
 }
 
 /**************************************/
@@ -132,9 +102,10 @@ main h1 {
     gap: 15px;
 }
 
-/* #projects h1 {
+.section-header-projects {
     align-items: center;
-} */
+    text-align: center;
+}
 
 .card {
     border: 1px solid #ddd;
@@ -167,31 +138,72 @@ main h1 {
 }
 
 /**************************************/
-/* Contact */
-/**************************************/
-
-#contact .contact-info p {
-    margin: 1px 0;
-}
-
-/**************************************/
 /* Footer */
 /**************************************/
 
 footer {
-    background-color: #222;
-    color: white;
+    padding: 5px 0;
     text-align: center;
-    padding: 10px 0;
+}
+  
+.graphic {
+    background-color: #444444;
+    color: #ffffff;
+
+    display: flex; 
+    justify-content: center; 
+    align-items: center;
+    text-align: center;
+    
     margin: 0 auto;
-    margin-bottom: 20px;
-    margin-top: 5px;
-    width: 250px;
-    height: 25px;
+    padding: 5px 15px 5px 15px;
+    width: fit-content;
+    height: fit-content;
+    
+    border-radius: 25px;
+}
+  
+.graphic p {
+    margin: 0;
+    font-size: 16px;
+}
+
+/**************************************/
+/* Splash Screen */
+/**************************************/
+
+.splash-screen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: #333;
+    color: white;
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: 25px;
+    font-size: 2rem;
+    z-index: 1000;
+    transition: opacity 0.5s ease, pointer-events 0.5s ease;
+}
+
+/**************************************/
+/* Highlighter Animation */
+/**************************************/
+
+.section-header {
+    position: relative;
+    transition: color 0.4s, background-color 0.4s; 
+    border-radius: 10px;
+    padding-left: 5px;
+    padding-right: 5px;
+    max-width: fit-content;
+}
+  
+.highlighted {
+    color: #ffffff; 
+    background-color: #3d3d3d; 
 }
 
 /**************************************/
@@ -212,7 +224,7 @@ footer {
         grid-template-columns: 1fr;
     }
 
-    #projects h1 {
+    .section-header-projects {
         text-align: left;
         align-items: left;
     }
