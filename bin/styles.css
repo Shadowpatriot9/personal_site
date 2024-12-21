@@ -1,6 +1,11 @@
 /**************************************/
 /* General Styles */
 /**************************************/
+
+html {
+    scroll-behavior: smooth;
+}
+
 body {
     font-family: 'Arial', sans-serif;
     margin: 0;
@@ -63,11 +68,13 @@ header nav a:hover {
 /**************************************/
 
 main {
-    padding: 20px;
+    padding: 10px;
+    margin-bottom: 5px;
 }
 
 main h1 {
-    margin-top: 5px;
+    margin-top: auto;
+    padding: auto;
 }
 
 .section {
@@ -78,45 +85,31 @@ main h1 {
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
 }
 
-/**************************************/
-/* Projects Grid */
-/**************************************/
-
-.projects-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 15px;
-}
-
-.card {
-    padding: 10px;
-    border: 1px solid #ddd;
-    border-radius: 5px;
-    text-align: center;
-    background-color: #fafafa;
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
-}
-
-.card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
-}
-
-#projects h1 {
-    align-items: center;
-    text-align: center;
-}
-
-/**************************************/
-/* Contact */
-/**************************************/
-
-#contact .contact-info p {
-    margin: 1px 0;
-}
-
-#contact h1 {
+.section h1 {
     margin-bottom: 5px;
+}
+
+.section p {
+    margin-top: 5px;
+    margin-bottom: 5px;
+}
+
+/**************************************/
+/* Highlighter Animation */
+/**************************************/
+
+.section-header {
+    position: relative;
+    transition: color 0.4s, background-color 0.4s; 
+    border-radius: 10px;
+    padding-left: 5px;
+    padding-right: 5px;
+    max-width: fit-content;
+}
+  
+.highlighted {
+    color: #ffffff; 
+    background-color: #3d3d3d; 
 }
 
 /**************************************/
@@ -130,6 +123,58 @@ main h1 {
 }
 
 /**************************************/
+/* Projects Grid */
+/**************************************/
+
+.projects-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 15px;
+}
+
+/* #projects h1 {
+    align-items: center;
+} */
+
+.card {
+    border: 1px solid #ddd;
+    border-radius: 7px;
+    text-align: center;
+    background-color: #fafafa;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.card h3 {
+    margin: auto;
+}
+
+.card a {
+    padding: 5px;
+    margin: auto;
+    color: black;
+    text-decoration: none;
+}
+
+.card a p {
+    margin: auto;
+    color: black;
+    text-decoration: none;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+}
+
+/**************************************/
+/* Contact */
+/**************************************/
+
+#contact .contact-info p {
+    margin: 1px 0;
+}
+
+/**************************************/
 /* Footer */
 /**************************************/
 
@@ -140,6 +185,7 @@ footer {
     padding: 10px 0;
     margin: 0 auto;
     margin-bottom: 20px;
+    margin-top: 5px;
     width: 250px;
     height: 25px;
     display: flex;
