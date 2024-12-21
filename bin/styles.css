@@ -71,6 +71,7 @@ main h1 {
 
 .section p {
     margin: 0px;
+    line-height: 20px;
 }
 
 .home-grid {
@@ -137,7 +138,8 @@ footer {
     align-items: center;
     text-align: center;
     
-    margin: 0 auto;
+    margin: 10px auto;
+
     padding: 5px 15px 5px 15px;
     width: fit-content;
     height: fit-content;
