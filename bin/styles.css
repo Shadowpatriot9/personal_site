@@ -20,27 +20,16 @@ body {
 /**************************************/
 
 header {
-    background-color: #222;
-    color: white;
+    background-color: #000000;
+    color: #ffffff;
     padding: 10px 20px;
     text-align: center;
 }
 
 header #main-title {
     margin: 0;
-    font-size: 1.5rem;
-}
-
-header nav a {
-    color: white;
-    text-decoration: none;
-    margin: 0 1px;
-    font-size: 1rem;
-    transition: color 0.3s ease;
-}
-
-header nav a:hover {
-    color: #ffd700;
+    font-size: 25px;
+    
 }
 
 /**************************************/
@@ -48,8 +37,7 @@ header nav a:hover {
 /**************************************/
 
 main {
-    padding: 10px;
-    margin-bottom: 5px;
+    padding: 10px 10px 0px 10px;
 }
 
 main h1 {
@@ -58,35 +46,34 @@ main h1 {
 }
 
 .section {
-    margin: 10px 0;
-    padding: 15px;
+    margin: 5px 0;
+    padding: 13px;
     background: white;
     border-radius: 5px;
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
 }
 
-.section h1 {
-    margin-bottom: 5px;
+.section-header {
+    position: relative;
+    transition: color 0.4s, background-color 0.4s; 
+    border-radius: 10px;
+    max-width: fit-content;
+    margin: 0px;
+    align-items: left;
+    text-align: left;
+}
+
+.section-header-projects {
+    align-items: center;
+    text-align: center;
+    margin: 0px 0px 5px 0px;
 }
 
 .section p {
-    margin-top: 5px;
-    margin-bottom: 5px;
+    margin: 0px;
 }
 
-/**************************************/
-/* Section | Contact */
-/**************************************/
-
-#contact .contact-info p {
-    margin: 1px 0;
-}
-
-/**************************************/
-/* Home Grid */
-/**************************************/
-
-.grid-container {
+.home-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
     gap: 10px;
@@ -100,11 +87,6 @@ main h1 {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
     gap: 15px;
-}
-
-.section-header-projects {
-    align-items: center;
-    text-align: center;
 }
 
 .card {
@@ -191,19 +173,11 @@ footer {
 /**************************************/
 /* Highlighter Animation */
 /**************************************/
-
-.section-header {
-    position: relative;
-    transition: color 0.4s, background-color 0.4s; 
-    border-radius: 10px;
-    padding-left: 5px;
-    padding-right: 5px;
-    max-width: fit-content;
-}
   
 .highlighted {
     color: #ffffff; 
     background-color: #3d3d3d; 
+    padding: 0px 5px 0px 5px;
 }
 
 /**************************************/
@@ -229,7 +203,7 @@ footer {
         align-items: left;
     }
 
-    .grid-container {
+    .home-grid {
         display: block;
     }
 

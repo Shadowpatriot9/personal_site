@@ -1,5 +1,8 @@
+Bugs:
+- re-align section header to left even w/the animation
+- fix section paragraph spacing to make it tighter all around
 
-Features to add:
+In Progress | Main:
 - Hover action where the sectiontitle gets animated highlighted
 - when looking at projects section, the whole site focuses on it and dims out the others until scrolled back up or mouse hover is over it
 - aka, more theatrics and animations to make it look pretty
@@ -7,5 +10,9 @@ Features to add:
 - add the follwing as projects:
 - for the about, keep it to just brief "yo, here my site. I like to keep it simple so here you go, if you want to look at my resume and stuff, start clicking, I didnt want to have the same thing in 20 different locations (GH, LI, etc...)
 
-Bugs:
-- fix center for projects title when in desktop view
+In Progress | Page | S9:
+- want similar format to home but want s9 header to be inverted
+- want it to include features of s9
+- want to showcase specs w/some style
+- link back to home in header
+- carry the home footer over
