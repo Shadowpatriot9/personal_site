@@ -27,6 +27,7 @@ header {
     padding: 14px 20px;
     border: 2px solid #000000;
     border-width: 2px 0px;
+    border-top: 0px;
 }
 
 #graphic h1 {
