@@ -49,6 +49,7 @@ body.loaded {
 /* Header
 /*********************************/
 
+/* GS */
 header {
     text-align: center;
     align-items: center;
@@ -87,11 +88,30 @@ header.loaded {
 /* Main
 /*********************************/
 
-.grid {
+.containter {
+    display: flex;
+}
+
+.grid-1, .grid-2, .grid-3 {
     display: grid;
-    grid-template-rows: auto; 
     gap: 10px;
     padding: 10px;
+}
+
+.grid-1 {
+    grid-template-rows: auto;
+    
+}
+
+.grid-2 {
+    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+    padding-top: 0px;
+    padding-bottom: 0px;
+}
+
+.grid-3 {
+    grid-template-rows: auto;
+
 }
 
 .section {
@@ -109,6 +129,7 @@ header.loaded {
     padding: 0px;
 }
 
+/* S9 */
 #title {
     margin: 0px;
     height: fit-content;
@@ -154,8 +175,17 @@ footer {
     
     border-radius: 25px;
 }
-  
+
 .graphic p {
     margin: 0;
     font-size: 16px;
+}
+
+.love-note p {
+    margin: 0px;
+    line-height: 15px;
+    padding: 0px;
+    text-decoration: none;
+    color: #ffffff;
+    background-color: transparent;
 }

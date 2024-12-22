@@ -1,9 +1,17 @@
 Bugs:
 - fix features header to left more
 - make sure all grids are same px for home grids of main and s9
+- top padding to match main and S9
+- want to slow down splash a bit
+- match footer margin to main's grid to s9's
 
 In Progress | Main:
 - general optmization and cleanup
+- want a better splash screen fade in when site loads
+- eventually want a "once visted and want to go back to main" that if I: go to main, to s9, back to main; that is does the invert animation instead of loading the splash again
+- make a made with love w/heart at the bottom and make it capable of color inversion when going between pages
+- add: naton, nfi, muse, eyelearn on there as archived
+- for each project page, i want a brief including date of origin if able and bla bla bla
 
 - Hover action where the sectiontitle gets animated highlighted
 - when looking at projects section, the whole site focuses on it and dims out the others until scrolled back up or mouse hover is over it
@@ -17,6 +25,7 @@ In Progress | Page | S9:
 - better header design (color?)
 - real time monitoring dashboard connected to s9?
 - want to showcase specs w/some style
+- want a thing where if accessed via clicking title that it goes back to main and inverted for animation
 
 Done | Page | S9:
 - make a whole fade page where once the page is accessed that the whole page like inverts in a fade animation to then load the needed site!!
