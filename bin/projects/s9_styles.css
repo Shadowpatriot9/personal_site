@@ -2,9 +2,31 @@
 /* General Styles
 /*********************************/
 
+:root {
+    --element-color: #ffffff;
+    --page-color: #232323;
+    --text-color: #000000;
+    --box-shadow-color: 2px 2px 2px 3px rgba(0, 0, 0, 0.303);
+}
+
+@keyframes fade-in {
+    from {opacity: 0;}
+    to {opacity: 1;}
+}
+@keyframes header-fade {
+    from{
+        background-color: black; 
+        color: white;}
+    to{
+        background-color: var(--element-color); 
+        color: var(--text-color)}
+}
+
 html {
     scroll-behavior: smooth;
-    background-color: white;
+    height: 100%;
+    width: 100%;
+
 }
 
 /*********************************/
@@ -15,6 +37,12 @@ body {
     font-family: Arial, sans-serif;
     margin: 0px;
     padding: 0px;
+    background-color: white;
+    transition: background-color 1s ease; /* Transition to change background-color */
+    transition-delay: .3s;
+}
+body.loaded {
+    background-color: var(--page-color);
 }
 
 /*********************************/
@@ -24,14 +52,24 @@ body {
 header {
     text-align: center;
     align-items: center;
-    padding: 13px 20px;
-    border: 2px solid #000000;
+    padding: 15px 20px;
     border-width: 2px 0px;
+
+    background-color: black; /* Initial background color */
+    transition: background-color 1.25s ease; 
+    transition-delay: .75s;
+}
+header.loaded {
+    background-color: white;
 }
 
 #graphic a {
     text-decoration: none;
-    color: inherit;
+    color: white; /* Initial background color */
+    transition: color 1s ease; /* Transition to change background-color */
+}
+#graphic.loaded a {
+    color: black;
 }
 
 #graphic h1 {
@@ -42,9 +80,6 @@ header {
     margin: 0 auto;
     width: fit-content;
     height: fit-content;
-
-    background-color: #ffffff;
-    color: #000000;
     font-size: 25px;
 }
 
@@ -63,12 +98,23 @@ header {
     border: 1px solid #dddddd;
     border-radius: 5px;
     padding: 0px 25px;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    box-shadow: var(--box-shadow-color);
+    background-color: var(--element-color);
+    opacity: 0; 
+    animation: fade-in 2s ease 2.5s forwards;
 }
 
 .section h3 {
     margin-bottom: 0px;
     padding: 0px;
+}
+
+#title {
+    margin: 0px;
+    height: fit-content;
+    background-color: var(--element-color);
+    opacity: 0; 
+    animation: fade-in 1.5s ease 2s forwards;
 }
 
 #title h1 {
@@ -78,11 +124,7 @@ header {
     text-align: center;
     margin: 0px;
     padding: 3px 0px;
-}
-
-#title {
-    margin: 0px;
-    height: fit-content;
+    background-color: transparent;
 }
 
 /**************************************/
