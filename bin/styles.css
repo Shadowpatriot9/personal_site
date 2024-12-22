@@ -107,13 +107,15 @@ main h1 {
     margin: auto;
     color: black;
     text-decoration: none;
-    line-height: 20px;
+    line-height: 18px;
 }
 
 .card a p {
     margin: auto;
     color: black;
     text-decoration: none;
+    justify-content: center;
+
 }
 
 .card:hover {
@@ -180,7 +182,8 @@ footer {
 .highlighted {
     color: #ffffff; 
     background-color: #3d3d3d; 
-    padding: 0px 5px 0px 5px;
+    padding: 0px 5px;
+    margin: 0px;
 }
 
 /**************************************/

@@ -24,10 +24,14 @@ body {
 header {
     text-align: center;
     align-items: center;
-    padding: 14px 20px;
+    padding: 13px 20px;
     border: 2px solid #000000;
     border-width: 2px 0px;
-    border-top: 0px;
+}
+
+#graphic a {
+    text-decoration: none;
+    color: inherit;
 }
 
 #graphic h1 {
@@ -48,4 +52,67 @@ header {
 /* Main
 /*********************************/
 
+.grid {
+    display: grid;
+    grid-template-rows: auto; 
+    gap: 10px;
+    padding: 10px;
+}
 
+.section {
+    border: 1px solid #dddddd;
+    border-radius: 5px;
+    padding: 0px 25px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.section h3 {
+    margin-bottom: 0px;
+    padding: 0px;
+}
+
+#title h1 {
+    color: #000000;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    margin: 0px;
+    padding: 3px 0px;
+}
+
+#title {
+    margin: 0px;
+    height: fit-content;
+}
+
+/**************************************/
+/* Footer */
+/**************************************/
+
+footer {
+    padding: 5px 0;
+    text-align: center;
+}
+  
+.graphic {
+    background-color: #444444;
+    color: #ffffff;
+
+    display: flex; 
+    justify-content: center; 
+    align-items: center;
+    text-align: center;
+    
+    margin: 10px auto;
+
+    padding: 5px 15px 5px 15px;
+    width: fit-content;
+    height: fit-content;
+    
+    border-radius: 25px;
+}
+  
+.graphic p {
+    margin: 0;
+    font-size: 16px;
+}
