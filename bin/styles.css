@@ -107,6 +107,7 @@ main h1 {
     margin: auto;
     color: black;
     text-decoration: none;
+    line-height: 20px;
 }
 
 .card a p {
