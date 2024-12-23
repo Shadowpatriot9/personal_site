@@ -48,7 +48,7 @@ header {
 
     text-decoration: none;
     color: black; 
-    animation: fade-in 1.5s ease 0s forwards;
+    animation: fade-in .5s ease 0s forwards;
 }
 
 #gs-btn {
@@ -81,7 +81,7 @@ header {
     height: fit-content;
     background-color: var(--element-color);
     opacity: 0; 
-    animation: fade-in 1.5s ease 1.2s forwards;
+    animation: fade-in 1.5s ease .65s forwards;
     border: 1px solid #dddddd;
     border-radius: 5px;
     padding: 13px 25px;
@@ -123,7 +123,7 @@ header {
     box-shadow: var(--box-shadow-color);
     background-color: var(--element-color);
     opacity: 0; 
-    animation: fade-in 2s ease 1.75s forwards;
+    animation: fade-in 2s ease 1s forwards;
 }
 
 .section h3 {
@@ -131,6 +131,31 @@ header {
     padding: 0px;
 
 }
+
+#status-container {
+    gap: 3px;
+    display: inline-flex;
+}
+
+#status-container span {
+    font-size: 16px;
+    font-weight: normal;
+}
+
+#status-indicator-1.emoji {
+    font-size: 1.75em;
+    align-items: center;
+    justify-content: center;
+    line-height: 15px;
+}
+
+#status-indicator-2 {
+    display: flex;
+    align-items: left;
+    justify-content: left;
+
+}
+
 
 /**************************************/
 /* Footer */
@@ -177,3 +202,15 @@ footer {
     opacity: 0; 
     animation: fade-in 4s ease 2.2s forwards;
 }
+
+/**************************************/
+/* Mobile Design
+/**************************************/
+
+@media (max-width: 835px) {
+    .grid-2 {
+        grid-template-columns: 1fr;
+    }
+}
+
+/**************************************/
