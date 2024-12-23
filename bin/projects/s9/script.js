@@ -9,9 +9,10 @@ document.getElementById('gs-btn').addEventListener('click', function () {
   });
 
 /////////////////////////////
-// Monitoring Dashboard
+// Functions | Monitoring Dashboard
 /////////////////////////////
 
+// Status Indicator
 async function checkServerStatus() {
   try {
       // Fetch status.json from the server

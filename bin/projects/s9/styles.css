@@ -1,106 +1,103 @@
 /*********************************/
-/* General Styles
+/* Global */
 /*********************************/
 
 :root {
-    --element-color: #ffffff;
-    --page-color: #232323;
+    --primary-color: #ffffff;
+    --secondary-color: #232323;
+    --graphic-other-color: #444444;
     --text-color: #000000;
     --box-shadow-color: 2px 2px 2px 3px rgba(255, 255, 255, 0.35);
+    --font-type: Arial, sans-serif;
+    --font-size-1: 16px;
+    --border-radius: 5px;
+    --gap: 10px;
 }
 
-@keyframes fade-in {
-    from {opacity: 0;}
-    to {opacity: 1;}
-}
+/*********************************/
+/* General Styles */
+/*********************************/
 
 html {
     scroll-behavior: smooth;
     height: 100%;
     width: 100%;
-
 }
-
-/*********************************/
-/* Body
-/*********************************/
 
 body {
-    font-family: Arial, sans-serif;
+    font-family: var(--font-type);
     margin: 0px;
     padding: 0px;
-    background-color: var(--page-color);
-
+    background-color: var(--secondary-color);
 }
 
+/********************************************************************************/
+/********************************************************************************/
+
 /*********************************/
-/* Header
+/* Main */
 /*********************************/
 
-/* GS */
+/* Header | GS */
 header {
     text-align: center;
     align-items: center;
     padding: 10px 20px;
     line-height: 40px;
     border-width: 2px 0px;
-    background-color: white;
-
     text-decoration: none;
-    color: black; 
+    color: var(--text-color); 
+    background-color: var(--primary-color);
     animation: fade-in .5s ease 0s forwards;
 }
 
-#gs-btn {
-    align-items: center;
-    justify-content: center;
-    font-weight: bold;
-    font-family: Arial, sans-serif;
-    padding: 5px 20px;             
-    font-size: 25px;                 
-    background-color: #ffffff;  
-    color: var(--text-color);              
-    border: none;                  
-    border-radius: 5px;          
-    cursor: pointer;             
-}
-
-#gs-btn:hover {
-  background-color: var(--page-color);   
-  color: #ffffff;   
-  transform: scale(1.1);     
-}
-
-/*********************************/
-/* Main
-/*********************************/
-
-/* S9 */
+/* Header | S9 */
 #title {
     margin: 0px;
+    padding: 13px 25px;
     height: fit-content;
-    background-color: var(--element-color);
+    background-color: var(--primary-color);
+    border: 1px solid #dddddd;
+    box-shadow: var(--box-shadow-color);
+    border-radius: var(--border-radius);
     opacity: 0; 
     animation: fade-in 1.5s ease .65s forwards;
-    border: 1px solid #dddddd;
-    border-radius: 5px;
-    padding: 13px 25px;
-    box-shadow: var(--box-shadow-color);
 }
 
 #title h1 {
-    color: #000000;
+    margin: 0px;
+    color: var(--text-color);
+    background-color: transparent;
     justify-content: center;
     align-items: center;
     text-align: center;
-    margin: 0px;
-    background-color: transparent;
 }
+
+/* Sections */
+.section {
+    border-radius: var(--border-radius);
+    padding: 13px 25px;
+    background-color: var(--primary-color);
+    border: 1px solid #dddddd;
+    box-shadow: var(--box-shadow-color);
+    opacity: 0; 
+    animation: fade-in 2s ease 1s forwards;
+}
+
+.section h3 {
+    margin: 0px;
+    padding: 0px;
+}
+
+
+/**************************************/
+/* Grids */
+/**************************************/
 
 .grid-1, .grid-2, .grid-3 {
     display: grid;
-    gap: 10px;
     padding: 10px;
+    gap: var(--gap);
 }
 .grid-1 {
     grid-template-rows: auto;
@@ -116,38 +113,6 @@ header {
 
 }
 
-.section {
-    border: 1px solid #dddddd;
-    border-radius: 5px;
-    padding: 13px 25px;
-    box-shadow: var(--box-shadow-color);
-    background-color: var(--element-color);
-    opacity: 0; 
-    animation: fade-in 2s ease 1s forwards;
-}
-
-.section h3 {
-    margin: 0px;
-    padding: 0px;
-
-}
-
-#status-container {
-    gap: 3px;
-    display: inline-flex;
-}
-
-#status-container span {
-    font-size: 16px;
-    font-weight: normal;
-}
-
-#status-indicator {
-    font-size: 16px;
-    line-height: auto;
-}
-
-
 /**************************************/
 /* Footer */
 /**************************************/
@@ -158,21 +123,17 @@ footer {
 }
   
 .graphic {
-    background-color: #444444;
-    color: #ffffff;
-
+    margin: 10px auto;
+    padding: 5px 15px 5px 15px;
     display: flex; 
     justify-content: center; 
     align-items: center;
     text-align: center;
-    
-    margin: 10px auto;
-    line-height: 20px;
-
-    padding: 5px 15px 5px 15px;
     width: fit-content;
     height: fit-content;
-    
+    line-height: 20px;
+    color: var(--primary-color);
+    background-color: var(--graphic-other-color);
     border-radius: 25px;
     opacity: 0; 
     animation: fade-in 4s ease 2s forwards;
@@ -180,22 +141,84 @@ footer {
 
 .graphic p {
     margin: 0;
-    font-size: 16px;
+    font-size: var(--font-size-1);
 }
 
 .love-note p {
-    margin: 0px;
+    margin: 0px 0px 20px 0px;
+    padding: 0px 0px 10px 0px;
     line-height: 15px;
-    padding: 0px;
     text-decoration: none;
-    color: #ffffff;
+    color: var(--primary-color);
     background-color: transparent;
     opacity: 0; 
     animation: fade-in 4s ease 2.2s forwards;
 }
 
+/********************************************************************************/
+/********************************************************************************/
+
+/*********************************/
+/* Buttons */
+/*********************************/
+
+#gs-btn {
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-family: var(--font-type);
+    padding: 5px 20px;             
+    font-size: 25px;                 
+    background-color: var(--primary-color);  
+    color: var(--text-color);              
+    border: none;                  
+    border-radius: var(--border-radius);          
+    cursor: pointer;             
+}
+
+#gs-btn:hover {
+  color: #ffffff;   
+  background-color: var(--secondary-color);   
+  transform: scale(1.1);     
+}
+
 /**************************************/
-/* Mobile Design
+/* Animations
+/**************************************/
+
+@keyframes fade-in {
+    from {opacity: 0;}
+    to {opacity: 1;}
+}
+
+/**************************************/
+/* Monitoring */
+/**************************************/
+
+/* Status Indicator */
+#status-container {
+    gap: 3px;
+    display: inline-flex;
+}
+
+#status-container span {
+    font-size: var(--font-size-1);
+    font-weight: normal;
+}
+
+#status-indicator {
+    font-size: var(--font-size-1);
+    line-height: auto;
+}
+
+/* Network Traffic */
+/***/
+
+/********************************************************************************/
+/********************************************************************************/
+
+/**************************************/
+/* Mobile Design */
 /**************************************/
 
 @media (max-width: 835px) {
@@ -204,4 +227,4 @@ footer {
     }
 }
 
-/**************************************/
+/********************************************************************************/
