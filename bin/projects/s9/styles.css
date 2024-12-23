@@ -6,7 +6,7 @@
     --element-color: #ffffff;
     --page-color: #232323;
     --text-color: #000000;
-    --box-shadow-color: 2px 2px 2px 3px rgba(0, 0, 0, 0.303);
+    --box-shadow-color: 2px 2px 2px 3px rgba(255, 255, 255, 0.35);
 }
 
 @keyframes fade-in {
@@ -142,18 +142,9 @@ header {
     font-weight: normal;
 }
 
-#status-indicator-1.emoji {
-    font-size: 1.75em;
-    align-items: center;
-    justify-content: center;
-    line-height: 15px;
-}
-
-#status-indicator-2 {
-    display: flex;
-    align-items: left;
-    justify-content: left;
-
+#status-indicator {
+    font-size: 16px;
+    line-height: auto;
 }
 
 
