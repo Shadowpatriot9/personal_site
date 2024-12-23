@@ -281,6 +281,8 @@ footer {
     .card {
         border: 1px solid #ddd;
         border-radius: 7px;
+        color: var(--header-text-color);
+        text-decoration: none;
         text-align: center;
         background-color: #fafafa;
         transition: transform 0.3s ease, box-shadow 0.2s ease;
