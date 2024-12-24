@@ -6,7 +6,7 @@ Here I routinely edit and host my personal site. I do my best to make sure the i
 ## Link
 The link is under the 'About' section on the right panel of the repo, <br>
 but in case you want it here too; here you go :) <br>
-Link: https://shadowpatriot9.github.io/Personal_Site
+Link: http://mgds.site/
 
 <br>
 
