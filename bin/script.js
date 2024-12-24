@@ -43,6 +43,16 @@ document.querySelectorAll('nav a').forEach(link => {
 // Buttons
 /////////////////////////////////////
 
+// S9QL
+document.getElementById('s9ql-btn').addEventListener('click', function () {
+  const mainContent = document.getElementById('overlay');
+  mainContent.classList.add('fade-out');
+  setTimeout(() => {
+    window.location.href = 'projects/s9ql/index.html';
+  }, 500);
+});
+
+
 // sOS
 document.getElementById('sos-btn').addEventListener('click', function () {
   const mainContent = document.getElementById('overlay');
