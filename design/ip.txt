@@ -1,32 +1,40 @@
 ////////////////////////////////////////////////////////////
 
 Bugs:
-- when main refreshed, shows blank screen (thinks its from overlay)
+- fix if splash screen visited within 3min, skip it, otherwise show
 - fix status indicator on s9
 
 ////////////////////////////////////////////////////////////
 
 In Progress | Main:
-- eventually want a "once visted and want to go back to main" that if I: go to main, to s9, back to main; that is does the invert animation instead of loading the splash again
-- when looking at projects section, the whole site focuses on it and dims out the others until scrolled back up or mouse hover is over it
+- 
 
 Done | Page | Main:
-- a rolling animation on the title bar when mouse hover action of mgs to show full name
-- make a made with love w/heart at the bottom and make it capable of color inversion when going between pages
-- add the follwing as projects:
-- for the about, keep it to just brief "yo, here my site. I like to keep it simple so here you go, if you want to look at my resume and stuff, start clicking, I didnt want to have the same thing in 20 different locations (GH, LI, etc...)
-- aka, more theatrics and animations to make it look pretty
-- add: naton, nfi, muse, eyelearn on there as archived
-- general optmization and cleanup
-- adjut splash screen to include sleeker left to right transition animation
-- for each project page, i want a brief including date of origin if able and bla bla bla
+
 
 ///////////////////////////////////////////////////////////
 
 In Progress | Page | S9:
-- want a thing where if accessed via clicking title that it goes back to main and inverted for animation
+- network traffic for dashboard
 
 Done | Page | S9:
+
+
+////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////
+
+Archive (all): 
+- better header design (color?)
+- want to showcase specs w/some style
+- real time monitoring dashboard connected to s9?
+- make a whole fade page where once the page is accessed that the whole page like inverts in a fade animation to then load the needed site!!
+- link back to home in header
+- carry the home footer over
+- want it to include features of s9
+- want similar format to home but want s9 header to be inverted
+- refactor html where title is main grid then the sections below are another grid in columns
+- eventually want a "once visted and want to go back to main" that if I: go to main, to s9, back to main; that is does the invert animation instead of loading the splash again
+
 - better header design (color?)
 - want to showcase specs w/some style
 - real time monitoring dashboard connected to s9?
@@ -37,4 +45,6 @@ Done | Page | S9:
 - want similar format to home but want s9 header to be inverted
 - refactor html where title is main grid then the sections below are another grid in columns
 
+
+////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////

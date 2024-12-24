@@ -18,6 +18,7 @@
     --gap-1: 10px;
     --splash-screen-duration-page: 1.8s; /* This also has a 1s delay before, just fyi */
     --splash-screen-duration-text: 3.3s; /* This needs to be min .5s higher than duration page (including the page 1s delay) */
+    --font-size-project-card: 14px;
 }
 
 /**************************************/
@@ -57,7 +58,7 @@ body {
     justify-content: center;
     font-size: 2rem;
     z-index: 999;
-    transition: opacity 1s ease var(--splash-screen-duration-page), pointer-events 0.5s ease;
+    transition: opacity 1s ease var(--splash-screen-duration-page), pointer-events var(--splash-screen-duration-text) ease;
 }
 
 .splash-logo {
@@ -180,6 +181,7 @@ main h1 {
     transition: color 0.4s, background-color 0.4s; 
     border-radius: var(--border-radius-2);
     margin: 0px;
+    padding: 0px 5px;
 }
 
 #about .section-header, 
@@ -195,8 +197,9 @@ main h1 {
 }
 
 .section p {
-    margin: 0px;
+    margin: 0px 5px;
     line-height: 20px;
+
 }
 
 /* Grids */
@@ -254,6 +257,11 @@ main h1 {
     justify-content: center;
     height: auto;
     padding: 7px;
+}
+
+.card p {
+    font-size: var(--font-size-project-card);
+    line-height: calc(var(--font-size-project-card) + 2px);
 }
 
 .card h3 {

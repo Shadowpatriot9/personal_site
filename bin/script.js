@@ -23,6 +23,21 @@ document.querySelectorAll('nav a').forEach(link => {
         }
     });
 });
+
+//** placeholder for new function, its broken */
+// // Splash Screen Check if Visited
+// document.addEventListener("DOMContentLoaded", () => {
+//     const splash = document.getElementById("splash-screen");
+//     const body = document.body;
+//     const lastVisit = localStorage.getItem('lastVisit');
+//     const now = new Date().getTime();
+//     const threeMinutes = 3 * 60 * 1000;
+
+//     if (lastVisit && (now - lastVisit) < threeMinutes) {
+//         // Skip splash screen
+//         splash.style.display = 'flex';
+//     }
+// });
   
 /////////////////////////////////////
 // Buttons
