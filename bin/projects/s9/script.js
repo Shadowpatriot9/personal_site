@@ -1,3 +1,9 @@
+/////////////////////////////////////
+// Animations 
+/////////////////////////////////////
+
+
+
 /////////////////////////////
 // Buttons
 /////////////////////////////
@@ -5,8 +11,11 @@
 // GS
 document.getElementById('gs-btn').addEventListener('click', function () {
     const mainContent = document.getElementById('overlay');
-    window.location.href = '../../index.html';
-});
+    mainContent.classList.add('fade-out');
+    setTimeout(() => {
+      window.location.href = '../../index.html';
+    }, 500);
+  });
 
 /////////////////////////////
 // Functions | Monitoring Dashboard
@@ -66,4 +75,5 @@ const ctx = document.getElementById('myChart').getContext('2d');
             }
         }
     });
+
 /////////////////////////////

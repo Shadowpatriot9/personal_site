@@ -1,3 +1,4 @@
+/********************************************************************************/
 /**************************************/
 /* Global */
 /**************************************/
@@ -8,6 +9,7 @@
     --overlay-color-1: #2a2a2a;
     --header-text-color-1: #000000;
     --header-text-color-2: #ffffff;
+    --header-highlighted-background-color: #3d3d3d;
     --box-shadow-color: 2px 2px 2px 3px rgba(0, 0, 0, 0.3);
     --font-type: 'Arial', sans-serif;
     --font-size-header: 25px;
@@ -16,7 +18,6 @@
     --gap-1: 10px;
     --splash-screen-duration-page: 1.8s; /* This also has a 1s delay before, just fyi */
     --splash-screen-duration-text: 3.3s; /* This needs to be min .5s higher than duration page (including the page 1s delay) */
-
 }
 
 /**************************************/
@@ -90,16 +91,40 @@ body {
 /* Header */
 /**************************************/
 
-header {
+.header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
     background-color: var(--primary-color);
     color: var(--header-text-color-2);
     padding: 10px 20px;
     text-align: center;
+    font-size: var(--font-size-header);
+    font-family: var(--font-type);
+    position: relative;
 }
 
-header #main-title {
-    margin: 0;
-    font-size: var(--font-size-header);
+#main-title {
+    z-index: 99;
+}
+
+#full-name {
+    position: absolute;
+    z-index: 100;
+    opacity: 0;
+    text-align: center;
+    margin-right: calc(var(--font-size-header) -1px);
+}
+
+.header:hover #full-name {
+    opacity: 1; 
+    transform-origin: 45% center;
+    animation: header-expand 0.1s ease forwards;
+}
+
+.header:hover #main-title {
+    opacity: 0;
 }
 
 /********************************************************************************/
@@ -120,7 +145,7 @@ header #main-title {
     opacity: 0;             
     visibility: hidden;     
     transition: opacity 0.5s ease-in-out, visibility 0.5s ease-in-out;
-  }
+}
 
 main {
     padding: 10px 10px 0px 10px;
@@ -131,7 +156,6 @@ main h1 {
     padding: auto;
 }
 
-
 /* Sections */
 .section {
     margin: 5px 0;
@@ -139,6 +163,13 @@ main h1 {
     background: white;
     border-radius: var(--border-radius-1);
     box-shadow: var(--box-shadow-color);
+}
+
+.section:hover .section-header {
+    color: var(--header-text-color-2); 
+    background-color: var(--header-highlighted-background-color); 
+    padding: 0px 5px;
+    margin: 0px;
 }
 
 .section-header {
@@ -190,9 +221,10 @@ main h1 {
     margin: 0px 5px 0px 5px; 
 }
 
-.section-header-projects {
+#projects.section-header {
     align-items: center;
     text-align: center;
+    left: 45.5%;
     margin: 0px 0px 5px 0px;
 }
 
@@ -269,14 +301,6 @@ footer {
 /**************************************/
 /* Animations */
 /**************************************/
-  
-/* Section Header Highlighter */
-.highlighted {
-    color: var(--secondary-color); 
-    background-color: #3d3d3d; 
-    padding: 0px 5px;
-    margin: 0px;
-}
 
 /* Page Direct Out, Fade Out */
 .fade-out {
@@ -284,14 +308,22 @@ footer {
     visibility: visible;    
 }
 
+/* Fade In */
 @keyframes fade-in {
     from {opacity: 0;}
     to {opacity: 1;}
 }
 
+/* Splash Logo Slip Right */
 @keyframes fade-in-right {
     from {transform: translateX(0px) scaleX(1);}
     to {transform: translateX(0px) scaleX(0);}
+}
+
+/* Header Hover */
+@keyframes header-expand {
+    from{transform: translateX(0px) scaleX(0);}
+    to{transform: translateX(0px) scaleX(1);}
 }
 
 /**************************************/
@@ -308,14 +340,17 @@ footer {
         margin-top: 10px;
     }
 
-    .section-header-projects {
-        text-align: left;
-        align-items: left;
+    #contact.section {
+        margin-top: 0px;
     }
 
     .grid-1 {
         grid-template-columns: 1fr;
         row-gap: 3px;
+    }
+
+    #projects.section-header {
+        left: 0%;
     }
 
     .projects-grid {

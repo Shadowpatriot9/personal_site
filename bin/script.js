@@ -23,37 +23,6 @@ document.querySelectorAll('nav a').forEach(link => {
         }
     });
 });
-
-// Highlighter
-window.addEventListener('scroll', () => {
-    let sections = document.querySelectorAll('section');
-    let headers = document.querySelectorAll('.section-header');
-  
-    let triggerPoint = window.innerHeight * 0.3;
-    let leftmostSection = null;
-  
-    sections.forEach((section, index) => {
-      const rect = section.getBoundingClientRect();
-      const header = headers[index];
-  
-      if (rect.top <= triggerPoint && rect.bottom > triggerPoint) {
-        if (leftmostSection === null || rect.left < leftmostSection.getBoundingClientRect().left) {
-          leftmostSection = section;
-        }
-      }
-    });
-  
-    if (leftmostSection) {
-      const index = Array.from(sections).indexOf(leftmostSection);
-      headers[index].classList.add('highlighted');
-    }
-  
-    sections.forEach((section, index) => {
-      if (section !== leftmostSection) {
-        headers[index].classList.remove('highlighted');
-      }
-    });
-  });
   
 /////////////////////////////////////
 // Buttons
