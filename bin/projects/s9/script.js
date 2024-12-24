@@ -24,7 +24,7 @@ document.getElementById('gs-btn').addEventListener('click', function () {
 // Status Indicator
 async function checkServerStatus() {
   try {
-      const response = await fetch('http://107.2.138.206/status.json');
+      const response = await fetch('https://107.2.138.206/status.json');
       
       if (!response.ok) { throw new Error("Network response was not ok"); }
 

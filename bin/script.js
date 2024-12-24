@@ -43,6 +43,15 @@ document.querySelectorAll('nav a').forEach(link => {
 // Buttons
 /////////////////////////////////////
 
+// sOS
+document.getElementById('sos-btn').addEventListener('click', function () {
+  const mainContent = document.getElementById('overlay');
+  mainContent.classList.add('fade-out');
+  setTimeout(() => {
+    window.location.href = 'projects/sOS/index.html';
+  }, 500);
+});
+
 // S9
 document.getElementById('s9-btn').addEventListener('click', function () {
   const mainContent = document.getElementById('overlay');
