@@ -158,6 +158,8 @@ main h1 {
 
 /* Sections */
 .section {
+    display: flex;
+    flex-direction: column;
     margin: 5px 0;
     padding: 13px;
     background: white;
@@ -173,13 +175,23 @@ main h1 {
 }
 
 .section-header {
-    position: relative;
+    display: inline-flex; 
+    width: fit-content; 
     transition: color 0.4s, background-color 0.4s; 
     border-radius: var(--border-radius-2);
-    max-width: fit-content;
     margin: 0px;
-    align-items: left;
+}
+
+#about .section-header, 
+#contact .section-header {
+    justify-content: flex-start;
     text-align: left;
+}
+
+#projects .section-header {
+    justify-content: center;
+    text-align: center;
+    align-self: center;
 }
 
 .section p {
@@ -189,15 +201,19 @@ main h1 {
 
 /* Grids */
 .grid-1 {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+    display: flex;
+    flex-wrap: wrap;
     gap: var(--gap-1);
     padding: 5px;
 }
 
+.grid-1 > * {
+    flex: 1 1 100px;
+}
+
 .grid-2 {
-    display: grid;
-    grid-template-rows: auto;
+    display: flex;
+    flex-direction: column;
     gap: var(--gap-1);
 }
 
@@ -340,12 +356,14 @@ footer {
         margin-top: 10px;
     }
 
-    #contact.section {
-        margin-top: 0px;
+    .section {
+        width: 100%;
+        margin-top: 0px; 
     }
 
     .grid-1 {
-        grid-template-columns: 1fr;
+        display: flex;
+        flex-direction: column;
         row-gap: 3px;
     }
 
