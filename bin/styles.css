@@ -4,15 +4,19 @@
 
 :root {
     --primary-color: #000000;
-    --secondary-color: #ffffff;
-    --overlay-color-1: #232323;
-    --header-text-color: #000000;
+    --secondary-color: #cccccc;
+    --overlay-color-1: #2a2a2a;
+    --header-text-color-1: #000000;
+    --header-text-color-2: #ffffff;
     --box-shadow-color: 2px 2px 2px 3px rgba(0, 0, 0, 0.3);
     --font-type: 'Arial', sans-serif;
     --font-size-header: 25px;
     --border-radius-1: 5px;
     --border-radius-2: 10px;
     --gap-1: 10px;
+    --splash-screen-duration-page: 1.8s; /* This also has a 1s delay before, just fyi */
+    --splash-screen-duration-text: 3.3s; /* This needs to be min .5s higher than duration page (including the page 1s delay) */
+
 }
 
 /**************************************/
@@ -45,23 +49,50 @@ body {
     left: 0;
     width: 100%;
     height: 100%;
-    background-color: #333;
+    background-color: #b1b1b1;
     color: var(--secondary-color);
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 2rem;
     z-index: 999;
-    transition: opacity 1s ease, pointer-events 0.5s ease;
+    transition: opacity 1s ease var(--splash-screen-duration-page), pointer-events 0.5s ease;
 }
-    
+
+.splash-logo {
+    padding: 13px 15px;
+    background-color: #0e0d0d;
+    position: absolute;
+    line-height: 26px;
+    height: auto;
+    z-index: 888;
+    color: var(--header-text-color-2);
+    border-radius: var(--border-radius-2);
+    opacity: 0;
+    animation: fade-in 0.5s ease 0.2s forwards;
+}    
+
+#splash-overlay {
+    position: absolute;
+    border-radius: var(--border-radius-2);
+    top: 0;
+    left: 0;
+    width: 97%;
+    height: 100%;
+    background-color: #0e0d0d;
+    z-index: 1000;
+    opacity: 1; 
+    transform-origin: right;
+    animation: fade-in-right 0.3s ease-in-out 1s forwards;
+}
+
 /**************************************/
 /* Header */
 /**************************************/
 
 header {
     background-color: var(--primary-color);
-    color: var(--secondary-color);
+    color: var(--header-text-color-2);
     padding: 10px 20px;
     text-align: center;
 }
@@ -201,7 +232,7 @@ footer {
   
 .graphic {
     background-color: #444444;
-    color: var(--secondary-color);
+    color: var(--header-text-color-2);
     display: flex; 
     justify-content: center; 
     align-items: center;
@@ -212,6 +243,8 @@ footer {
     width: fit-content;
     height: fit-content;
     border-radius: 25px;
+    opacity: 0;
+    animation: fade-in 3s ease calc(var(--splash-screen-duration-text) - 0.5s) forwards;
 }
   
 .graphic p {
@@ -226,6 +259,8 @@ footer {
     text-decoration: none;
     color: var(--primary-color);
     background-color: transparent;
+    opacity: 0;
+    animation: fade-in 3s ease calc(var(--splash-screen-duration-text) + 0s) forwards;
 }
 
 /********************************************************************************/
@@ -247,6 +282,16 @@ footer {
 .fade-out {
     opacity: 1;          
     visibility: visible;    
+}
+
+@keyframes fade-in {
+    from {opacity: 0;}
+    to {opacity: 1;}
+}
+
+@keyframes fade-in-right {
+    from {transform: translateX(0px) scaleX(1);}
+    to {transform: translateX(0px) scaleX(0);}
 }
 
 /**************************************/
@@ -281,7 +326,7 @@ footer {
     .card {
         border: 1px solid #ddd;
         border-radius: 7px;
-        color: var(--header-text-color);
+        color: var(--header-text-color-1);
         text-decoration: none;
         text-align: center;
         background-color: #fafafa;

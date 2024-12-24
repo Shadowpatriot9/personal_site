@@ -7,7 +7,7 @@
     --secondary-color: #232323;
     --graphic-other-color: #444444;
     --text-color: #000000;
-    --box-shadow-color: 2px 2px 2px 3px rgba(255, 255, 255, 0.35);
+    --box-shadow-color: 2px 2px 2px 3px rgba(255, 255, 255, 0.3);
     --font-type: Arial, sans-serif;
     --font-size-1: 16px;
     --border-radius: 5px;
@@ -73,6 +73,11 @@ header {
     text-align: center;
 }
 
+/* Main Content */
+main {
+    padding: 13px 5px 0px 5px;
+}
+
 /* Sections */
 .section {
     border-radius: var(--border-radius);
@@ -89,6 +94,9 @@ header {
     padding: 0px;
 }
 
+#monitor.section p {
+    margin: 0px;
+}
 
 /**************************************/
 /* Grids */
@@ -101,6 +109,7 @@ header {
 }
 .grid-1 {
     grid-template-rows: auto;
+    padding-top: 5px;
     
 }
 .grid-2 {
@@ -212,7 +221,10 @@ footer {
 }
 
 /* Network Traffic */
-/***/
+.canvas {
+    max-width: 600px;
+    margin: 0 auto;
+}
 
 /********************************************************************************/
 /********************************************************************************/
