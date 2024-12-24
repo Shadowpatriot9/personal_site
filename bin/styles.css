@@ -121,7 +121,7 @@ body {
 .header:hover #full-name {
     opacity: 1; 
     transform-origin: 45% center;
-    animation: header-expand 0.1s ease forwards;
+    animation: header-expand 0.1s ease 0.5s forwards;
 }
 
 .header:hover #main-title {

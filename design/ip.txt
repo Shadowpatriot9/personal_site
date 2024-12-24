@@ -2,7 +2,7 @@
 
 Bugs:
 - fix if splash screen visited within 3min, skip it, otherwise show
-- fix status indicator on s9
+- fix status indicator while site is accessed via https
 
 ////////////////////////////////////////////////////////////
 
