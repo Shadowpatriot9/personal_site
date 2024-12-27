@@ -108,6 +108,12 @@ main {
     padding: 0px;
 }
 
+.section h4 {
+    margin: 0px;
+    padding: 0px;
+    font-style: italic;
+}
+
 #brief p {
     margin: 0px;
     display: inline;
@@ -121,7 +127,7 @@ main {
 /* Grids */
 /**************************************/
 
-.grid-1 /*if other grids are needed, add grid-2, grid-3, etc.*/ {
+.grid-1, .grid-2 {
     display: grid;
     padding: 10px;
     gap: var(--gap);
@@ -129,7 +135,10 @@ main {
 .grid-1 {
     grid-template-rows: auto;
     padding-top: 5px;
-    
+}
+
+.grid-2 {
+    grid-template-columns: 1fr 1fr;
 }
 
 /**************************************/
@@ -224,9 +233,9 @@ footer {
 /**************************************/
 
 @media (max-width: 835px) {
-    /* .grid-2 {
+    .grid-2 {
         grid-template-columns: 1fr;
-    } */
+    }
 }
 
 /********************************************************************************/
