@@ -123,12 +123,11 @@ main {
 
 .grid-1 /*if other grids are needed, add grid-2, grid-3, etc.*/ {
     display: grid;
-    padding: 10px;
+    padding: 5px 10px;
     gap: var(--gap);
 }
 .grid-1 {
     grid-template-rows: auto;
-    padding-top: 5px;
     
 }
 

@@ -129,12 +129,11 @@ main {
 
 .grid-1, .grid-2 {
     display: grid;
-    padding: 10px;
+    padding: 5px 10px;
     gap: var(--gap);
 }
 .grid-1 {
     grid-template-rows: auto;
-    padding-top: 5px;
 }
 
 .grid-2 {
