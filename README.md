@@ -1,7 +1,8 @@
 # Welcome
 
 ## Introduction
-Here I routinely edit and host my personal site via a MERN stack deployed via the PaaS "Render". I do my best to make sure the info is up to date but understand that an out of date version may be posted so please verify the dates of the latest commits to verify the information.
+Here I routinely edit and host my personal site following a MERN stack (previously on a LAMP stack) and deployed through the PaaS "Render". 
+I do my best to make sure the info is up to date but understand that an out of date version may be posted so please verify the dates of the latest commits to verify the information.
 
 ## Link
 The link is under the 'About' section on the right panel of the repo, <br>
