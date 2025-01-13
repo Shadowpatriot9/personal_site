@@ -7,7 +7,7 @@ Bugs:
 ////////////////////////////////////////////////////////////
 
 In Progress | Main:
-- 
+- make the title name be a complete name and then a box overlaying it that transforms to reveal name on hover action
 
 Done | Page | Main:
 
