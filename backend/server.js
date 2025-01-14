@@ -5,6 +5,10 @@ require('dotenv').config();
 
 const app = express();
 
+// Middleware to handle JSON and URL-encoded data
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
 // Serve static React files
 app.use(express.static(path.join(__dirname, '../frontend/build')));
 
