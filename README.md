@@ -1,7 +1,7 @@
 # Welcome
 
 ## Introduction
-Here I routinely edit and host my personal site following a MERN stack (previously on a LAMP stack) and deploy it through the PaaS "Vercel". 
+Here I routinely edit and host my personal site following a MERN stack (previously on a self-hosted LAMP stack) and deploy it through the PaaS "Vercel". 
 I do my best to make sure the info is up to date but understand that an out of date version may be posted so please verify the dates of the latest commits to verify the information.
 
 ## Link
