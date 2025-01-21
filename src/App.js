@@ -1,7 +1,6 @@
 import { useEffect } from 'react';
-// import { SpeedInsights } from "./node_modules/@vercel/speed-insights/dist/react"
 import { initializeAnimations } from './script';
-import { Router, Routes, Route, Link } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 
 import './styles/styles_page.css';
 import './styles/styles_projects.css';
@@ -11,24 +10,19 @@ import S9 from './projects/s9/s9.js';
 
 function App() {
   useEffect(() => {
-    if (document.readyState === 'complete' || document.readyState === 'interactive') {
-      initializeAnimations();
-    } else {
-      document.addEventListener('DOMContentLoaded', initializeAnimations);
-    }
+    initializeAnimations();
     return () => {
-      document.removeEventListener('DOMContentLoaded', initializeAnimations);
+      // Clean up any potential event listeners or animations here if needed
     };
   }, []);
 
   return (
     <Router>
       <div className="App">
+        <div>
         <Routes>
           <Route path="/projects/s9" element={<S9 />} />
         </Routes>
-
-        <div>
           {/* Page Head */}
           {/* Encoding */}
           <meta charSet="UTF-8" />
@@ -142,10 +136,9 @@ function App() {
             </div>        
           </footer>
         </div>
-      </div>
+      </div> 
     </Router>
   );
 }
 
 export default App;
-
