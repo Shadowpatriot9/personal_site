@@ -1,10 +1,13 @@
-import './styles/styles_page.css';
-import './styles/styles_projects.css';
-import './styles/styles_mobile.css';
 import { useEffect } from 'react';
 // import { SpeedInsights } from "./node_modules/@vercel/speed-insights/dist/react"
 import { initializeAnimations } from './script';
-import S9 from './projects/s9/s9';
+import { Router, Routes, Route, Link } from 'react-router-dom';
+
+import './styles/styles_page.css';
+import './styles/styles_projects.css';
+import './styles/styles_mobile.css';
+
+import S9 from './projects/s9/s9.js';
 
 function App() {
   useEffect(() => {
@@ -96,7 +99,7 @@ function App() {
                   <button className="card" id="s9-btn">
                     <h3> S9 </h3> 
                     <p> Shadow Home Server </p>
-                    
+                    <Link to="/s9">S9</Link>
                   </button>
                   {/* Project Card | NFI */}
                   <button className="card" id="nfi-btn">
