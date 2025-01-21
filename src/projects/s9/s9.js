@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { initializeAnimations } from './script';
-import './projects/s9/styles.css';
+// import './projects/s9/styles.css';
 
 const S9 = () => {
   useEffect(() => {
