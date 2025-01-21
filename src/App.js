@@ -90,11 +90,13 @@ function App() {
                     <p> Shadow Operating System </p>
                   </button>
                   {/* Project Card | S9 */}
-                  <button className="card" id="s9-btn">
-                    <h3> S9 </h3> 
-                    <p> Shadow Home Server </p>
-                    <Link to="/s9">S9</Link>
-                  </button>
+                  <Link to="./projects/s9/s9.js">
+                    <button className="card" id="s9-btn">
+                      <h3>S9</h3>
+                      <p>Shadow Home Server</p>
+                    </button>
+                  </Link>
+
                   {/* Project Card | NFI */}
                   <button className="card" id="nfi-btn">
                     <h3> NFI </h3> 
