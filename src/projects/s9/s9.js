@@ -3,16 +3,16 @@ import React, { useEffect } from 'react';
 // import './projects/s9/styles.css';
 
 const S9 = () => {
-  useEffect(() => {
-    if (document.readyState === 'complete' || document.readyState === 'interactive') {
-      initializeAnimations();
-    } else {
-      document.addEventListener('DOMContentLoaded', initializeAnimations);
-    }
-    return () => {
-      document.removeEventListener('DOMContentLoaded', initializeAnimations);
-    };
-  }, []);
+  // useEffect(() => {
+  //   if (document.readyState === 'complete' || document.readyState === 'interactive') {
+  //     initializeAnimations();
+  //   } else {
+  //     document.addEventListener('DOMContentLoaded', initializeAnimations);
+  //   }
+  //   return () => {
+  //     document.removeEventListener('DOMContentLoaded', initializeAnimations);
+  //   };
+  // }, []);
 
   return (
     <div>
