@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { initializeAnimations } from './script';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 
 import './styles/styles_page.css';
 import './styles/styles_projects.css';
