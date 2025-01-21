@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
-import { initializeAnimations } from '../../script';
-import './styles.css'; // Adjust this path as needed
+import { initializeAnimations } from './projects/s9/script';
+import './projects/s9/styles.css'; // Adjust this path as needed
 
 const S9 = () => {
   useEffect(() => {

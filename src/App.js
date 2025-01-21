@@ -90,7 +90,7 @@ function App() {
                     <p> Shadow Operating System </p>
                   </button>
                   {/* Project Card | S9 */}
-                  <Link to="./projects/s9/s9.js">
+                  <Link to="./projects/s9/s9">
                     <button className="card" id="s9-btn">
                       <h3>S9</h3>
                       <p>Shadow Home Server</p>
