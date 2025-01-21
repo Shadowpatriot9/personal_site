@@ -52,11 +52,11 @@ function S9() {
               {/* Section | Features */}
               <section className="section" id="features">
                 <h3> Features: </h3>
-                <li> Backup NAS File System (NAS via SAMBA, may switch to NFS) </li>
+                <li> Backup NAS File System (NAS via NFS) </li>
                 <li> VM Hosting (Virtual Box w/specific OS imaged to preference) </li>
-                <li> Site and Web Application Hosting (Docker and Apache) </li>
                 <li> Accessible Anywhere (SSH and AnyDesk for RDP) </li>
                 <li> Monitoring (HTOP, WireShark, Prometheus) </li>
+                <li> Auto Config Script, Auto Install ISO for re-imaging purposes.</li>
               </section>
               {/* Section | Specs */}
               <section className="section" id="specs">
