@@ -7,7 +7,7 @@ I do my best to make sure the info is up to date but understand that an out of d
 ## Link
 The link is under the 'About' section on the right panel of the repo, <br>
 but in case you want it here too; here you go :) <br>
-Link: https://mgds.site/
+Link: https://mgds.me
 
 <br>
 
