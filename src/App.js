@@ -40,30 +40,36 @@ function Home() {
       <div className="App">
         <div>
           {/* Page Head */}
-          {/* Encoding */}
-          <meta charSet="UTF-8" />
-          <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-          {/* Site Tab Title */}
-          <title> GS </title> 
-          {/* External Links */}
-          <link rel="stylesheet" href="./styles/styles_page.css" />
-          <link rel="stylesheet" href="./styles/styles_mobile.css" />
-          <link rel="stylesheet" href="./styles/styles_projects.css" />
+            {/* Encoding */}
+              <meta charSet="UTF-8" />
+              <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+            {/* Site Tab Title */}
+              <title> GS </title> 
+
+            {/* External Links */}
+              <link rel="stylesheet" href="./styles/styles_page.css" />
+              <link rel="stylesheet" href="./styles/styles_mobile.css" />
+              <link rel="stylesheet" href="./styles/styles_projects.css" />
+
           {/* Page Body */}
-          {/* Home Splash Screen */}
-          <div className="splash-screen" id="splash-screen"> 
-            <div className="splash-logo">
-              Grayden Scovil
-              <div id="splash-overlay"> </div>
-            </div> 
-          </div>
-          {/* Fade Out Overlay */}
-          <div className="overlay" id="overlay" />
-          {/* Page Title */}
-          <header className="header"> 
-            <h1 id="main-title"> GS </h1>
-            <h1 id="full-name"> Grayden Scovil </h1>
-          </header>
+            {/* Home Splash Screen */}
+            <div className="splash-screen" id="splash-screen"> 
+              <div className="splash-logo">
+                Grayden Scovil
+                <div id="splash-overlay"> </div>
+              </div> 
+            </div>
+
+            {/* Fade Out Overlay */}
+            <div className="overlay" id="overlay" />
+
+            {/* Page Title */}
+            <header className="header"> 
+              <h1 id="main-title"> GS </h1>
+              <h1 id="full-name"> Grayden Scovil </h1>
+            </header>
+
           {/* Main */}
           <main> 
             {/* Home Grid */}
@@ -90,6 +96,7 @@ function Home() {
                   </p></div>
               </section>
             </div>
+
             <div className="grid-2">
               {/* Projects Section */}
               <section className="section" id="projects"> 
@@ -106,10 +113,10 @@ function Home() {
                     <p> Shadow Operating System </p>
                   </button>
                   {/* Project Card | S9 */}
-                  <Link to="./projects/s9/s9">
+                  <Link to="/projects/s9">
                     <button className="card" id="s9-btn">
-                      <h3>S9</h3>
-                      <p>Shadow Home Server</p>
+                        <h3>S9</h3>
+                        <p>Shadow Home Server</p>
                     </button>
                   </Link>
 
@@ -142,6 +149,7 @@ function Home() {
               </section>
             </div>
           </main>
+
           {/* Footer */}
           <footer className="footer"> 
             {/* Copyright */}
@@ -153,6 +161,7 @@ function Home() {
               <p> Made with ♥ </p>
             </div>        
           </footer>
+
         </div>
       </div> 
   );
