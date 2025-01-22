@@ -65,7 +65,7 @@ header {
     animation: fade-in .5s ease 0s forwards;
 }
 
-/* Header | S9 */
+/* Header | ***project name*** */
 #title {
     margin: 0px;
     padding: 13px 25px;
@@ -108,9 +108,12 @@ main {
     padding: 0px;
 }
 
-#monitor.section p {
+/* If project discontinued, add: */
+/* .section h4 {
     margin: 0px;
-}
+    padding: 0px;
+    font-style: italic;
+} */
 
 #brief p {
     margin: 0px;
@@ -125,25 +128,19 @@ main {
 /* Grids */
 /**************************************/
 
-.grid-1, .grid-2, .grid-3 {
+.grid-1 /*if other grids are needed add:, grid-2, grid-3, etc.*/ {
     display: grid;
-    padding: 10px;
+    padding: 5px 10px;
     gap: var(--gap);
 }
 .grid-1 {
     grid-template-rows: auto;
-    padding-top: 5px;
-    
 }
-.grid-2 {
-    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
-    padding-top: 0px;
-    padding-bottom: 0px;
-}
-.grid-3 {
-    grid-template-rows: auto;
 
-}
+/* .grid-2 {
+    grid-template-columns: 1fr 1fr;
+} */
+    
 
 /**************************************/
 /* Footer */
@@ -229,32 +226,6 @@ footer {
     visibility: visible;    
 }
 
-/**************************************/
-/* Monitoring */
-/**************************************/
-
-/* Status Indicator */
-#status-container {
-    gap: 3px;
-    display: inline-flex;
-}
-
-#status-container span {
-    font-size: var(--font-size-1);
-    font-weight: normal;
-}
-
-#status-indicator {
-    font-size: var(--font-size-1);
-    line-height: auto;
-}
-
-/* Network Traffic */
-.canvas {
-    max-width: 600px;
-    margin: 0 auto;
-}
-
 /********************************************************************************/
 /********************************************************************************/
 
@@ -263,9 +234,9 @@ footer {
 /**************************************/
 
 @media (max-width: 835px) {
-    .grid-2 {
+    /* .grid-2 {
         grid-template-columns: 1fr;
-    }
+    } */
 }
 
 /********************************************************************************/
