@@ -85,16 +85,23 @@ function Main() {
               <section className="section" id="projects"> 
                 <h1 className="section-header" id="projects"> Projects </h1> 
                 <div className="projects-grid">
+
                   {/* Project Card | S_Im */}
-                  <button className="card" id="s9ql-btn">
-                    <h3> S_Im </h3> 
-                    <p> Shadow Simulator (tbd) </p>
-                  </button> 
+                  <Link to="/projects/S_Im">
+                    <button className="card" id="s9ql-btn">
+                      <h3> S_Im </h3> 
+                      <p> Shadow Simulator (tbd) </p>
+                    </button> 
+                  </Link>
+
                   {/* Project Card | sOS */}
-                  <button className="card" id="sos-btn">
-                    <h3> sOS </h3> 
-                    <p> Shadow Operating System </p>
-                  </button>
+                  <Link to="/projects/sOS">
+                    <button className="card" id="sos-btn">
+                      <h3> sOS </h3> 
+                      <p> Shadow Operating System </p>
+                    </button>
+                  </Link>
+
                   {/* Project Card | S9 */}
                   <Link to="/projects/s9">
                     <button className="card" id="s9-btn">
@@ -104,10 +111,13 @@ function Main() {
                   </Link>
 
                   {/* Project Card | NFI */}
-                  <button className="card" id="nfi-btn">
-                    <h3> NFI </h3> 
-                    <p> (old, incomplete) <br /> Nuclear Fission-Based <br /> Propulsion System </p>
-                  </button>
+                  <Link to="/projects/NFI">
+                    <button className="card" id="nfi-btn">
+                      <h3> NFI </h3> 
+                      <p> (old, incomplete) <br /> Nuclear Fission-Based <br /> Propulsion System </p>
+                    </button>
+                  </Link>
+
                   {/* Project Card | Muse */}
                   <Link to="/projects/Muse">
                     <button className="card" id="muse-btn">
@@ -117,20 +127,29 @@ function Main() {
                   </Link>
 
                   {/* Project Card | EyeLearn */}
-                  <button className="card" id="el-btn">
-                    <h3> EyeLearn </h3> 
-                    <p> (old, incomplete) <br /> Academia AR/VR Headset </p>
-                  </button>
+                  <Link to="/projects/EL">
+                    <button className="card" id="el-btn">
+                      <h3> EyeLearn </h3> 
+                      <p> (old, incomplete) <br /> Academia AR/VR Headset </p>
+                    </button>
+                  </Link>
+
                   {/* Project Card | Naton */}
-                  <button className="card" id="naton-btn">
-                    <h3> Naton </h3> 
-                    <p> (old, incomplete) <br /> Element Converter </p>
-                  </button>
+                  <Link to="/projects/Naton">
+                    <button className="card" id="naton-btn">
+                      <h3> Naton </h3> 
+                      <p> (old, incomplete) <br /> Element Converter </p>
+                    </button>
+                  </Link>
+
                   {/* *** Project Card Template *** */}
-                  {/* <button class="card" id="***name***-btn">
-                              <h3> ***title*** </h3> 
-                              <p> ***text*** </p>
-                          </button> */}
+                  {/* Project Card | **
+                  <Link to="/projects/***">
+                    <button className="card" id="***-btn">
+                        <h3>***</h3>
+                        <p>****</p>
+                    </button>
+                  </Link> */}
                 </div>
               </section>
             </div>

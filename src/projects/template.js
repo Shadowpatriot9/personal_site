@@ -15,9 +15,9 @@ export default name_of_page_;
 // *** Dont forget your links for buttons ***
 // *** Also...dont forget to add to the Main.js and App.js files  ***
 
-// {/* Header */}
-// <header id="header">
-// <Link to="/">
-//   <button id="gs-btn">GS</button>
-// </Link>        
-// </header>
+{/* Header */}
+<header id="header">
+<Link to="/">
+  <button id="gs-btn">GS</button>
+</Link>        
+</header>

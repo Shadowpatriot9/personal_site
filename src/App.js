@@ -6,6 +6,9 @@ import S9 from './projects/s9/s9';
 import Muse from './projects/muse/muse';
 import EL from './projects/eye-learn/EL';
 import NFI from './projects/nfi/NFI';
+import Naton from './projects/naton/Naton';
+import sOS from './projects/sOS/sOS';
+
 // **template** import name_of_page_ from './projects/**/**';
 
 function App() {
@@ -18,6 +21,9 @@ function App() {
           <Route path="/projects/muse" element={<Muse />} />
           <Route path="/projects/EL" element={<EL />} />
           <Route path="/projects/NFI" element={<NFI />} />
+          <Route path="/projects/Naton" element={<Naton />} />
+          <Route path="/projects/sOS" element={<sOS />} />
+          
           {/* **template** <Route path="/projects/**" element={<name_of_page_ />} /> */}
 
         </Routes>
