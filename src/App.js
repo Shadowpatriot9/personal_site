@@ -100,7 +100,7 @@ function Home() {
               <section className="section" id="projects"> 
                 <h1 className="section-header" id="projects"> Projects </h1> 
                 <div className="projects-grid">
-                  {/* Project Card | S9QL */}
+                  {/* Project Card | S_Im */}
                   <button className="card" id="s9ql-btn">
                     <h3> S_Im </h3> 
                     <p> Shadow Simulator (tbd) </p>
