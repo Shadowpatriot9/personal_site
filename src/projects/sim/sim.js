@@ -29,7 +29,7 @@ function Sim() {
       <div className="grid-1">
         {/* Section | S9 */}
         <section id="title">
-          <h1> S9QL </h1>
+          <h1> S_Im </h1>
         </section>
         {/* Section | Brief */}
         <section className="section" id="brief">
