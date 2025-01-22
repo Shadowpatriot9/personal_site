@@ -1,9 +1,8 @@
-
 import React from 'react';
 import { Link } from 'react-router-dom';
 // import "./projects/**/** .css"; name of css file
 
-function sim() {
+function Sim() {
   return (
 <div>
   {/* Page Head */}
@@ -56,4 +55,4 @@ function sim() {
   );
 }
 
-export default sim;
+export default Sim;

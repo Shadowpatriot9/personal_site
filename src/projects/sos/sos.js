@@ -2,7 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 // import "./projects/**/** .css"; name of css file
 
-function sos1 () {
+function Sos () {
   return (
     <div>
     {/* Page Head */}
@@ -55,6 +55,6 @@ function sos1 () {
   );
 }
 
-export default sos1;
+export default Sos;
 
 
