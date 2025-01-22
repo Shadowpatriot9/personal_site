@@ -61,13 +61,13 @@ export function initializeAnimations() {
     // });
 
     // S9
-    document.getElementById('s9-btn').addEventListener('click', function () {
-        const mainContent = document.getElementById('overlay');
-        mainContent.classList.add('fade-out');
-        setTimeout(() => {
-            <Link to="/projects/s9/index.js">S9</Link>
-        }, 500);
-    });
+    // document.getElementById('s9-btn').addEventListener('click', function () {
+    //     const mainContent = document.getElementById('overlay');
+    //     mainContent.classList.add('fade-out');
+    //     setTimeout(() => {
+    //         <Link to="/projects/s9/index.js">S9</Link>
+    //     }, 500);
+    // });
 
     // // NFI
     // document.getElementById('nfi-btn').addEventListener('click', function () {

@@ -10,26 +10,6 @@ import './styles/styles_mobile.css';
 import S9 from './projects/s9/s9';
 
 function App() {
-  return (
-    <Router>
-      <div>
-        <nav>
-          <Link to="/">Home</Link> | <Link to="/projects/s9">Go to S9</Link>
-        </nav>
-
-        {/* Main Content */}
-        <main>
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/projects/s9" element={<S9 />} /> {/* Route updated */}
-          </Routes>
-        </main>
-      </div>
-    </Router>
-  );
-}
-
-function Home() {
   useEffect(() => {
     if (document.readyState === 'complete' || document.readyState === 'interactive') {
       initializeAnimations();
@@ -43,11 +23,22 @@ function Home() {
 
   return (
     <Router>
-      <div className="App">
-        <div>
+      <div>
+        <Link to="/">Home</Link> | <Link to="/projects/s9">Go to S9</Link>
+
         <Routes>
+          <Route path="/" element={<Home />} />
           <Route path="/projects/s9" element={<S9 />} />
         </Routes>
+      </div>
+    </Router>
+  );
+}
+
+function Home() {
+  return (
+      <div className="App">
+        <div>
           {/* Page Head */}
           {/* Encoding */}
           <meta charSet="UTF-8" />
@@ -164,7 +155,6 @@ function Home() {
           </footer>
         </div>
       </div> 
-    </Router>
   );
 }
 
