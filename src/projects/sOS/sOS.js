@@ -2,7 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 // import "./projects/**/** .css"; name of css file
 
-function sOS () {
+function sos () {
   return (
     <div>
     {/* Page Head */}
@@ -19,7 +19,7 @@ function sOS () {
         {/* Header */}
         <header id="header">
         <Link to="/">
-        <button id="gs-btn">GS</button>
+          <button id="gs-btn">GS</button>
         </Link>        
         </header>
     {/* Main */}
@@ -55,6 +55,6 @@ function sOS () {
   );
 }
 
-export default sOS;
+export default sos;
 
 

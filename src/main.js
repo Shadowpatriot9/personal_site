@@ -87,7 +87,7 @@ function Main() {
                 <div className="projects-grid">
 
                   {/* Project Card | S_Im */}
-                  <Link to="/projects/S_Im">
+                  <Link to="/projects/sim">
                     <button className="card" id="s9ql-btn">
                       <h3> S_Im </h3> 
                       <p> Shadow Simulator (tbd) </p>
@@ -95,7 +95,7 @@ function Main() {
                   </Link>
 
                   {/* Project Card | sOS */}
-                  <Link to="/projects/sOS">
+                  <Link to="/projects/sos">
                     <button className="card" id="sos-btn">
                       <h3> sOS </h3> 
                       <p> Shadow Operating System </p>

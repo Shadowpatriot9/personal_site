@@ -7,7 +7,8 @@ import Muse from './projects/muse/muse';
 import EL from './projects/eye-learn/EL';
 import NFI from './projects/nfi/NFI';
 import Naton from './projects/naton/Naton';
-import sOS from './projects/sOS/sOS';
+import sos from './projects/sos/sos';
+import sim from './projects/sim/sim';
 
 // **template** import name_of_page_ from './projects/**/**';
 
@@ -22,8 +23,9 @@ function App() {
           <Route path="/projects/EL" element={<EL />} />
           <Route path="/projects/NFI" element={<NFI />} />
           <Route path="/projects/Naton" element={<Naton />} />
-          <Route path="/projects/sOS" element={<sOS />} />
-          
+          <Route path="/projects/sos" element={<sos />} />
+          <Route path="/projects/sim" element={<sim />} />
+
           {/* **template** <Route path="/projects/**" element={<name_of_page_ />} /> */}
 
         </Routes>
