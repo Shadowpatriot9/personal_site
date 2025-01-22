@@ -149,7 +149,7 @@
 
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
-import S9 from './projects/s9/S9';
+import S9 from './projects/s9/s9';
 
 function App() {
   return (
