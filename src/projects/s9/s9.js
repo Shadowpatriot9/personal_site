@@ -92,3 +92,18 @@
 // };
 
 // export default S9;
+
+import React from 'react';
+import { Link } from 'react-router-dom';
+
+function S9() {
+  return (
+    <div>
+      <h1>S9 Page</h1>
+      <p>This is the content of the S9 page.</p>
+      <Link to="/">Back to Home</Link>
+    </div>
+  );
+}
+
+export default S9;

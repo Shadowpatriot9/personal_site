@@ -149,22 +149,21 @@
 
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
-import SubPage from './SubPage';
+import S9 from './projects/s9/S9';
 
 function App() {
   return (
     <Router>
       <div>
-        <header>
-          <h1>Main Page</h1>
-          <nav>
-            <Link to="/">Home</Link> | <Link to="/subpage">Go to SubPage</Link>
-          </nav>
-        </header>
+        <nav>
+          <Link to="/">Home</Link> | <Link to="/projects/s9">Go to S9</Link>
+        </nav>
+
+        {/* Main Content */}
         <main>
           <Routes>
             <Route path="/" element={<Home />} />
-            <Route path="/subpage" element={<SubPage />} />
+            <Route path="/projects/s9" element={<S9 />} /> {/* Route updated */}
           </Routes>
         </main>
       </div>
@@ -173,7 +172,7 @@ function App() {
 }
 
 function Home() {
-  return <h2>Welcome to the Main Page!</h2>;
+  return <h2>Welcome to the Main Page2!</h2>;
 }
 
 export default App;
