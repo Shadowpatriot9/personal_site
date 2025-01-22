@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import "./projects/s9/s9.css";
+// import "./projects/s9/s9.css";
 
 function S9() {
   return (
