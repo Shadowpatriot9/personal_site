@@ -109,10 +109,13 @@ function Main() {
                     <p> (old, incomplete) <br /> Nuclear Fission-Based <br /> Propulsion System </p>
                   </button>
                   {/* Project Card | Muse */}
-                  <button className="card" id="muse-btn">
-                    <h3> Muse </h3> 
-                    <p> (old, incomplete) <br /> Automated Audio Equalizer </p>
-                  </button> 
+                  <Link to="/projects/Muse">
+                    <button className="card" id="muse-btn">
+                      <h3> Muse </h3> 
+                      <p> (old, incomplete) <br /> Automated Audio Equalizer </p>
+                    </button> 
+                  </Link>
+
                   {/* Project Card | EyeLearn */}
                   <button className="card" id="el-btn">
                     <h3> EyeLearn </h3> 
