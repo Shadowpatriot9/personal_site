@@ -95,7 +95,7 @@ function Main() {
                   </Link>
 
                   {/* Project Card | sOS */}
-                  <Link to="/projects/sos">
+                  <Link to="/projects/sos1">
                     <button className="card" id="sos-btn">
                       <h3> sOS </h3> 
                       <p> Shadow Operating System </p>
