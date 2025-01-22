@@ -31,11 +31,15 @@ function App() {
 
 function Home() {
   useEffect(() => {
-    initializeAnimations();
+    if (document.readyState === 'complete' || document.readyState === 'interactive') {
+      initializeAnimations();
+    } else {
+      document.addEventListener('DOMContentLoaded', initializeAnimations);
+    }
     return () => {
-      // Clean up any potential event listeners or animations here if needed
+      document.removeEventListener('DOMContentLoaded', initializeAnimations);
     };
-  }, []);
+  },[]);
 
   return (
     <Router>
@@ -165,3 +169,5 @@ function Home() {
 }
 
 export default App;
+
+
