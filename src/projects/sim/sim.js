@@ -9,7 +9,7 @@ function Sim() {
   {/* Encoding */}
   <meta charSet="UTF-8" name="viewport" content="width=device-width, initial-scale=1.0" />
   {/* Site Tab Title */}
-  <title> S9QL </title>
+  <title> S_Im </title>
   {/* External Links */}
   <link rel="stylesheet" href="styles.css" />
   {/* Body */}
@@ -35,7 +35,7 @@ function Sim() {
         <section className="section" id="brief">
           <h3> Description: <p> (Date of origin: 12/2024) </p> </h3>
           WIP, see link below <br />
-          <a href="https://github.com/Shadowpatriot9/S9QL"> Link </a>
+          <a href="https://github.com/Shadowpatriot9/S_im"> Link </a>
         </section>
       </div>
     </div>
