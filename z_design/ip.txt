@@ -10,6 +10,7 @@ In Progress | Main:
 - make the title name be a complete name and then a box overlaying it that transforms to reveal name on hover action
 - want to make it simplified down to: inout form app, to data entry to mongodb, to own sub page on projects grid in same format
 - then want it where i have templates of old projects or a github project etc...
+- then also have th database be exportable for excel or something
 
 Done | Page | Main:
 
