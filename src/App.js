@@ -1,5 +1,6 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { Analytics } from "@vercel/analytics/react"
 
 import Main from './Main';
 import S9 from './projects/s9';
@@ -17,6 +18,8 @@ function App() {
   return (
     <Router>
       <div>
+        <Analytics id="PZ9X7E3YVX" />
+        
         <Routes>
           <Route path="/" element={<Main />} />
           <Route path="/projects/s9" element={<S9 />} />
