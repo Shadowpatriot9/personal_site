@@ -9,7 +9,7 @@ import NFI from './projects/NFI';
 import Naton from './projects/Naton';
 import Sos from './projects/sos';
 import Sim from './projects/sim';
-import Input from './input';
+// import Input from './input';
 
 // **template** import name_of_page_ from './projects/**/**';
 
