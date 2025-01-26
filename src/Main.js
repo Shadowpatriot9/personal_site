@@ -6,7 +6,32 @@ import './styles/styles_projects.css';
 import './styles/styles_mobile.css';
 
 import { useEffect } from 'react';
-import { initializeAnimations } from './script';
+
+export function initializeAnimations() {
+  /////////////////////////////////////
+  // Animations 
+  /////////////////////////////////////
+
+  // Splash Screen Fade-Out
+  const splash = document.getElementById("splash-screen");
+  setTimeout(() => {
+      splash.style.opacity = 0; 
+      splash.style.pointerEvents = "none"; 
+  }, 500); 
+
+  // Smooth Scroll for Navigation Link
+  document.querySelectorAll('nav a').forEach(link => {
+      link.addEventListener('click', event => {
+          event.preventDefault(); 
+          const targetId = link.getAttribute('href').substring(1);
+          const targetSection = document.getElementById(targetId);
+
+          if (targetSection) {
+              targetSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }
+      });
+  });
+}
 
 function Main() {
   useEffect(() => {
@@ -172,3 +197,27 @@ function Main() {
 }
   
 export default Main;
+
+// For Button fade out actions for each project card
+// // S9
+// document.getElementById('s9-btn').addEventListener('click', function () {
+//     const mainContent = document.getElementById('overlay');
+//     mainContent.classList.add('fade-out');
+//     setTimeout(() => {
+//     }, 500);
+// });
+
+
+    //** placeholder for new function, its broken */
+// // Splash Screen Check if Visited
+// const splash = document.getElementById("splash-screen");
+// const body = document.body;
+// const lastVisit = localStorage.getItem('lastVisit');
+// const now = new Date().getTime();
+// const threeMinutes = 3 * 60 * 1000;
+
+// if (lastVisit && (now - lastVisit) < threeMinutes) {
+//     // Skip splash screen
+//     splash.style.display = 'flex';
+// }
+    
