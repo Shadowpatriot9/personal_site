@@ -56,6 +56,10 @@ function Main() {
             <title> GS </title>           
             
             {/* External Links */}
+              <link rel="preconnect" href="https://fonts.googleapis.com" />
+              <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin />
+              <link href="https://fonts.googleapis.com/css2?family=Afacad+Flux:wght@100..1000&display=swap" rel="stylesheet" />
+
               <link rel="stylesheet" href="./styles/styles_page.css" />
               <link rel="stylesheet" href="./styles/styles_mobile.css" />
               <link rel="stylesheet" href="./styles/styles_projects.css" />
@@ -76,7 +80,7 @@ function Main() {
             <header className="header"> 
               <Link to="/input">
                 <button className="input" id="input">
-                  <h1 id="main-title"> GS </h1>
+                  <h1 id="main-title"> GS</h1>
                   <h1 id="full-name"> Grayden Scovil </h1>
                   <div class="full-name-cover" id="full-name-cover"> </div>
                 </button>

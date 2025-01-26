@@ -10,8 +10,8 @@
     --header-text-color-2: #ffffff;
     --header-highlighted-background-color: #3d3d3d;
     --box-shadow-color: 2px 2px 2px 3px rgba(0, 0, 0, 0.3);
-    --font-type: 'Roboto', sans-serif;
-    --font-size-header: 25px;
+    --font-type: "Afacad Flux", serif;
+    --font-size-header: 28px;
     --border-radius-1: 5px;
     --border-radius-2: 10px;
     --gap-1: 10px;
@@ -38,6 +38,15 @@ body {
     background-color: #f9f9f9;
     background-color: var(--secondary-color);
     transition: background-color 1s ease;
+}
+
+.afacad-flux-unique {
+  font-family: "Afacad Flux", serif;
+  font-optical-sizing: auto;
+  font-weight: 300;
+  font-style: normal;
+  font-variation-settings:
+    "slnt" 0;
 }
 
 /********************************************************************************/
@@ -123,18 +132,22 @@ body {
     position: relative;
     width: 100vw;
 }
-
 #input {
-    /* position: relative;
-    display: inline-block; */
+    position: relative;
+    display: inline-block;
     background-color: transparent;
     color: var(--header-text-color-2);
     border: none;
+    width: fit-content;
+    cursor: pointer;
 }
 
 #main-title {
     z-index: 100;
     margin: 0px;
+    opacity: 1;
+    background-color: transparent;
+    width: fit-content;
     font-size: var(--font-size-header);
     font-family: var(--font-type);
 }
@@ -142,11 +155,10 @@ body {
 #full-name {
     position: absolute;
     text-align: center;
-    transform: translate(-47%, -160%);
+    transform: translate(-50%, -150%);
     z-index: 81;
     width: 200px;
-    opacity: 0;
-    background-color: transparent;
+    opacity: 0; 
     word-spacing: -3px;
     font-size: var(--font-size-header);
     font-family: var(--font-type);
@@ -155,32 +167,33 @@ body {
 .full-name-cover {
     position: absolute;
     z-index: 80;
-    opacity: 1;
-    transform: translate(-40%, -95%);
-    height: var(--font-size-header) ;
+    opacity: 0; /* Start fully visible */
+    transform: translate(-47%, -100%); /* Position the cover */
+    height: var(--font-size-header);
     width: 175px;
     padding: 3px 7px;
-    background-color: green;
+    background-color: var(--header-text-color-2);
     border-radius: var(--border-radius-1);
+    transition: opacity 0.2s ease-in-out; /* Smooth opacity transition */
+    clip-path: circle(50% at center); /* Start with the circle centered at 50% (fully covering) */
+    transform-origin: center center; /* Start the animation from the center */
 }
 
-#main-title:hover {
+#input:hover .full-name-cover {
+    animation: header-fade-from-center 125ms ease-in-out forwards; /* Swipe and fade-out animation */
+}
+
+#input:hover #main-title {
+    background-color: black;
     opacity: 0;
 }
 
-#input:hover + #full-name {
-    cursor: pointer;
+#input:hover #full-name {
+    background-color: transparent;
+    animation: fadeIn 150ms ease-in-out 0s forwards; /* Fade-in with a 1-second delay */
     opacity: 1;
+
 }
-
-#input:hover + #full-name-cover {
-    transform-origin: 51% center;
-    animation: header-expand 0.25s ease-in-out 0s forwards;
-    opacity: 1; 
-}
-
-
-
 
 /**************************************/
 /* Main Content */
@@ -315,6 +328,15 @@ main h1 {
     to {opacity: 1;}
 }
 
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
 /* Splash Logo Slip Right */
 @keyframes fade-in-right {
     from {transform: translateX(0px) scaleX(1);}
@@ -322,15 +344,15 @@ main h1 {
 }
 
 /* Header Hover */
-@keyframes header-expand {
-    from{
-        transform: translateX(0px) scaleX(0);}
-    to{
-        animation-delay: .3s;
-        transform: translateX(0px) scaleX(1) 
-    ;}
+@keyframes header-fade-from-center {
+    from {
+        opacity: 1; /* Fully visible */
+        clip-path: circle(20% at center); /* Fully covers the text with a circle */
+    }
+    to {
+        opacity: 0; /* Fade to invisible */
+        clip-path: circle(150% at center); /* Expand the circle to cover the whole area, making it fade out */
+    }
 }
-
-
 
 /********************************************************************************/

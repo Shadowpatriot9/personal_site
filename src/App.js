@@ -12,6 +12,9 @@ import Sos from './projects/sos';
 import Sim from './projects/sim';
 import Input from './Input';
 
+import '@fontsource/lato/400.css'; 
+import '@fontsource/lato/700.css'; 
+
 // **template** import name_of_page_ from './projects/**/**';
 
 function App() {
