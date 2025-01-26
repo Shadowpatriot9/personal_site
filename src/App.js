@@ -26,7 +26,7 @@ function App() {
           <Route path="/projects/Naton" element={<Naton />} />
           <Route path="/projects/sos" element={<Sos />} />
           <Route path="/projects/sim" element={<Sim />} />
-          <Route path="/" element={<Input />} />
+          {/* <Route path="/" element={<Input />} /> */}
 
           {/* **template** <Route path="/projects/**" element={<name_of_page_ />} /> */}
 
