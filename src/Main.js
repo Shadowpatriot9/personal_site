@@ -53,8 +53,8 @@ function Main() {
               <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
             {/* Site Tab Title */}
-              <title> GS </title> 
-
+            <title> GS </title>           
+            
             {/* External Links */}
               <link rel="stylesheet" href="./styles/styles_page.css" />
               <link rel="stylesheet" href="./styles/styles_mobile.css" />
@@ -74,8 +74,12 @@ function Main() {
 
             {/* Page Title */}
             <header className="header"> 
-              <h1 id="main-title"> GS </h1>
-              <h1 id="full-name"> Grayden Scovil </h1>
+              <Link to="/input">
+                <button className="input">
+                  <h1 id="main-title"> GS </h1>
+                  <h1 id="full-name"> Grayden Scovil </h1>
+                </button>
+              </Link>
             </header>
 
           {/* Main */}
@@ -139,7 +143,7 @@ function Main() {
                   <Link to="/projects/NFI">
                     <button className="card" id="nfi-btn">
                       <h3> NFI </h3> 
-                      <p> (old, incomplete) <br /> Nuclear Fission-Based <br /> Propulsion System </p>
+                      <p> (old, incomplete) <br /> Rocket Propulsion System </p>
                     </button>
                   </Link>
 
