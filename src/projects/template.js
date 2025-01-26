@@ -21,3 +21,13 @@ export default name_of_page_;
   <button id="gs-btn">GS</button>
 </Link>        
 </header>
+
+
+// GS
+// document.getElementById('gs-btn').addEventListener('click', function () {
+//     const mainContent = document.getElementById('overlay');
+//     mainContent.classList.add('fade-out');
+//     setTimeout(() => {
+//       window.location.href = '../../index.html';
+//     }, 500);
+//   });

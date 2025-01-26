@@ -1,14 +1,14 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 
-import Main from './main';
-import S9 from './projects/s9/s9';
-import Muse from './projects/muse/muse';
-import EL from './projects/eye-learn/EL';
-import NFI from './projects/nfi/NFI';
-import Naton from './projects/naton/Naton';
-import Sos from './projects/sos/sos';
-import Sim from './projects/sim/sim';
+import Main from './Main';
+import S9 from './projects/s9';
+import Muse from './projects/muse';
+import EL from './projects/EL';
+import NFI from './projects/NFI';
+import Naton from './projects/Naton';
+import Sos from './projects/sos';
+import Sim from './projects/sim';
 
 // **template** import name_of_page_ from './projects/**/**';
 
