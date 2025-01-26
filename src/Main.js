@@ -2,7 +2,6 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 
 import './styles/styles_page.css';
-import './styles/styles_projects.css';
 import './styles/styles_mobile.css';
 
 import { useEffect } from 'react';
