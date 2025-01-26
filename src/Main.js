@@ -75,9 +75,10 @@ function Main() {
             {/* Page Title */}
             <header className="header"> 
               <Link to="/input">
-                <button className="input">
+                <button className="input" id="input">
                   <h1 id="main-title"> GS </h1>
                   <h1 id="full-name"> Grayden Scovil </h1>
+                  <div class="full-name-cover" id="full-name-cover"> </div>
                 </button>
               </Link>
             </header>
