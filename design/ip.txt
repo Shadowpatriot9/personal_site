@@ -13,6 +13,7 @@ In Progress | Main:
 - then also have th database be exportable for excel or something
 - make the buttons black, with white color for better ui and make it more of a pop out button
 - change the project grid to dynamic based on size
+- make header as sticky for mobile scrolling
 
 Done | Page | Main:
 
