@@ -1,10 +1,12 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-// import "./projects/muse/muse.css";
+
+import './../styles/styles_sub.css';
+import styles1 from './../styles/styles_sub.css';
 
 function Muse() {
   return (
-    <div>
+<div className={styles1.body2} id='body2'>
   {/* Page Head */}
   {/* Encoding */}
   <meta charSet="UTF-8" name="viewport" content="width=device-width, initial-scale=1.0" />

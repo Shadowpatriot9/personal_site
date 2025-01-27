@@ -1,10 +1,12 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-// import "./projects/s9/s9.css";
+
+import './../styles/styles_sub.css';
+import styles1 from './../styles/styles_sub.css';
 
 function S9() {
   return (
-    <div>
+<div className={styles1.body2} id='body2'>
         {/* Header */}
         <header id="header">
           <Link to="/">

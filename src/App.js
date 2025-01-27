@@ -12,17 +12,21 @@ import Sos from './projects/sos';
 import Sim from './projects/sim';
 import Input from './Input';
 
-import '@fontsource/lato/400.css'; 
-import '@fontsource/lato/700.css'; 
-
 // **template** import name_of_page_ from './projects/**/**';
 
 function App() {
   return (
     <Router>
       <div>
-        <Analytics id="PZ9X7E3YVX" />
-        
+      {/* Global Font Family */}
+      <link rel="preconnect" href="https://fonts.googleapis.com" />
+      <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin />
+      <link href="https://fonts.googleapis.com/css2?family=Afacad+Flux:wght@100..1000&display=swap" rel="stylesheet" />
+
+      {/* Vercel Analytics */}
+      <Analytics id="PZ9X7E3YVX" />
+
+      {/* Main to Sub Page Setup */}  
         <Routes>
           <Route path="/" element={<Main />} />
           <Route path="/projects/s9" element={<S9 />} />
@@ -33,7 +37,6 @@ function App() {
           <Route path="/projects/sos" element={<Sos />} />
           <Route path="/projects/sim" element={<Sim />} />
           <Route path="/Input" element={<Input />} />
-          {/* <Route path="/" element={<Input />} /> */}
 
           {/* **template** <Route path="/projects/**" element={<name_of_page_ />} /> */}
 

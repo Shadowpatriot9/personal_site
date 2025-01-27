@@ -2,6 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 
 import './styles/styles_page.css';
+import styles from './styles/styles_page.css';
 import './styles/styles_mobile.css';
 
 import { useEffect } from 'react';
@@ -45,7 +46,7 @@ function Main() {
   },[]);
 
   return (
-        <div>
+        <div className={styles.body1} id='body1'>
           {/* Page Head */}
             {/* Encoding */}
               <meta charSet="UTF-8" />
@@ -54,15 +55,6 @@ function Main() {
             {/* Site Tab Title */}
             <title> GS </title>           
             
-            {/* External Links */}
-              <link rel="preconnect" href="https://fonts.googleapis.com" />
-              <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin />
-              <link href="https://fonts.googleapis.com/css2?family=Afacad+Flux:wght@100..1000&display=swap" rel="stylesheet" />
-
-              <link rel="stylesheet" href="./styles/styles_page.css" />
-              <link rel="stylesheet" href="./styles/styles_mobile.css" />
-              <link rel="stylesheet" href="./styles/styles_projects.css" />
-
           {/* Page Body */}
             {/* Home Splash Screen */}
             <div className="splash-screen" id="splash-screen"> 
@@ -87,7 +79,7 @@ function Main() {
             </header>
 
           {/* Main */}
-          <main> 
+          <main className="main" id="main1"> 
             {/* Home Grid */}
             <div className="grid-1">
               {/* About Section */}
