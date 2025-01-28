@@ -1,6 +1,8 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { Analytics } from "@vercel/analytics/react"
+import { useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 
 import Main from './Main';
 import S9 from './projects/s9';
@@ -14,6 +16,14 @@ import Input from './Input';
 
 // **template** import name_of_page_ from './projects/**/**';
 
+const ScrollToTop = () => {
+  const { pathname } = useLocation();
+  useEffect(() => {
+    window.scrollTo(0,0);
+  }, [pathname]);
+  return null;
+}
+
 function App() {
   return (
     <Router>
@@ -25,6 +35,8 @@ function App() {
 
       {/* Vercel Analytics */}
       <Analytics id="PZ9X7E3YVX" />
+
+      <ScrollToTop />
 
       {/* Main to Sub Page Setup */}  
         <Routes>

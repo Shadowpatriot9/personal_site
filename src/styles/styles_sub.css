@@ -242,7 +242,7 @@ footer {
     }
     header {
         position: sticky;
-        z-index: 1000;
+        z-index: 300;
         border-bottom: 3px solid #232323;
         top: 0;
     }
