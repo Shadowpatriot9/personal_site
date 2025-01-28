@@ -7,7 +7,8 @@
     margin: 0px;
     padding: 0px;
     background-color: #232323;
-    height: 100vh;
+    height: 100dvh;
+    overflow: auto;
     scroll-behavior: smooth;
 }
 

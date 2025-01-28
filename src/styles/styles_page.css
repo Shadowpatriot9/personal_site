@@ -9,7 +9,8 @@
     color: #333;
     background-color: #cccccc;
     transition: background-color 1s ease;
-    height: 100vh;
+    height: 100dvh;
+    overflow: auto;
     scroll-behavior: smooth;
 }
 
