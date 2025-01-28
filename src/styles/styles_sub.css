@@ -2,17 +2,13 @@
 /* General Styles */
 /*********************************/
 
-/* html {
-    scroll-behavior: smooth;
-    height: 100%;
-    width: 100%;
-} */
-
 #body2 {
     font-family: 'Afacad Flux', sans-serif;
     margin: 0px;
     padding: 0px;
     background-color: #232323;
+    height: 100vh;
+    scroll-behavior: smooth;
 }
 
 /********************************************************************************/

@@ -1,11 +1,9 @@
-import React from 'react';
+import React,{ useEffect } from 'react';
 import { Link } from 'react-router-dom';
 
 import './styles/styles_page.css';
 import styles from './styles/styles_page.css';
 import './styles/styles_mobile.css';
-
-import { useEffect } from 'react';
 
 export function initializeAnimations() {
   /////////////////////////////////////
@@ -121,8 +119,8 @@ function Main() {
                   {/* Project Card | S_Im */}
                   <Link to="/projects/sim">
                     <button className="card1" id="s9ql-btn">
-                      <h3> S_Im </h3> 
-                      <p> Shadow Simulator (tbd) </p>
+                      <h3> S_im </h3> 
+                      <p> Shadow Simulator </p>
                     </button> 
                   </Link>
 
@@ -210,12 +208,14 @@ export default Main;
 
 // For Button fade out actions for each project card
 // // S9
+// script.js
 // document.getElementById('s9-btn').addEventListener('click', function () {
-//     const mainContent = document.getElementById('overlay');
-//     mainContent.classList.add('fade-out');
-//     setTimeout(() => {
-//     }, 500);
+//   const mainContent = document.getElementById('overlay');
+//   mainContent.classList.add('fade-out');
+//   setTimeout(() => {
+//   }, 500);
 // });
+
 
 
     //** placeholder for new function, its broken */
