@@ -4,16 +4,20 @@
 
 @media (max-width: 835px) {
 
-    header nav {
+    .header1 nav {
         margin-top: 10px;
     }
+    .header1 {
+        position: sticky;
+        top: 0;
+    }
 
-    .section {
+    .section1 {
         margin-top: 0px; 
         color: var(--header-text-color-1);
     }
 
-    .grid-1 {
+    .grid-11 {
         padding: 0px 5px 3px 5px;
         display: flex;
         flex-direction: column;
@@ -21,9 +25,10 @@
     }
 
     .projects-grid {
-        padding: 0px 0px 0px 0px;
+        padding: 5px 0px 0px 0px;
         display: grid;
         grid-template-columns: 1fr;
+        gap: 10px;
     }
 
     .card {
@@ -40,7 +45,7 @@
         height: 100%;
     }
 
-    .footer {
+    .footer1 {
         margin-bottom: 20px;
     }
 }

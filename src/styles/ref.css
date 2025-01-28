@@ -108,6 +108,12 @@ main {
     padding: 0px;
 }
 
+.section h4 {
+    margin: 0px;
+    padding: 0px;
+    font-style: italic;
+}
+
 #monitor.section p {
     margin: 0px;
 }

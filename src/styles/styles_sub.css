@@ -2,11 +2,11 @@
 /* General Styles */
 /*********************************/
 
-html {
+/* html {
     scroll-behavior: smooth;
     height: 100%;
     width: 100%;
-}
+} */
 
 #body2 {
     font-family: 'Afacad Flux', sans-serif;
@@ -91,6 +91,13 @@ main {
     padding: 0px;
 }
 
+.section h4 {
+    margin: 0px;
+    padding: 3px 0px;
+    font-style: italic;
+}
+
+
 #brief {
     margin: 0px;
     display: inline;
@@ -100,17 +107,41 @@ main {
     line-height: 16px;
 }
 
+#brief p {
+    margin: 0px;
+    display: inline;
+    font-family: 'Afacad Flux', serif;
+    font-weight: bold;
+    font-size: 16px;
+    line-height: 16px;
+}
+
 /**************************************/
 /* Grids */
 /**************************************/
 
-.grid-1 /*if other grids are needed, add grid-2, grid-3, etc.*/ {
+.grid-1 {
+    grid-template-rows: auto;    
+}
+
+.grid-1, .grid-2, .grid-3 {
     display: grid;
-    padding: 5px 10px;
+    padding: 10px 10px;
     gap: 10px;
 }
 .grid-1 {
-    grid-template-rows: auto;    
+    grid-template-rows: auto;
+    padding-top: 5px;
+    
+}
+.grid-2 {
+    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+    padding-top: 0px;
+    padding-bottom: 0px;
+}
+.grid-3 {
+    grid-template-rows: auto;
+
 }
 
 /**************************************/
@@ -124,7 +155,7 @@ footer {
 }
   
 .graphic {
-    margin: 10px auto;
+    margin: 10px auto 5px auto;
     padding: 5px 15px 5px 15px;
     display: flex; 
     justify-content: center; 
@@ -208,6 +239,12 @@ footer {
 @media (max-width: 835px) {
     .grid-2 {
         grid-template-columns: 1fr;
+    }
+    header {
+        position: sticky;
+        z-index: 1000;
+        border-bottom: 3px solid #232323;
+        top: 0;
     }
 }
 

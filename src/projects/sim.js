@@ -46,12 +46,15 @@ function Sim() {
   <footer> 
     {/* Copyright */}
     <div className="graphic">
-      <p> © 2024 Grayden Scovil </p> 
-    </div>
-    {/* Love Note */}
-    <div className="love-note">
-      <p> Made with ♥ </p>
-    </div>  
+          <p> © 2025 Grayden Scovil </p> 
+          </div>
+          {/* Love Note */}
+          <div className="love-note">
+            <p> 
+              Made with 
+              <svg version="{1.0}" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlnsxlink="http://www.w3.org/1999/xlink" width="23px" height="13px" viewBox="0 0 64 64" enablebackground="new 0 0 64 64" xmlspace="preserve" fill="#ffffff"><g id="SVGRepo_bgCarrier" strokewidth="{0}" /><g id="SVGRepo_tracerCarrier" strokelinecap="round" strokelinejoin="round" /><g id="SVGRepo_iconCarrier"> <path fill="#ffffff" d="M47.977,5.99c-4.416,0-8.414,1.792-11.308,4.686l-4.685,4.654l-4.686-4.654 C24.406,7.782,20.408,5.99,15.992,5.99C7.161,5.99,0,13.15,0,21.982c0,4.416,2.85,8.539,5.747,11.432l23.41,23.414 c1.562,1.562,4.092,1.562,5.653,0l23.349-23.352c2.896-2.893,5.81-7.078,5.81-11.494C63.969,13.15,56.808,5.99,47.977,5.99z" /> </g></svg>
+            </p>
+          </div>  
   </footer>
 </div>
   );
