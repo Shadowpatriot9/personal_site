@@ -26,7 +26,7 @@
         padding: 5px 0px 0px 0px;
         display: grid;
         grid-template-columns: 1fr;
-        gap: 10px;
+        gap: 5px;
     }
 
     .card {
