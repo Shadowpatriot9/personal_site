@@ -4,11 +4,17 @@
 
 @font-face {
     font-family: 'SF Pro';
-    src: url('../assets/Fonts/SF-Pro-Text-Medium.otf') format('opentype');
+    src: url('../assets/Fonts/SF-Pro-Display-Light.otf') format('opentype');
     font-weight: 400;
-  }
-  
-  #body1 {
+}
+ 
+@font-face {
+    font-family: 'SF2';
+    src: url('../assets/Fonts/SF-Pro-Display-Semibold.otf') format('opentype');
+    font-weight: 400;
+}
+
+#body1 {
     margin: 0px;
     font-family: 'SF Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
     line-height: 1.6;
@@ -37,7 +43,7 @@
 /**************************************/
 
 .splash-screen {
-    font-family: 'SF Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    font-family: 'SF2', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
     position: fixed;
     top: 0;
     left: 0;
@@ -130,7 +136,7 @@
     background-color: transparent;
     width: fit-content;
     font-size: 28px;
-    font-family: 'SF Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    font-family: 'SF2', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 }
 
 #full-name {
@@ -142,7 +148,7 @@
     opacity: 0; 
     word-spacing: -3px;
     font-size: 28px;
-    font-family: 'SF Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    font-family: 'SF2', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 }
 
 .full-name-cover {
@@ -214,6 +220,7 @@
     border-radius: 10px;
     margin: 0px;
     padding: 0px 5px;
+    font-family: 'SF2', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 }
 
 #about .section-header, 
