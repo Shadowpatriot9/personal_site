@@ -142,11 +142,11 @@
 #full-name {
     position: absolute;
     text-align: center;
-    transform: translate(-47%, -150%);
+    transform: translate(-46%, -150%);
     z-index: 81;
     width: 200px;
     opacity: 0; 
-    word-spacing: -3px;
+    word-spacing: -4px;
     font-size: 28px;
     font-family: 'SF2', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 }
