@@ -136,7 +136,7 @@ function Main() {
                   <Link to="/projects/s9">
                     <button className="card1" id="s9-btn">
                         <h3>S9</h3>
-                        <p>Shadow Home Server</p>
+                        <p> Shadow Home Server</p>
                     </button>
                   </Link>
 
@@ -144,7 +144,7 @@ function Main() {
                   <Link to="/projects/NFI">
                     <button className="card1" id="nfi-btn">
                       <h3> NFI </h3> 
-                      <p> (old, incomplete) <br /> Rocket Propulsion System </p>
+                      <p> Rocket Propulsion System </p>
                     </button>
                   </Link>
 
@@ -152,7 +152,7 @@ function Main() {
                   <Link to="/projects/Muse">
                     <button className="card1" id="muse-btn">
                       <h3> Muse </h3> 
-                      <p> (old, incomplete) <br /> Automated Audio Equalizer </p>
+                      <p> Automated Audio Equalizer </p>
                     </button> 
                   </Link>
 
@@ -160,7 +160,7 @@ function Main() {
                   <Link to="/projects/EL">
                     <button className="card1" id="el-btn">
                       <h3> EyeLearn </h3> 
-                      <p> (old, incomplete) <br /> Academia AR/VR Headset </p>
+                      <p> Academia AR/VR Headset </p>
                     </button>
                   </Link>
 
@@ -168,7 +168,7 @@ function Main() {
                   <Link to="/projects/Naton">
                     <button className="card1" id="naton-btn">
                       <h3> Naton </h3> 
-                      <p> (old, incomplete) <br /> Element Converter </p>
+                      <p> Element Converter </p>
                     </button>
                   </Link>
 
