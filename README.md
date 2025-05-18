@@ -18,6 +18,6 @@ That's it from me though, let me know how my personal secrets look to ya ;)
 > [!Note]
 > I'm keeping the monkey on the readme btw....
 > <br>
-> I like him and his name is Paul :D
+> I like him and his name is Jerry :D
 
 ![giphy](https://github.com/user-attachments/assets/abbb34ac-f83a-49be-a46c-1d019fd19526)
