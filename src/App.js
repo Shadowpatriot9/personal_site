@@ -13,6 +13,7 @@ import Naton from './projects/Naton';
 import Sos from './projects/sos';
 import Sim from './projects/sim';
 import Input from './Input';
+import Admin from './Admin';
 
 // **template** import name_of_page_ from './projects/**/**';
 
@@ -49,6 +50,7 @@ function App() {
           <Route path="/projects/sos" element={<Sos />} />
           <Route path="/projects/sim" element={<Sim />} />
           <Route path="/Input" element={<Input />} />
+          <Route path="/admin" element={<Admin />} />
 
           {/* **template** <Route path="/projects/**" element={<name_of_page_ />} /> */}
 
