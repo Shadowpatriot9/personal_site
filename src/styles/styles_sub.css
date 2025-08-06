@@ -18,8 +18,8 @@
     font-family: 'SF Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
     margin: 0px;
     padding: 0px;
-    background-color: #cccccc;
-    color: #333;
+    background-color: #232323;
+    color: #ffffff;
     height: 100dvh;
     overflow: auto;
     scroll-behavior: smooth;
@@ -47,20 +47,21 @@
     transition: opacity 0.5s ease-in-out, visibility 0.5s ease-in-out;
   }
 
-/* Header | GS */
+/* Header | GS - INVERTED */
 header {
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    background-color: #232323;
-    color: #ffffff;
+    background-color: #ffffff;
+    color: #232323;
     margin: 0px;
     padding: 12px 0px 8px 0px;
     text-align: center;
     position: relative;
     width: 100vw;
     animation: fade-in .5s ease 0s forwards;
+    border-bottom: 2px solid #cccccc;
 }
 
 /* Header | ***project name*** */
@@ -258,7 +259,7 @@ footer {
     position: relative;
     display: inline-block;
     background-color: transparent;
-    color: #ffffff;
+    color: #232323;
     border: none;
     width: fit-content;
     cursor: pointer;
@@ -271,8 +272,10 @@ footer {
 }
 
 #gs-btn:hover {
-    background-color: #cccccc;
-    color: #333333;
+    background-color: #232323;
+    color: #ffffff;
+    border-radius: 5px;
+    padding: 2px 8px;
     transform: scale(1.05);
 }
 

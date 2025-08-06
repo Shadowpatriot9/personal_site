@@ -1,12 +1,29 @@
+/* Global San Francisco Font */
+@font-face {
+  font-family: 'SF Pro';
+  src: url('./assets/Fonts/SF-Pro-Text-Medium.otf') format('opentype');
+  font-weight: 400;
+}
+
+@font-face {
+  font-family: 'SF2';
+  src: url('./assets/Fonts/SF-Pro-Display-Semibold.otf') format('opentype');
+  font-weight: 400;
+}
+
+/* Global body styling */
 body {
   margin: 0;
-  /* font-family: 'SF Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; */
-
+  font-family: 'SF Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
 code {
-  /* font-family: 'SF Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; */
+  font-family: 'SF Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
 
+/* Ensure all elements inherit the SF Pro font */
+* {
+  font-family: inherit;
 }
