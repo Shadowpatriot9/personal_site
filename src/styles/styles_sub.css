@@ -172,34 +172,39 @@ main h1 {
 }
 
 /**************************************/
-/* Grids */
+/* Vertical Grids - Top to Bottom Layout */
 /**************************************/
 
-/* Grids */
-.grid-1 {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-    padding: 0px 5px 0px 5px;
-}
-
-.grid-1 > * {
-    flex: 1 1 100px;
-}
-
-.grid-2 {
+/* All grids are now vertical (column layout) */
+.grid-1, .grid-2, .grid-3 {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 15px;
     padding: 0px 5px;
+    width: 100%;
 }
 
-.grid-3 {
+/* Ensure all grid items stack vertically */
+.grid-1 > *, .grid-2 > *, .grid-3 > * {
+    width: 100%;
+    flex: none;
+}
+
+/* Main content layout - ensure vertical flow */
+main {
     display: flex;
     flex-direction: column;
-    gap: 10px;
-    padding: 0px 5px;
+    padding: 10px 10px 0px 10px;
+    max-width: 1200px;
+    margin: 0 auto;
 }
+
+/* Ensure sections stack vertically */
+main > * {
+    width: 100%;
+    margin-bottom: 10px;
+}
+
 
 /**************************************/
 /* Footer */
