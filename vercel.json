@@ -4,7 +4,8 @@
       "src": "package.json",
       "use": "@vercel/static-build",
       "config": {
-        "distDir": "build"
+        "distDir": "build",
+        "framework": "create-react-app"
       }
     },
     {
@@ -21,5 +22,6 @@
       "src": "/(.*)",
       "dest": "/build/$1"
     }
-  ]
+  ],
+  "installCommand": "npm install"
 }
