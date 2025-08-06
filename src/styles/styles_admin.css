@@ -2,14 +2,28 @@
 /* Admin Panel Styles */
 /**************************************/
 
+@font-face {
+    font-family: 'SF Pro';
+    src: url('../assets/Fonts/SF-Pro-Text-Medium.otf') format('opentype');
+    font-weight: 400;
+}
+ 
+@font-face {
+    font-family: 'SF2';
+    src: url('../assets/Fonts/SF-Pro-Display-Semibold.otf') format('opentype');
+    font-weight: 400;
+}
+
 .admin-container {
   min-height: 100vh;
-  background-color: #232323;
+  background-color: #cccccc;
+  color: #333;
   font-family: 'SF Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  line-height: 1.6;
 }
 
 .admin-header {
-  background-color: #444444;
+  background-color: #232323;
   color: white;
   padding: 1rem 2rem;
   display: flex;
@@ -78,18 +92,18 @@
   display: block;
   margin-bottom: 0.5rem;
   font-weight: 500;
-  color: #cccccc;
+  color: #333;
 }
 
 .form-group input {
   width: 100%;
   padding: 0.75rem;
-  border: 1px solid #444444;
+  border: 1px solid #ddd;
   border-radius: 4px;
   font-size: 1rem;
   box-sizing: border-box;
-  background-color: #444444;
-  color: #ffffff;
+  background-color: #ffffff;
+  color: #333;
 }
 
 .form-group input:focus {
@@ -123,19 +137,20 @@
 
 .add-project-section,
 .projects-section {
-  background-color: #333333;
-  border-radius: 8px;
+  background: white;
+  border-radius: 5px;
   padding: 2rem;
   margin-bottom: 2rem;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+  box-shadow: 2px 2px 2px 3px rgba(0, 0, 0, 0.3);
 }
 
 .add-project-section h2,
 .projects-section h2 {
   margin-top: 0;
   margin-bottom: 1.5rem;
-  color: #ffffff;
+  color: #333;
   font-size: 1.5rem;
+  font-family: 'SF2', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 }
 
 /* Project Form */
@@ -174,22 +189,24 @@
 }
 
 .project-item {
-  border: 1px solid #444444;
+  border: 1px solid #ddd;
   border-radius: 6px;
   padding: 1.5rem;
-  background-color: #444444;
+  background-color: #f8f9fa;
+  box-shadow: 1px 1px 1px 1px rgba(0, 0, 0, 0.1);
 }
 
 .project-info h3 {
   margin-top: 0;
   margin-bottom: 1rem;
-  color: #ffffff;
+  color: #333;
   font-size: 1.25rem;
+  font-family: 'SF2', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 }
 
 .project-info p {
   margin: 0.5rem 0;
-  color: #cccccc;
+  color: #666;
 }
 
 .project-actions {

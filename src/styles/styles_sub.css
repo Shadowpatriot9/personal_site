@@ -2,15 +2,29 @@
 /* General Styles */
 /*********************************/
 
+@font-face {
+    font-family: 'SF Pro';
+    src: url('../assets/Fonts/SF-Pro-Text-Medium.otf') format('opentype');
+    font-weight: 400;
+}
+ 
+@font-face {
+    font-family: 'SF2';
+    src: url('../assets/Fonts/SF-Pro-Display-Semibold.otf') format('opentype');
+    font-weight: 400;
+}
+
 #body2 {
     font-family: 'SF Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
     margin: 0px;
     padding: 0px;
-    background-color: #232323;
+    background-color: #cccccc;
+    color: #333;
     height: 100dvh;
     overflow: auto;
     scroll-behavior: smooth;
     transition: background-color 1s ease;
+    line-height: 1.6;
 }
 
 /********************************************************************************/
@@ -35,72 +49,107 @@
 
 /* Header | GS */
 header {
-    text-align: center;
+    display: flex;
+    flex-direction: column;
     align-items: center;
-    padding: 10px 20px;
-    line-height: 40px;
-    border-width: 2px 0px;
-    text-decoration: none;
-    color: #ffffff; 
-    background-color: #333333;
+    justify-content: center;
+    background-color: #232323;
+    color: #ffffff;
+    margin: 0px;
+    padding: 12px 0px 8px 0px;
+    text-align: center;
+    position: relative;
+    width: 100vw;
     animation: fade-in .5s ease 0s forwards;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
 }
 
 /* Header | ***project name*** */
 #title {
-    margin: 0px;
-    padding: 13px 25px;
-    height: fit-content;
-    background-color: #ffffff;
-    border: 1px solid #dddddd;
-    box-shadow: 2px 2px 2px 3px rgba(255, 255, 255, 0.3);
+    display: flex;
+    flex-direction: column;
+    margin: 5px 0;
+    padding: 13px;
+    background: white;
     border-radius: 5px;
+    box-shadow: 2px 2px 2px 3px rgba(0, 0, 0, 0.3);
     opacity: 0; 
     animation: fade-in 1.5s ease .65s forwards;
 }
 
 #title h1 {
     margin: 0px;
-    color: #ffffff;
+    color: #333;
     background-color: transparent;
     justify-content: center;
     align-items: center;
     text-align: center;
     font-weight: 500;
+    font-family: 'SF2', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 }
 
 /* Main Content */
 main {
-    padding: 13px 5px 0px 5px;
+    padding: 10px 10px 0px 10px;
+}
+
+main h1 {
+    padding: auto;
 }
 
 /* Sections */
 .section {
-    border-radius: 8px;
-    padding: 20px 25px;
-    background-color: #333333;
-    border: 1px solid #444444;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    display: flex;
+    flex-direction: column;
+    margin: 5px 0;
+    padding: 13px;
+    background: white;
+    border-radius: 5px;
+    box-shadow: 2px 2px 2px 3px rgba(0, 0, 0, 0.3);
     opacity: 0; 
     animation: fade-in 2s ease 1s forwards;
-    margin-bottom: 20px;
+}
+
+.section:hover .section-header {
+    color: #ffffff; 
+    background-color: #3d3d3d; 
+    padding: 0px 5px;
+    margin: 0px;
+}
+
+.section-header {
+    display: inline-flex; 
+    width: fit-content; 
+    transition: color 0.4s, background-color 0.4s; 
+    border-radius: 10px;
+    margin: 0px;
+    padding: 0px 5px;
+    font-family: 'SF2', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 }
 
 .section h3 {
     margin: 0px 0px 15px 0px;
-    padding: 0px;
-    color: #ffffff;
+    padding: 0px 5px;
+    color: #333;
     font-weight: 500;
+    font-family: 'SF2', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    display: inline-flex;
+    width: fit-content;
+    transition: color 0.4s, background-color 0.4s;
+    border-radius: 10px;
 }
 
 .section h4 {
     margin: 0px;
     padding: 3px 0px;
     font-style: italic;
-    color: #cccccc;
+    color: #666;
 }
 
+.section p {
+    margin: 0px 5px;
+    line-height: 20px;
+    color: #333;
+}
 
 #brief {
     margin: 0px;
@@ -118,35 +167,37 @@ main {
     font-weight: normal;
     font-size: 16px;
     line-height: 1.6;
-    color: #ffffff;
+    color: #333;
 }
 
 /**************************************/
 /* Grids */
 /**************************************/
 
+/* Grids */
 .grid-1 {
-    grid-template-rows: auto;    
-}
-
-.grid-1, .grid-2, .grid-3 {
-    display: grid;
-    padding: 10px 10px;
+    display: flex;
+    flex-wrap: wrap;
     gap: 10px;
+    padding: 0px 5px 0px 5px;
 }
-.grid-1 {
-    grid-template-rows: auto;
-    padding-top: 5px;
-    
-}
-.grid-2 {
-    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
-    padding-top: 0px;
-    padding-bottom: 0px;
-}
-.grid-3 {
-    grid-template-rows: auto;
 
+.grid-1 > * {
+    flex: 1 1 100px;
+}
+
+.grid-2 {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 0px 5px;
+}
+
+.grid-3 {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 0px 5px;
 }
 
 /**************************************/
@@ -175,11 +226,13 @@ footer {
     opacity: 0; 
     animation: fade-in 4s ease 2s forwards;
     box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    font-family: 'SF Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 }
 
 .graphic p {
     margin: 0;
     font-size: 16px;
+    font-family: 'SF Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 }
 
 .love-note p {
@@ -187,10 +240,11 @@ footer {
     padding: 0px 0px 10px 0px;
     line-height: 15px;
     text-decoration: none;
-    color: #ffffff;
+    color: #000000;
     background-color: transparent;
     opacity: 0; 
     animation: fade-in 4s ease 2.2s forwards;
+    font-family: 'SF Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 }
 
 /********************************************************************************/
@@ -201,23 +255,25 @@ footer {
 /*********************************/
 
 #gs-btn {
-    align-items: center;
-    justify-content: center;
-    font-weight: 500;
-    font-family: 'SF Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-    padding: 8px 16px;             
-    font-size: 16px;                 
-    background-color: #ffffff;  
-    color: #333333;              
-    border: none;                  
-    border-radius: 4px;          
+    position: relative;
+    display: inline-block;
+    background-color: transparent;
+    color: #ffffff;
+    border: none;
+    width: fit-content;
     cursor: pointer;
+    z-index: 100;
+    margin: 0px;
+    opacity: 1;
+    font-size: 28px;
+    font-family: 'SF2', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
     transition: background-color 0.2s ease;
 }
 
 #gs-btn:hover {
-  background-color: #cccccc;   
-  transform: scale(1.05);     
+    background-color: #cccccc;
+    color: #333333;
+    transform: scale(1.05);
 }
 
 /**************************************/

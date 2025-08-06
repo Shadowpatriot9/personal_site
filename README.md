@@ -4,6 +4,9 @@
 Here I routinely edit and host my personal site following a MERN stack (previously on a self-hosted LAMP stack) and deploy it through the PaaS "Vercel". 
 I do my best to make sure the info is up to date but understand that an out of date version may be posted so please verify the dates of the latest commits to verify the information.
 
+## Admin Panel
+✅ **Fixed Admin Login Functionality** - The admin panel is now fully functional with enhanced authentication and proper Vercel deployment configuration.
+
 ## Link
 The link is under the 'About' section on the right panel of the repo, <br>
 but in case you want it here too; here you go :) <br>
