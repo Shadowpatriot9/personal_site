@@ -31,31 +31,16 @@ function Admin() {
 
   const handleLogin = async (e) => {
     e.preventDefault();
+    setIsLoading(true);
     
     if (!username || !password) {
       alert('Please enter both username and password');
+      setIsLoading(false);
       return;
     }
     
-    // Development mode authentication bypass
-    if (process.env.NODE_ENV === 'development') {
-      if (username === 'shadowpatriot9' && password === '16196823') {
-        console.log('✅ Development login successful');
-        setIsAuthenticated(true);
-        setToken('dev-token');
-        localStorage.setItem('adminAuthenticated', 'true');
-        localStorage.setItem('adminToken', 'dev-token');
-        loadProjects('dev-token');
-        return;
-      } else {
-        alert('❌ Invalid credentials. Use username: shadowpatriot9, password: 16196823');
-        return;
-      }
-    }
-
-    // Production authentication
     try {
-      console.log('🔐 Attempting production login...');
+      console.log('🔐 Attempting login...');
       const response = await fetch('/api/admin/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -64,7 +49,7 @@ function Admin() {
       
       if (response.ok) {
         const data = await response.json();
-        console.log('✅ Production login successful');
+        console.log('✅ Login successful');
         setIsAuthenticated(true);
         setToken(data.token);
         localStorage.setItem('adminAuthenticated', 'true');
@@ -77,17 +62,20 @@ function Admin() {
       }
     } catch (error) {
       console.error('❌ Network error during login:', error);
-      // Fallback to development mode if API is not available
-      if (username === 'shadowpatriot9' && password === '16196823') {
-        console.log('🔧 Falling back to development auth due to network error');
+      
+      // Development fallback when API is not available
+      if (process.env.NODE_ENV === 'development' && username === 'shadowpatriot9' && password === '16196823') {
+        console.log('🔧 Using development fallback authentication');
         setIsAuthenticated(true);
         setToken('dev-token');
         localStorage.setItem('adminAuthenticated', 'true');
         localStorage.setItem('adminToken', 'dev-token');
         loadProjects('dev-token');
       } else {
-        alert('❌ Login failed: Network error. Check console for details.');
+        alert('❌ Login failed: Unable to connect to server. Please check your connection and try again.');
       }
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -324,7 +312,9 @@ function Admin() {
                 required
               />
             </div>
-            <button type="submit" className="login-btn">Login</button>
+            <button type="submit" className="login-btn" disabled={isLoading}>
+              {isLoading ? 'Logging in...' : 'Login'}
+            </button>
           </form>
         </div>
       </div>
