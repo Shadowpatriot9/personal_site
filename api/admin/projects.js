@@ -33,26 +33,53 @@ const ProjectModel = mongoose.models.Project || mongoose.model('Project', Projec
 
 // Middleware to verify JWT token
 function verifyToken(req, res, next) {
+  console.log('\n' + '='.repeat(50));
+  console.log('🛡️ TOKEN VERIFICATION STARTED');
+  console.log('Time:', new Date().toISOString());
+  
   const authHeader = req.headers.authorization;
+  console.log('Authorization header:', authHeader ? `[${authHeader.length} chars]` : 'MISSING');
+  
   if (!authHeader) {
+    console.log('❌ TOKEN VERIFICATION FAILED: No authorization header');
     return res.status(401).json({ error: 'No token provided' });
   }
 
   const token = authHeader.split(' ')[1];
+  console.log('Extracted token:', token ? `[${token.length} chars]` : 'MISSING');
+  console.log('Token format check:', authHeader.startsWith('Bearer ') ? 'Valid Bearer format' : 'Invalid format');
+  
   try {
+    console.log('Attempting JWT verification with secret length:', JWT_SECRET?.length || 0);
     const decoded = jwt.verify(token, JWT_SECRET);
+    console.log('✅ TOKEN VERIFIED SUCCESSFULLY');
+    console.log('Decoded payload:', decoded);
     req.user = decoded;
     next();
   } catch (error) {
+    console.log('❌ TOKEN VERIFICATION FAILED');
+    console.error('JWT error:', error.message);
+    console.error('Error type:', error.name);
     return res.status(401).json({ error: 'Invalid token' });
   }
 }
 
 export default async function handler(req, res) {
+  console.log('\n' + '='.repeat(50));
+  console.log('📁 ADMIN PROJECTS API CALLED');
+  console.log('Time:', new Date().toISOString());
+  console.log('Method:', req.method);
+  console.log('URL:', req.url);
+  console.log('Headers:', JSON.stringify(req.headers, null, 2));
+  console.log('='.repeat(50));
+  
   // Verify authentication for all operations
   verifyToken(req, res, async () => {
+    console.log('\n💾 DATABASE CONNECTION:');
     try {
+      console.log('Attempting to connect to database...');
       await connectToDatabase();
+      console.log('✅ Database connected successfully');
 
       switch (req.method) {
         case 'GET':

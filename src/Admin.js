@@ -36,79 +36,167 @@ function Admin() {
   const handleLogin = async (e) => {
     e.preventDefault();
     setIsLoading(true);
+    
+    console.log('\n' + '='.repeat(60));
+    console.log('🛡️ FRONTEND LOGIN ATTEMPT STARTED');
+    console.log('Time:', new Date().toISOString());
+    console.log('Username provided:', `"${username}"`);
+    console.log('Password length:', password?.length);
+    console.log('='.repeat(60));
 
     if (!username || !password) {
+      console.log('❌ VALIDATION FAILED: Missing credentials');
+      console.log('Username:', !!username, '| Password:', !!password);
       alert('Please enter both username and password');
       setIsLoading(false);
       return;
     }
+    console.log('✅ VALIDATION PASSED: Credentials provided');
 
     // Detect if we're in development (localhost)
     const isLocalDevelopment = window.location.hostname === 'localhost' || 
                               window.location.hostname === '127.0.0.1' ||
                               process.env.NODE_ENV === 'development';
 
-    console.log('🔍 Environment:', {
-      hostname: window.location.hostname,
-      NODE_ENV: process.env.NODE_ENV,
-      isLocalDevelopment
-    });
+    console.log('\n🌍 ENVIRONMENT DETECTION:');
+    console.log('window.location.hostname:', window.location.hostname);
+    console.log('window.location.href:', window.location.href);
+    console.log('process.env.NODE_ENV:', process.env.NODE_ENV);
+    console.log('isLocalDevelopment:', isLocalDevelopment);
+    console.log('User agent:', navigator.userAgent);
 
-    // Try API authentication first (works in both dev and prod)
+    console.log('\n🔌 ATTEMPTING API AUTHENTICATION:');
+    
+    const apiEndpoint = '/api/admin/login';
+    const requestBody = { username, password };
+    const requestHeaders = { 'Content-Type': 'application/json' };
+    
+    console.log('API endpoint:', apiEndpoint);
+    console.log('Request method: POST');
+    console.log('Request headers:', requestHeaders);
+    console.log('Request body (password masked):', { username, password: '[MASKED]' });
+    
     try {
-      console.log('🔐 Attempting API login...');
-      const response = await fetch('/api/admin/login', {
+      console.log('🚀 Making fetch request...');
+      const fetchStartTime = Date.now();
+      
+      const response = await fetch(apiEndpoint, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password }),
+        headers: requestHeaders,
+        body: JSON.stringify(requestBody),
       });
-
+      
+      const fetchEndTime = Date.now();
+      console.log(`⏱️ Fetch completed in ${fetchEndTime - fetchStartTime}ms`);
+      
+      console.log('\n📝 RESPONSE DETAILS:');
+      console.log('Status:', response.status);
+      console.log('Status text:', response.statusText);
+      console.log('Headers:', Object.fromEntries(response.headers.entries()));
+      console.log('Response OK:', response.ok);
+      console.log('URL:', response.url);
+      
       if (response.ok) {
-        const data = await response.json();
-        console.log('✅ API login successful');
+        console.log('\n📦 PARSING SUCCESS RESPONSE:');
+        let data;
+        try {
+          const responseText = await response.text();
+          console.log('Raw response text:', responseText);
+          data = JSON.parse(responseText);
+          console.log('Parsed JSON:', data);
+        } catch (parseError) {
+          console.error('❌ JSON parse error:', parseError);
+          throw new Error('Invalid JSON response from server');
+        }
+        
+        console.log('\n✅ API LOGIN SUCCESSFUL:');
+        console.log('Token received:', data.token ? `[${data.token.length} chars]` : 'NO TOKEN');
+        console.log('User data:', data.user);
+        console.log('Message:', data.message);
+        
+        console.log('\n💾 UPDATING FRONTEND STATE:');
         setIsAuthenticated(true);
+        console.log('setIsAuthenticated(true) called');
+        
         setToken(data.token);
+        console.log('setToken called with token');
+        
         localStorage.setItem('adminAuthenticated', 'true');
         localStorage.setItem('adminToken', data.token);
+        console.log('localStorage updated');
+        
+        console.log('📁 Loading projects...');
         loadProjects(data.token);
+        
         setIsLoading(false);
+        console.log('✅ LOGIN PROCESS COMPLETED SUCCESSFULLY');
         return;
+        
       } else {
-        const errorData = await response.json().catch(() => ({ error: 'Login failed' }));
-        console.error('❌ API login failed:', errorData);
+        console.log('\n❌ API RESPONSE ERROR:');
+        let errorData;
+        try {
+          const errorText = await response.text();
+          console.log('Error response text:', errorText);
+          errorData = JSON.parse(errorText);
+          console.log('Parsed error JSON:', errorData);
+        } catch (parseError) {
+          console.warn('Could not parse error response:', parseError);
+          errorData = { error: 'Login failed' };
+        }
+        
+        console.log('Error data:', errorData);
         
         // If API fails and we're in development, try fallback
         if (isLocalDevelopment && username === 'shadowpatriot9' && password === '16196823') {
-          console.log('🔧 API failed, using development fallback');
+          console.log('\n🔧 API FAILED - ATTEMPTING DEVELOPMENT FALLBACK:');
+          console.log('Fallback conditions met - switching to dev mode');
+          
           setIsAuthenticated(true);
           setToken('dev-token');
           localStorage.setItem('adminAuthenticated', 'true');
           localStorage.setItem('adminToken', 'dev-token');
           loadProjects('dev-token');
           setIsLoading(false);
+          console.log('✅ DEVELOPMENT FALLBACK SUCCESSFUL');
           return;
         }
         
-        alert(`Login failed: ${errorData.error || 'Invalid credentials'}`);
+        console.log('❌ NO FALLBACK AVAILABLE - Showing error to user');
+        const errorMessage = `Login failed: ${errorData.error || 'Invalid credentials'}`;
+        console.log('Error message:', errorMessage);
+        alert(errorMessage);
       }
     } catch (error) {
-      console.error('❌ Network error during API login:', error);
+      console.log('\n⚡ NETWORK/FETCH ERROR:');
+      console.error('Full error object:', error);
+      console.error('Error message:', error.message);
+      console.error('Error stack:', error.stack);
       
       // Network error fallback for development
       if (isLocalDevelopment && username === 'shadowpatriot9' && password === '16196823') {
-        console.log('🔧 Network error, using development fallback');
+        console.log('\n🔧 NETWORK ERROR - ATTEMPTING DEVELOPMENT FALLBACK:');
+        console.log('Fallback conditions met - switching to dev mode');
+        
         setIsAuthenticated(true);
         setToken('dev-token');
         localStorage.setItem('adminAuthenticated', 'true');
         localStorage.setItem('adminToken', 'dev-token');
         loadProjects('dev-token');
         setIsLoading(false);
+        console.log('✅ DEVELOPMENT FALLBACK AFTER NETWORK ERROR SUCCESSFUL');
         return;
       }
       
-      alert('❌ Login failed: Unable to connect to server. Please check your connection and try again.');
+      console.log('❌ NO FALLBACK AVAILABLE - Showing network error to user');
+      const errorMessage = '❌ Login failed: Unable to connect to server. Please check your connection and try again.';
+      console.log('Error message:', errorMessage);
+      alert(errorMessage);
     } finally {
+      console.log('\n🏁 LOGIN ATTEMPT COMPLETED');
+      console.log('Final setIsLoading(false) call');
       setIsLoading(false);
+      console.log('='.repeat(60) + '\n');
     }
   };
 
