@@ -22,10 +22,14 @@ function Admin() {
   useEffect(() => {
     const authStatus = localStorage.getItem('adminAuthenticated');
     const savedToken = localStorage.getItem('adminToken');
+    
     if (authStatus === 'true' && savedToken) {
+      console.log('🔄 Restoring authentication from localStorage');
       setIsAuthenticated(true);
       setToken(savedToken);
       loadProjects(savedToken);
+    } else {
+      console.log('🔓 No saved authentication found');
     }
   }, []);
 
@@ -39,8 +43,31 @@ function Admin() {
       return;
     }
 
+    // Development mode: Skip API call and use direct authentication
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🔧 Development mode: Checking credentials locally');
+      
+      // Check development credentials
+      if (username === 'shadowpatriot9' && password === '16196823') {
+        console.log('✅ Development login successful');
+        setIsAuthenticated(true);
+        setToken('dev-token');
+        localStorage.setItem('adminAuthenticated', 'true');
+        localStorage.setItem('adminToken', 'dev-token');
+        setIsLoading(false);
+        loadProjects('dev-token');
+        return;
+      } else {
+        console.log('❌ Invalid development credentials');
+        alert('❌ Invalid credentials. Use: shadowpatriot9 / 16196823');
+        setIsLoading(false);
+        return;
+      }
+    }
+
+    // Production mode: Try API authentication
     try {
-      console.log('🔐 Attempting login...');
+      console.log('🔐 Attempting API login...');
       const response = await fetch('/api/admin/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -49,7 +76,7 @@ function Admin() {
 
       if (response.ok) {
         const data = await response.json();
-        console.log('✅ Login successful');
+        console.log('✅ API login successful');
         setIsAuthenticated(true);
         setToken(data.token);
         localStorage.setItem('adminAuthenticated', 'true');
@@ -57,33 +84,28 @@ function Admin() {
         loadProjects(data.token);
       } else {
         const errorData = await response.json().catch(() => ({ error: 'Login failed' }));
-        console.error('❌ Login failed:', errorData);
+        console.error('❌ API login failed:', errorData);
         alert(`Login failed: ${errorData.error || 'Invalid credentials'}`);
       }
     } catch (error) {
-      console.error('❌ Network error during login:', error);
-
-      // Development fallback when API is not available
-      if (process.env.NODE_ENV === 'development' && username === 'shadowpatriot9' && password === '16196823') {
-        console.log('🔧 Using development fallback authentication');
-        setIsAuthenticated(true);
-        setToken('dev-token');
-        localStorage.setItem('adminAuthenticated', 'true');
-        localStorage.setItem('adminToken', 'dev-token');
-        loadProjects('dev-token');
-      } else {
-        alert('❌ Login failed: Unable to connect to server. Please check your connection and try again.');
-      }
+      console.error('❌ Network error during API login:', error);
+      alert('❌ Login failed: Unable to connect to server. Please check your connection and try again.');
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleLogout = () => {
+    console.log('🚪 Logging out...');
     setIsAuthenticated(false);
     setToken('');
+    setUsername('');
+    setPassword('');
+    setProjects([]);
+    setEditingProject(null);
     localStorage.removeItem('adminAuthenticated');
     localStorage.removeItem('adminToken');
+    console.log('✅ Logout successful');
   };
 
   const loadProjects = async (authToken) => {
@@ -286,8 +308,19 @@ function Admin() {
           </Link>
           <h1>Admin Login</h1>
           {process.env.NODE_ENV === 'development' && (
-            <div style={{ color: '#ffc107', fontSize: '0.8rem' }}>
-              Dev Mode: shadowpatriot9 / 16196823
+            <div style={{ 
+              color: '#ffc107', 
+              fontSize: '0.9rem', 
+              textAlign: 'center', 
+              padding: '10px', 
+              border: '1px solid #ffc107', 
+              borderRadius: '5px', 
+              marginBottom: '20px',
+              backgroundColor: 'rgba(255, 193, 7, 0.1)' 
+            }}>
+              <strong>Development Mode</strong><br />
+              Username: shadowpatriot9<br />
+              Password: 16196823
             </div>
           )}
         </header>
