@@ -43,29 +43,18 @@ function Admin() {
       return;
     }
 
-    // Development mode: Skip API call and use direct authentication
-    if (process.env.NODE_ENV === 'development') {
-      console.log('🔧 Development mode: Checking credentials locally');
-      
-      // Check development credentials
-      if (username === 'shadowpatriot9' && password === '16196823') {
-        console.log('✅ Development login successful');
-        setIsAuthenticated(true);
-        setToken('dev-token');
-        localStorage.setItem('adminAuthenticated', 'true');
-        localStorage.setItem('adminToken', 'dev-token');
-        setIsLoading(false);
-        loadProjects('dev-token');
-        return;
-      } else {
-        console.log('❌ Invalid development credentials');
-        alert('❌ Invalid credentials. Use: shadowpatriot9 / 16196823');
-        setIsLoading(false);
-        return;
-      }
-    }
+    // Detect if we're in development (localhost)
+    const isLocalDevelopment = window.location.hostname === 'localhost' || 
+                              window.location.hostname === '127.0.0.1' ||
+                              process.env.NODE_ENV === 'development';
 
-    // Production mode: Try API authentication
+    console.log('🔍 Environment:', {
+      hostname: window.location.hostname,
+      NODE_ENV: process.env.NODE_ENV,
+      isLocalDevelopment
+    });
+
+    // Try API authentication first (works in both dev and prod)
     try {
       console.log('🔐 Attempting API login...');
       const response = await fetch('/api/admin/login', {
@@ -82,13 +71,41 @@ function Admin() {
         localStorage.setItem('adminAuthenticated', 'true');
         localStorage.setItem('adminToken', data.token);
         loadProjects(data.token);
+        setIsLoading(false);
+        return;
       } else {
         const errorData = await response.json().catch(() => ({ error: 'Login failed' }));
         console.error('❌ API login failed:', errorData);
+        
+        // If API fails and we're in development, try fallback
+        if (isLocalDevelopment && username === 'shadowpatriot9' && password === '16196823') {
+          console.log('🔧 API failed, using development fallback');
+          setIsAuthenticated(true);
+          setToken('dev-token');
+          localStorage.setItem('adminAuthenticated', 'true');
+          localStorage.setItem('adminToken', 'dev-token');
+          loadProjects('dev-token');
+          setIsLoading(false);
+          return;
+        }
+        
         alert(`Login failed: ${errorData.error || 'Invalid credentials'}`);
       }
     } catch (error) {
       console.error('❌ Network error during API login:', error);
+      
+      // Network error fallback for development
+      if (isLocalDevelopment && username === 'shadowpatriot9' && password === '16196823') {
+        console.log('🔧 Network error, using development fallback');
+        setIsAuthenticated(true);
+        setToken('dev-token');
+        localStorage.setItem('adminAuthenticated', 'true');
+        localStorage.setItem('adminToken', 'dev-token');
+        loadProjects('dev-token');
+        setIsLoading(false);
+        return;
+      }
+      
       alert('❌ Login failed: Unable to connect to server. Please check your connection and try again.');
     } finally {
       setIsLoading(false);
@@ -109,8 +126,14 @@ function Admin() {
   };
 
   const loadProjects = async (authToken) => {
+    // Check if we're in development or if token is dev-token
+    const isLocalDevelopment = window.location.hostname === 'localhost' || 
+                              window.location.hostname === '127.0.0.1' ||
+                              process.env.NODE_ENV === 'development' ||
+                              authToken === 'dev-token';
+    
     // Development mode - load mock projects
-    if (process.env.NODE_ENV === 'development') {
+    if (isLocalDevelopment) {
       const mockProjects = [
         {
           _id: '1',
@@ -194,8 +217,14 @@ function Admin() {
   const handleAddProject = async (e) => {
     e.preventDefault();
 
+    // Check if we're in development
+    const isLocalDevelopment = window.location.hostname === 'localhost' || 
+                              window.location.hostname === '127.0.0.1' ||
+                              process.env.NODE_ENV === 'development' ||
+                              token === 'dev-token';
+
     // Development mode - add to local state
-    if (process.env.NODE_ENV === 'development') {
+    if (isLocalDevelopment) {
       const newProjectWithId = {
         ...newProject,
         _id: Date.now().toString()
@@ -233,8 +262,14 @@ function Admin() {
   const handleUpdateProject = async (e) => {
     e.preventDefault();
 
+    // Check if we're in development
+    const isLocalDevelopment = window.location.hostname === 'localhost' || 
+                              window.location.hostname === '127.0.0.1' ||
+                              process.env.NODE_ENV === 'development' ||
+                              token === 'dev-token';
+
     // Development mode - update local state
-    if (process.env.NODE_ENV === 'development') {
+    if (isLocalDevelopment) {
       setProjects(projects.map(p =>
         p._id === editingProject._id ? editingProject : p
       ));
@@ -270,8 +305,14 @@ function Admin() {
   const handleDeleteProject = async (projectId) => {
     if (window.confirm('Are you sure you want to delete this project?')) {
 
+      // Check if we're in development
+      const isLocalDevelopment = window.location.hostname === 'localhost' || 
+                                window.location.hostname === '127.0.0.1' ||
+                                process.env.NODE_ENV === 'development' ||
+                                token === 'dev-token';
+
       // Development mode - remove from local state
-      if (process.env.NODE_ENV === 'development') {
+      if (isLocalDevelopment) {
         setProjects(projects.filter(p => p._id !== projectId));
         alert('Project deleted successfully! (Development mode)');
         return;
@@ -307,7 +348,7 @@ function Admin() {
             <button className="gs-btn">GS</button>
           </Link>
           <h1>Admin Login</h1>
-          {process.env.NODE_ENV === 'development' && (
+          {(window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || process.env.NODE_ENV === 'development') && (
             <div style={{ 
               color: '#ffc107', 
               fontSize: '0.9rem', 
