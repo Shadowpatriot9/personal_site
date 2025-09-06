@@ -67,9 +67,15 @@ function Admin() {
 
     console.log('\n🔌 ATTEMPTING API AUTHENTICATION:');
     
-    const apiEndpoint = '/api/admin/login';
+    // Use canonical API base URL to avoid domain issues
+    const API_BASE = process.env.REACT_APP_API_BASE || window.location.origin;
+    const apiEndpoint = `${API_BASE}/api/admin/login`;
     const requestBody = { username, password };
     const requestHeaders = { 'Content-Type': 'application/json' };
+    
+    console.log('API_BASE determined:', API_BASE);
+    console.log('window.location.origin:', window.location.origin);
+    console.log('process.env.REACT_APP_API_BASE:', process.env.REACT_APP_API_BASE);
     
     console.log('API endpoint:', apiEndpoint);
     console.log('Request method: POST');
@@ -286,7 +292,11 @@ function Admin() {
 
     // Production mode
     try {
-      const response = await fetch('/api/admin/projects', {
+      const API_BASE = process.env.REACT_APP_API_BASE || window.location.origin;
+      const apiEndpoint = `${API_BASE}/api/admin/projects`;
+      console.log('Loading projects from:', apiEndpoint);
+      
+      const response = await fetch(apiEndpoint, {
         headers: {
           'Authorization': `Bearer ${authToken || token}`
         }
@@ -325,7 +335,11 @@ function Admin() {
 
     // Production mode
     try {
-      const response = await fetch('/api/admin/projects', {
+      const API_BASE = process.env.REACT_APP_API_BASE || window.location.origin;
+      const apiEndpoint = `${API_BASE}/api/admin/projects`;
+      console.log('Adding project to:', apiEndpoint);
+      
+      const response = await fetch(apiEndpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -368,7 +382,11 @@ function Admin() {
 
     // Production mode
     try {
-      const response = await fetch(`/api/admin/projects/${editingProject._id}`, {
+      const API_BASE = process.env.REACT_APP_API_BASE || window.location.origin;
+      const apiEndpoint = `${API_BASE}/api/admin/projects/${editingProject._id}`;
+      console.log('Updating project at:', apiEndpoint);
+      
+      const response = await fetch(apiEndpoint, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -408,7 +426,11 @@ function Admin() {
 
       // Production mode
       try {
-        const response = await fetch(`/api/admin/projects/${projectId}`, {
+        const API_BASE = process.env.REACT_APP_API_BASE || window.location.origin;
+        const apiEndpoint = `${API_BASE}/api/admin/projects/${projectId}`;
+        console.log('Deleting project at:', apiEndpoint);
+        
+        const response = await fetch(apiEndpoint, {
           method: 'DELETE',
           headers: {
             'Authorization': `Bearer ${token}`
