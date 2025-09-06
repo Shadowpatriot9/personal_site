@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import './styles/styles_admin.css';
+import styles from './styles/styles_admin.css';
 
 function Admin() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -32,13 +32,13 @@ function Admin() {
   const handleLogin = async (e) => {
     e.preventDefault();
     setIsLoading(true);
-    
+
     if (!username || !password) {
       alert('Please enter both username and password');
       setIsLoading(false);
       return;
     }
-    
+
     try {
       console.log('🔐 Attempting login...');
       const response = await fetch('/api/admin/login', {
@@ -46,7 +46,7 @@ function Admin() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, password }),
       });
-      
+
       if (response.ok) {
         const data = await response.json();
         console.log('✅ Login successful');
@@ -62,7 +62,7 @@ function Admin() {
       }
     } catch (error) {
       console.error('❌ Network error during login:', error);
-      
+
       // Development fallback when API is not available
       if (process.env.NODE_ENV === 'development' && username === 'shadowpatriot9' && password === '16196823') {
         console.log('🔧 Using development fallback authentication');
@@ -171,7 +171,7 @@ function Admin() {
 
   const handleAddProject = async (e) => {
     e.preventDefault();
-    
+
     // Development mode - add to local state
     if (process.env.NODE_ENV === 'development') {
       const newProjectWithId = {
@@ -188,13 +188,13 @@ function Admin() {
     try {
       const response = await fetch('/api/admin/projects', {
         method: 'POST',
-        headers: { 
+        headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify(newProject),
       });
-      
+
       if (response.ok) {
         setNewProject({ id: '', title: '', description: '', path: '', component: '' });
         loadProjects();
@@ -210,10 +210,10 @@ function Admin() {
 
   const handleUpdateProject = async (e) => {
     e.preventDefault();
-    
+
     // Development mode - update local state
     if (process.env.NODE_ENV === 'development') {
-      setProjects(projects.map(p => 
+      setProjects(projects.map(p =>
         p._id === editingProject._id ? editingProject : p
       ));
       setEditingProject(null);
@@ -225,13 +225,13 @@ function Admin() {
     try {
       const response = await fetch(`/api/admin/projects/${editingProject._id}`, {
         method: 'PUT',
-        headers: { 
+        headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify(editingProject),
       });
-      
+
       if (response.ok) {
         setEditingProject(null);
         loadProjects();
@@ -247,7 +247,7 @@ function Admin() {
 
   const handleDeleteProject = async (projectId) => {
     if (window.confirm('Are you sure you want to delete this project?')) {
-      
+
       // Development mode - remove from local state
       if (process.env.NODE_ENV === 'development') {
         setProjects(projects.filter(p => p._id !== projectId));
@@ -263,7 +263,7 @@ function Admin() {
             'Authorization': `Bearer ${token}`
           }
         });
-        
+
         if (response.ok) {
           loadProjects();
           alert('Project deleted successfully!');
@@ -286,12 +286,12 @@ function Admin() {
           </Link>
           <h1>Admin Login</h1>
           {process.env.NODE_ENV === 'development' && (
-            <div style={{color: '#ffc107', fontSize: '0.8rem'}}>
+            <div style={{ color: '#ffc107', fontSize: '0.8rem' }}>
               Dev Mode: shadowpatriot9 / 16196823
             </div>
           )}
         </header>
-        
+
         <div className="login-form">
           <form onSubmit={handleLogin}>
             <div className="form-group">
@@ -322,15 +322,15 @@ function Admin() {
   }
 
   return (
-    <div className="admin-container">
-      <header className="admin-header">
+    <div className={styles.admin_container} id="admin-container">
+      <header className={styles.admin_header} id="admin_header">
         <Link to="/">
           <button className="gs-btn">GS</button>
         </Link>
         <h1>Project Management</h1>
-        <div style={{display: 'flex', alignItems: 'center', gap: '1rem'}}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
           {process.env.NODE_ENV === 'development' && (
-            <div style={{color: '#ffc107', fontSize: '0.8rem'}}>
+            <div style={{ color: '#ffc107', fontSize: '0.8rem' }}>
               Development Mode
             </div>
           )}
@@ -338,7 +338,7 @@ function Admin() {
         </div>
       </header>
 
-      <main className="admin-main">
+      <main className={styles.admin_main} id="admin_main">
         {/* Add New Project */}
         <section className="add-project-section">
           <h2>Add New Project</h2>
@@ -349,7 +349,7 @@ function Admin() {
                 <input
                   type="text"
                   value={newProject.id}
-                  onChange={(e) => setNewProject({...newProject, id: e.target.value})}
+                  onChange={(e) => setNewProject({ ...newProject, id: e.target.value })}
                   required
                 />
               </div>
@@ -358,7 +358,7 @@ function Admin() {
                 <input
                   type="text"
                   value={newProject.title}
-                  onChange={(e) => setNewProject({...newProject, title: e.target.value})}
+                  onChange={(e) => setNewProject({ ...newProject, title: e.target.value })}
                   required
                 />
               </div>
@@ -368,7 +368,7 @@ function Admin() {
               <input
                 type="text"
                 value={newProject.description}
-                onChange={(e) => setNewProject({...newProject, description: e.target.value})}
+                onChange={(e) => setNewProject({ ...newProject, description: e.target.value })}
                 required
               />
             </div>
@@ -378,7 +378,7 @@ function Admin() {
                 <input
                   type="text"
                   value={newProject.path}
-                  onChange={(e) => setNewProject({...newProject, path: e.target.value})}
+                  onChange={(e) => setNewProject({ ...newProject, path: e.target.value })}
                   required
                 />
               </div>
@@ -387,7 +387,7 @@ function Admin() {
                 <input
                   type="text"
                   value={newProject.component}
-                  onChange={(e) => setNewProject({...newProject, component: e.target.value})}
+                  onChange={(e) => setNewProject({ ...newProject, component: e.target.value })}
                   required
                 />
               </div>
@@ -410,7 +410,7 @@ function Admin() {
                         <input
                           type="text"
                           value={editingProject.id}
-                          onChange={(e) => setEditingProject({...editingProject, id: e.target.value})}
+                          onChange={(e) => setEditingProject({ ...editingProject, id: e.target.value })}
                           required
                         />
                       </div>
@@ -419,7 +419,7 @@ function Admin() {
                         <input
                           type="text"
                           value={editingProject.title}
-                          onChange={(e) => setEditingProject({...editingProject, title: e.target.value})}
+                          onChange={(e) => setEditingProject({ ...editingProject, title: e.target.value })}
                           required
                         />
                       </div>
@@ -429,7 +429,7 @@ function Admin() {
                       <input
                         type="text"
                         value={editingProject.description}
-                        onChange={(e) => setEditingProject({...editingProject, description: e.target.value})}
+                        onChange={(e) => setEditingProject({ ...editingProject, description: e.target.value })}
                         required
                       />
                     </div>
@@ -439,7 +439,7 @@ function Admin() {
                         <input
                           type="text"
                           value={editingProject.path}
-                          onChange={(e) => setEditingProject({...editingProject, path: e.target.value})}
+                          onChange={(e) => setEditingProject({ ...editingProject, path: e.target.value })}
                           required
                         />
                       </div>
@@ -448,7 +448,7 @@ function Admin() {
                         <input
                           type="text"
                           value={editingProject.component}
-                          onChange={(e) => setEditingProject({...editingProject, component: e.target.value})}
+                          onChange={(e) => setEditingProject({ ...editingProject, component: e.target.value })}
                           required
                         />
                       </div>
