@@ -23,6 +23,8 @@ export default async function handler(req, res) {
 
   try {
     console.log('🔐 Login attempt for username:', username);
+    console.log('🔧 Environment check - ADMIN_PASSWORD_HASH exists:', !!ADMIN_PASSWORD_HASH);
+    console.log('🔧 Environment check - JWT_SECRET exists:', !!process.env.JWT_SECRET);
     
     // Check username
     if (username !== ADMIN_USERNAME) {
@@ -47,10 +49,13 @@ export default async function handler(req, res) {
         }
       }
     } else {
-      // Development mode - no production hash set
+      // No production hash set - use development authentication
+      console.log('🔧 No production hash found, using development authentication');
       if (username === DEV_USERNAME && password === DEV_PASSWORD) {
-        console.log('🔧 Using development authentication');
+        console.log('🔧 Development authentication successful');
         isValidPassword = true;
+      } else {
+        console.log('❌ Development authentication failed');
       }
     }
 
