@@ -1,9 +1,21 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import logger from '../utils/logger';
 
 import styles from './../styles/styles_sub.module.css';
 
 function Muse() {
+  useEffect(() => {
+    logger.pageView('Muse Project Page', {
+      project: 'Muse',
+      projectType: 'Automated Audio Equalizer',
+      dateOfOrigin: '03/2018',
+      status: 'Discontinued (05/2019)',
+      description: 'Automated music production device for novice songwriters',
+      background: 'Audio production automation to simplify creative process'
+    });
+  }, []);
+
   return (
     <div className={styles.body2} id='body2'>
       {/* Page Head */}

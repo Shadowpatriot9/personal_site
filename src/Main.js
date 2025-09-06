@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import logger from './utils/logger';
 
 import styles from './styles/styles_page.css';
 import './styles/styles_mobile.css';
@@ -32,6 +33,21 @@ export function initializeAnimations() {
 
 function Main() {
   useEffect(() => {
+    // Log page view
+    logger.pageView('Homepage', {
+      hasProjects: true,
+      sections: ['about', 'contact', 'projects'],
+      projectCount: 7
+    });
+    
+    // Log performance timing
+    if (window.performance && window.performance.timing) {
+      const loadTime = window.performance.timing.loadEventEnd - window.performance.timing.navigationStart;
+      if (loadTime > 0) {
+        logger.performance('Page Load Time', loadTime, 'ms');
+      }
+    }
+    
     if (document.readyState === 'complete' || document.readyState === 'interactive') {
       initializeAnimations();
     } else {
@@ -67,7 +83,7 @@ function Main() {
       {/* Page Title */}
       <header className="header1">
         <Link to="/admin">
-          <button className="input" id="input">
+          <button className="input" id="input" onClick={() => logger.interaction('click', 'admin-access', { destination: '/admin', source: 'homepage-header' })}>
             <h1 id="main-title"> GS </h1>
             <h1 id="full-name"> Grayden Scovil </h1>
             <div class="full-name-cover" id="full-name-cover"> </div>
@@ -115,7 +131,7 @@ function Main() {
 
               {/* Project Card | S_Im */}
               <Link to="/projects/sim">
-                <button className="card1" id="s9ql-btn">
+                <button className="card1" id="s9ql-btn" onClick={() => logger.interaction('click', 'project-card', { project: 'S_im', destination: '/projects/sim' })}>
                   <h3> S_im </h3>
                   <p> Shadow Simulator </p>
                 </button>
@@ -123,7 +139,7 @@ function Main() {
 
               {/* Project Card | sOS */}
               <Link to="/projects/sos">
-                <button className="card1" id="sos-btn">
+                <button className="card1" id="sos-btn" onClick={() => logger.interaction('click', 'project-card', { project: 'sOS', destination: '/projects/sos' })}>
                   <h3> sOS </h3>
                   <p> Shadow Operating System </p>
                 </button>
@@ -131,7 +147,7 @@ function Main() {
 
               {/* Project Card | S9 */}
               <Link to="/projects/s9">
-                <button className="card1" id="s9-btn">
+                <button className="card1" id="s9-btn" onClick={() => logger.interaction('click', 'project-card', { project: 'S9', destination: '/projects/s9' })}>
                   <h3>S9</h3>
                   <p> Shadow Home Server</p>
                 </button>
@@ -139,7 +155,7 @@ function Main() {
 
               {/* Project Card | NFI */}
               <Link to="/projects/NFI">
-                <button className="card1" id="nfi-btn">
+                <button className="card1" id="nfi-btn" onClick={() => logger.interaction('click', 'project-card', { project: 'NFI', destination: '/projects/NFI' })}>
                   <h3> NFI </h3>
                   <p> Rocket Propulsion System </p>
                 </button>
@@ -147,7 +163,7 @@ function Main() {
 
               {/* Project Card | Muse */}
               <Link to="/projects/Muse">
-                <button className="card1" id="muse-btn">
+                <button className="card1" id="muse-btn" onClick={() => logger.interaction('click', 'project-card', { project: 'Muse', destination: '/projects/Muse' })}>
                   <h3> Muse </h3>
                   <p> Automated Audio Equalizer </p>
                 </button>
@@ -155,7 +171,7 @@ function Main() {
 
               {/* Project Card | EyeLearn */}
               <Link to="/projects/EL">
-                <button className="card1" id="el-btn">
+                <button className="card1" id="el-btn" onClick={() => logger.interaction('click', 'project-card', { project: 'EyeLearn', destination: '/projects/EL' })}>
                   <h3> EyeLearn </h3>
                   <p> Academia AR/VR Headset </p>
                 </button>
@@ -163,7 +179,7 @@ function Main() {
 
               {/* Project Card | Naton */}
               <Link to="/projects/Naton">
-                <button className="card1" id="naton-btn">
+                <button className="card1" id="naton-btn" onClick={() => logger.interaction('click', 'project-card', { project: 'Naton', destination: '/projects/Naton' })}>
                   <h3> Naton </h3>
                   <p> Element Converter </p>
                 </button>

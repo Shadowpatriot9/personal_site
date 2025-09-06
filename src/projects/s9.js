@@ -1,15 +1,31 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import logger from '../utils/logger';
 
 import styles from './../styles/styles_sub.module.css';
 
 function S9() {
+  useEffect(() => {
+    logger.pageView('S9 Project Page', {
+      project: 'S9',
+      projectType: 'Shadow Home Server',
+      dateOfOrigin: '10/2024',
+      features: ['NAS File System', 'VM Hosting', 'Remote Access', 'Monitoring', 'Auto Config'],
+      specs: {
+        os: 'Ubuntu Server w/GNOME Desktop',
+        cpu: 'i7-13700K',
+        ram: '32GB DDR5 5600',
+        storage: '1TB NVMe'
+      }
+    });
+  }, []);
+
   return (
 <div className={styles.body2} id='body2'>
         {/* Header */}
         <header id="header">
           <Link to="/">
-            <button id="gs-btn">GS</button>
+            <button id="gs-btn" onClick={() => logger.interaction('click', 'navigation-home', { source: 'S9-project-page', destination: '/' })}>GS</button>
           </Link>        
         </header>
 

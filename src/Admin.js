@@ -17,6 +17,9 @@ function Admin() {
     path: '',
     component: ''
   });
+  const [chatPrompt, setChatPrompt] = useState('');
+  const [chatResponse, setChatResponse] = useState('');
+  const [chatLoading, setChatLoading] = useState(false);
 
   // Check if user is already authenticated
   useEffect(() => {
@@ -450,6 +453,49 @@ function Admin() {
     }
   };
 
+  const handleChatGPT = async (e) => {
+    e.preventDefault();
+    if (!chatPrompt.trim()) {
+      alert('Please enter a prompt');
+      return;
+    }
+
+    setChatLoading(true);
+    console.log('\n🤖 CHATGPT REQUEST STARTED');
+    console.log('Prompt:', chatPrompt);
+
+    try {
+      const API_BASE = process.env.REACT_APP_API_BASE || window.location.origin;
+      const apiEndpoint = `${API_BASE}/api/admin/chatgpt`;
+      console.log('ChatGPT endpoint:', apiEndpoint);
+
+      const response = await fetch(apiEndpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ prompt: chatPrompt })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log('✅ ChatGPT response received:', data);
+        setChatResponse(data.response);
+      } else {
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        console.error('❌ ChatGPT API error:', errorData);
+        setChatResponse(`Error: ${errorData.error || 'Failed to get response'}`);
+      }
+    } catch (error) {
+      console.error('❌ ChatGPT network error:', error);
+      setChatResponse(`Network Error: ${error.message}`);
+    } finally {
+      setChatLoading(false);
+      console.log('🏁 ChatGPT request completed');
+    }
+  };
+
   if (!isAuthenticated) {
     return (
       <div className="admin-container">
@@ -523,6 +569,61 @@ function Admin() {
       </header>
 
       <main className={styles.admin_main} id="admin_main">
+        {/* ChatGPT AI Assistant */}
+        <section className="chatgpt-section" style={{ marginBottom: '2rem', padding: '20px', border: '1px solid #ddd', borderRadius: '8px', backgroundColor: '#f9f9f9' }}>
+          <h2 style={{ color: '#333', marginBottom: '15px' }}>🤖 AI Assistant (ChatGPT)</h2>
+          <form onSubmit={handleChatGPT} style={{ marginBottom: '20px' }}>
+            <div className="form-group" style={{ marginBottom: '15px' }}>
+              <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Ask ChatGPT:</label>
+              <textarea
+                value={chatPrompt}
+                onChange={(e) => setChatPrompt(e.target.value)}
+                placeholder="Enter your question or prompt here..."
+                rows={3}
+                style={{ 
+                  width: '100%', 
+                  padding: '10px', 
+                  border: '1px solid #ccc', 
+                  borderRadius: '4px',
+                  resize: 'vertical',
+                  fontSize: '14px'
+                }}
+                required
+              />
+            </div>
+            <button 
+              type="submit" 
+              disabled={chatLoading}
+              style={{
+                backgroundColor: chatLoading ? '#ccc' : '#007cba',
+                color: 'white',
+                border: 'none',
+                padding: '10px 20px',
+                borderRadius: '4px',
+                cursor: chatLoading ? 'not-allowed' : 'pointer',
+                fontSize: '14px'
+              }}
+            >
+              {chatLoading ? '🔄 Thinking...' : '🚀 Ask ChatGPT'}
+            </button>
+          </form>
+          
+          {chatResponse && (
+            <div style={{ 
+              backgroundColor: 'white', 
+              padding: '15px', 
+              border: '1px solid #ddd', 
+              borderRadius: '4px',
+              whiteSpace: 'pre-wrap',
+              fontSize: '14px',
+              lineHeight: '1.4'
+            }}>
+              <strong style={{ color: '#007cba' }}>🤖 ChatGPT Response:</strong>
+              <div style={{ marginTop: '10px' }}>{chatResponse}</div>
+            </div>
+          )}
+        </section>
+
         {/* Add New Project */}
         <section className="add-project-section">
           <h2>Add New Project</h2>
