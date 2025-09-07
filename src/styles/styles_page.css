@@ -1,4 +1,53 @@
 /**************************************/
+/* CSS Custom Properties for Theming */
+/**************************************/
+
+:root {
+  /* Default theme variables - will be overridden by ThemeContext */
+  --color-primary: #007cba;
+  --color-secondary: #f8f9fa;
+  --color-background: #ffffff;
+  --color-surface: #f8f9fa;
+  --color-text: #333333;
+  --color-textSecondary: #666666;
+  --color-border: #e0e0e0;
+  --color-shadow: rgba(0, 0, 0, 0.1);
+  --color-accent: #17a2b8;
+  --color-success: #28a745;
+  --color-warning: #ffc107;
+  --color-danger: #dc3545;
+  --color-cardBg: #ffffff;
+  --color-headerBg: rgba(255, 255, 255, 0.95);
+  
+  /* Focus and accessibility colors */
+  --color-focus: #0056b3;
+  --color-focus-ring: rgba(0, 86, 179, 0.25);
+}
+
+/* Skip link for screen readers */
+.skip-link:focus {
+  position: absolute !important;
+  left: 10px !important;
+  top: 10px !important;
+  width: auto !important;
+  height: auto !important;
+  overflow: visible !important;
+  background: var(--color-primary);
+  color: var(--color-cardBg);
+  padding: 8px 16px;
+  border-radius: 4px;
+  text-decoration: none;
+  font-weight: bold;
+  z-index: 9999;
+}
+
+/* Enhanced focus states for better accessibility */
+*:focus {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+/**************************************/
 /* General Styles */
 /**************************************/
 
@@ -18,9 +67,9 @@
     margin: 0px;
     font-family: 'SF Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
     line-height: 1.6;
-    color: #333;
-    background-color: #cccccc;
-    transition: background-color 1s ease;
+    color: var(--color-text);
+    background-color: var(--color-background);
+    transition: background-color 1s ease, color 0.3s ease;
     height: 100dvh;
     overflow: auto;
     scroll-behavior: smooth;
@@ -49,8 +98,8 @@
     left: 0;
     width: 100%;
     height: 100%;
-    background-color: #b1b1b1;
-    color: #cccccc;
+    background-color: var(--color-surface);
+    color: var(--color-textSecondary);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -111,13 +160,15 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    background-color: #232323;
-    color: #ffffff;
+    background-color: var(--color-surface);
+    color: var(--color-text);
     margin: 0px;
     padding: 12px 0px 8px 0px;
     text-align: center;
     position: relative;
     width: 100vw;
+    transition: background-color 0.3s ease, color 0.3s ease;
+    border-bottom: 1px solid var(--color-border);
 }
 #input {
     position: relative;
@@ -201,14 +252,15 @@
     flex-direction: column;
     margin: 5px 0;
     padding: 13px;
-    background: white;
+    background: var(--color-cardBg);
     border-radius: 5px;
-    box-shadow: 2px 2px 2px 3px rgba(0, 0, 0, 0.3);
+    box-shadow: 2px 2px 2px 3px var(--color-shadow);
+    transition: background-color 0.3s ease;
 }
 
 .section1:hover .section-header {
-    color: #ffffff; 
-    background-color: #3d3d3d; 
+    color: var(--color-cardBg); 
+    background-color: var(--color-primary); 
     padding: 0px 5px;
     margin: 0px;
 }
@@ -276,12 +328,12 @@
 /* Projects | Cards */
 .card1 {
     font-family: 'SF Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-    border: 1px solid #ddd;
+    border: 1px solid var(--color-border);
     border-radius: 5px;
     text-align: center;
-    color: white;
-    background-color: #777777;
-    transition: transform 0.3s ease, box-shadow 0.2s ease;
+    color: var(--color-cardBg);
+    background-color: var(--color-textSecondary);
+    transition: transform 0.3s ease, box-shadow 0.2s ease, background-color 0.3s ease, color 0.3s ease;
     justify-content: center;
     height: auto;
     padding: 7px;
@@ -300,9 +352,9 @@
 
 .card1:hover {
     transform: translateY(-5px);
-    box-shadow: 3px 4px 2px rgba(0, 0, 0, 0.35);
+    box-shadow: 3px 4px 2px var(--color-shadow);
     cursor: pointer;
-    background-color: #333333;
+    background-color: var(--color-primary);
 }
 
 /********************************************************************************/
@@ -320,8 +372,9 @@
 }
   
 .graphic1 {
-    background-color: #444444;
-    color: #ffffff;
+    background-color: var(--color-surface);
+    color: var(--color-text);
+    border: 1px solid var(--color-border);
     display: flex; 
     justify-content: center; 
     align-items: center;
@@ -335,6 +388,7 @@
     opacity: 0;
     animation: fade-in 3s ease calc(3.3s - 0.5s) forwards;
     font-family: 'SF Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
 }
   
 .graphic1 p {
@@ -348,11 +402,12 @@
     padding: 0px 0px 10px 0px;
     line-height: 15px;
     text-decoration: none;
-    color: #000000;
+    color: var(--color-textSecondary);
     background-color: transparent;
     opacity: 0;
     animation: fade-in 3s ease calc(3.3s + 0s) forwards;
     font-family: 'SF Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    transition: color 0.3s ease;
 }
 
 /********************************************************************************/

@@ -1,8 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import AnalyticsDashboard from './components/AnalyticsDashboard';
+import PerformanceMonitor from './components/PerformanceMonitor';
+import { useTheme } from './contexts/ThemeContext';
 import styles from './styles/styles_admin.css';
 
 function Admin() {
+  const { theme } = useTheme();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -499,22 +503,22 @@ function Admin() {
   if (!isAuthenticated) {
     return (
       <div className="admin-container">
-        <header className="admin-header">
-          <Link to="/">
-            <button className="gs-btn">GS</button>
+        <header className="admin-header" role="banner">
+          <Link to="/" aria-label="Return to homepage">
+            <button className="gs-btn" title="Return to homepage">GS</button>
           </Link>
           <h1>Admin Login</h1>
           {(window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || process.env.NODE_ENV === 'development') && (
-            <div style={{ 
-              color: '#ffc107', 
+            <div id="dev-credentials" style={{ 
+              color: theme.warning, 
               fontSize: '0.9rem', 
               textAlign: 'center', 
               padding: '10px', 
-              border: '1px solid #ffc107', 
+              border: `1px solid ${theme.warning}`, 
               borderRadius: '5px', 
               marginBottom: '20px',
-              backgroundColor: 'rgba(255, 193, 7, 0.1)' 
-            }}>
+              backgroundColor: `${theme.warning}20` 
+            }} role="note" aria-label="Development mode credentials">
               <strong>Development Mode</strong><br />
               Username: shadowpatriot9<br />
               Password: 16196823
@@ -522,31 +526,40 @@ function Admin() {
           )}
         </header>
 
-        <div className="login-form">
-          <form onSubmit={handleLogin}>
+        <main className="login-form" role="main">
+          <form onSubmit={handleLogin} aria-label="Admin login form">
             <div className="form-group">
-              <label>Username:</label>
+              <label htmlFor="username-input">Username:</label>
               <input
+                id="username-input"
                 type="text"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 required
+                aria-describedby={process.env.NODE_ENV === 'development' ? 'dev-credentials' : undefined}
+                autoComplete="username"
               />
             </div>
             <div className="form-group">
-              <label>Password:</label>
+              <label htmlFor="password-input">Password:</label>
               <input
+                id="password-input"
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
+                aria-describedby={process.env.NODE_ENV === 'development' ? 'dev-credentials' : undefined}
+                autoComplete="current-password"
               />
             </div>
-            <button type="submit" className="login-btn" disabled={isLoading}>
+            <button type="submit" className="login-btn" disabled={isLoading} aria-describedby="login-status">
               {isLoading ? 'Logging in...' : 'Login'}
             </button>
+            <div id="login-status" className="sr-only">
+              {isLoading ? 'Please wait while we log you in...' : ''}
+            </div>
           </form>
-        </div>
+        </main>
       </div>
     );
   }
@@ -560,7 +573,7 @@ function Admin() {
         <h1>Project Management</h1>
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
           {process.env.NODE_ENV === 'development' && (
-            <div style={{ color: '#ffc107', fontSize: '0.8rem' }}>
+            <div style={{ color: theme.warning, fontSize: '0.8rem' }}>
               Development Mode
             </div>
           )}
@@ -569,12 +582,18 @@ function Admin() {
       </header>
 
       <main className={styles.admin_main} id="admin_main">
+        {/* Analytics Dashboard */}
+        <AnalyticsDashboard />
+        
+        {/* Performance Monitor */}
+        <PerformanceMonitor />
+        
         {/* ChatGPT AI Assistant */}
-        <section className="chatgpt-section" style={{ marginBottom: '2rem', padding: '20px', border: '1px solid #ddd', borderRadius: '8px', backgroundColor: '#f9f9f9' }}>
-          <h2 style={{ color: '#333', marginBottom: '15px' }}>🤖 AI Assistant (ChatGPT)</h2>
+        <section className="chatgpt-section" style={{ marginBottom: '2rem', padding: '20px', border: `1px solid ${theme.border}`, borderRadius: '8px', backgroundColor: theme.cardBg }}>
+          <h2 style={{ color: theme.text, marginBottom: '15px' }}>🤖 AI Assistant (ChatGPT)</h2>
           <form onSubmit={handleChatGPT} style={{ marginBottom: '20px' }}>
             <div className="form-group" style={{ marginBottom: '15px' }}>
-              <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Ask ChatGPT:</label>
+              <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold', color: theme.text }}>Ask ChatGPT:</label>
               <textarea
                 value={chatPrompt}
                 onChange={(e) => setChatPrompt(e.target.value)}
@@ -583,10 +602,12 @@ function Admin() {
                 style={{ 
                   width: '100%', 
                   padding: '10px', 
-                  border: '1px solid #ccc', 
+                  border: `1px solid ${theme.border}`, 
                   borderRadius: '4px',
                   resize: 'vertical',
-                  fontSize: '14px'
+                  fontSize: '14px',
+                  backgroundColor: theme.cardBg,
+                  color: theme.text
                 }}
                 required
               />
@@ -595,13 +616,14 @@ function Admin() {
               type="submit" 
               disabled={chatLoading}
               style={{
-                backgroundColor: chatLoading ? '#ccc' : '#007cba',
-                color: 'white',
-                border: 'none',
+                backgroundColor: chatLoading ? theme.textSecondary : theme.primary,
+                color: theme.cardBg,
+                border: `1px solid ${chatLoading ? theme.textSecondary : theme.primary}`,
                 padding: '10px 20px',
                 borderRadius: '4px',
                 cursor: chatLoading ? 'not-allowed' : 'pointer',
-                fontSize: '14px'
+                fontSize: '14px',
+                transition: 'background-color 0.2s, border-color 0.2s'
               }}
             >
               {chatLoading ? '🔄 Thinking...' : '🚀 Ask ChatGPT'}
@@ -610,15 +632,16 @@ function Admin() {
           
           {chatResponse && (
             <div style={{ 
-              backgroundColor: 'white', 
+              backgroundColor: theme.surface, 
               padding: '15px', 
-              border: '1px solid #ddd', 
+              border: `1px solid ${theme.border}`, 
               borderRadius: '4px',
               whiteSpace: 'pre-wrap',
               fontSize: '14px',
-              lineHeight: '1.4'
+              lineHeight: '1.4',
+              color: theme.text
             }}>
-              <strong style={{ color: '#007cba' }}>🤖 ChatGPT Response:</strong>
+              <strong style={{ color: theme.primary }}>🤖 ChatGPT Response:</strong>
               <div style={{ marginTop: '10px' }}>{chatResponse}</div>
             </div>
           )}

@@ -2,15 +2,31 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <link rel="icon" type="image/svg" href="%PUBLIC_URL%/logo.svg" />
-    <!-- <link rel="icon" href="%PUBLIC_URL%/favicon.ico" /> -->
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#000000" />
+    <meta name="theme-color" content="#007cba" />
     
-    <meta
-      name="description"
-      content="Web site created using create-react-app"
-    />
+    <!-- SEO and Social Meta Tags -->
+    <title>Grayden Scovil - Software Developer Portfolio</title>
+    <meta name="description" content="Grayden Scovil - Software Developer from Colorado. Explore my projects including home servers, development tools, and innovative applications. Contact me for collaboration opportunities." />
+    <meta name="keywords" content="Grayden Scovil, Software Developer, Colorado, Web Development, Home Server, S9, Portfolio, Programming" />
+    <meta name="author" content="Grayden Scovil" />
+    <meta name="robots" content="index, follow" />
+    
+    <!-- Open Graph Meta Tags -->
+    <meta property="og:title" content="Grayden Scovil - Software Developer Portfolio" />
+    <meta property="og:description" content="Software Developer from Colorado showcasing innovative projects and technical expertise." />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://mgds.me" />
+    <meta property="og:site_name" content="Grayden Scovil Portfolio" />
+    
+    <!-- Twitter Card Meta Tags -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Grayden Scovil - Software Developer" />
+    <meta name="twitter:description" content="Software Developer from Colorado showcasing innovative projects." />
+    
+    <!-- Favicon and Icons -->
+    <link rel="icon" type="image/svg" href="%PUBLIC_URL%/logo.svg" />
+    <link rel="apple-touch-icon" href="%PUBLIC_URL%/logo192.png" />
     <link rel="apple-touch-icon" href="%PUBLIC_URL%/logo192.png" />
     <!--
       manifest.json provides metadata used when your web app is installed on a
@@ -36,8 +52,18 @@
   </head>
   <body>
     <script src="%PUBLIC_URL%/script.js"></script>
-    <noscript>You need to enable JavaScript to run this app.</noscript>
-    <div id="root"></div>
+    <noscript>
+      <div style="padding: 20px; text-align: center; font-family: Arial, sans-serif;">
+        <h1>JavaScript Required</h1>
+        <p>This application requires JavaScript to function properly. Please enable JavaScript in your browser settings and reload the page.</p>
+        <p>If you need assistance, please contact the site administrator.</p>
+      </div>
+    </noscript>
+    
+    <!-- Skip to main content link for screen readers -->
+    <a href="#main-content" class="skip-link" style="position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden;">Skip to main content</a>
+    
+    <div id="root" role="application" aria-label="Grayden Scovil Portfolio Application"></div>
     <!--
       This HTML file is a template.
       If you open it directly in the browser, you will see an empty page.

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { Suspense } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import { Analytics } from "@vercel/analytics/react"
 import { useEffect } from 'react';
@@ -6,15 +6,44 @@ import { useLocation } from 'react-router-dom';
 import { ThemeProvider } from './contexts/ThemeContext';
 
 import Main from './Main';
-import S9 from './projects/s9';
-import Muse from './projects/muse';
-import EL from './projects/EL';
-import NFI from './projects/NFI';
-import Naton from './projects/Naton';
-import Sos from './projects/sos';
-import Sim from './projects/sim';
-import Input from './Input';
 import Admin from './Admin';
+import Input from './Input';
+
+// Lazy load project components for better performance
+const S9 = React.lazy(() => import('./projects/s9'));
+const Muse = React.lazy(() => import('./projects/muse'));
+const EL = React.lazy(() => import('./projects/EL'));
+const NFI = React.lazy(() => import('./projects/NFI'));
+const Naton = React.lazy(() => import('./projects/Naton'));
+const Sos = React.lazy(() => import('./projects/sos'));
+const Sim = React.lazy(() => import('./projects/sim'));
+
+// Loading component for lazy-loaded components
+const PageLoader = () => (
+  <div style={{
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    height: '100vh',
+    fontFamily: 'SF Pro, -apple-system, sans-serif',
+    fontSize: '1.2rem',
+    color: 'var(--color-text)',
+    backgroundColor: 'var(--color-background)'
+  }}>
+    <div style={{
+      textAlign: 'center',
+      padding: '20px',
+      borderRadius: '8px',
+      backgroundColor: 'var(--color-surface)',
+      border: '1px solid var(--color-border)'
+    }}>
+      <div style={{ marginBottom: '10px' }}>⚡ Loading...</div>
+      <div style={{ fontSize: '0.9rem', color: 'var(--color-textSecondary)' }}>
+        Please wait while we load the page
+      </div>
+    </div>
+  </div>
+);
 
 // **template** import name_of_page_ from './projects/**/**';
 
@@ -43,13 +72,41 @@ function App() {
       {/* Main to Sub Page Setup */}  
         <Routes>
           <Route path="/" element={<Main />} />
-          <Route path="/projects/s9" element={<S9 />} />
-          <Route path="/projects/muse" element={<Muse />} />
-          <Route path="/projects/EL" element={<EL />} />
-          <Route path="/projects/NFI" element={<NFI />} />
-          <Route path="/projects/Naton" element={<Naton />} />
-          <Route path="/projects/sos" element={<Sos />} />
-          <Route path="/projects/sim" element={<Sim />} />
+          <Route path="/projects/s9" element={
+            <Suspense fallback={<PageLoader />}>
+              <S9 />
+            </Suspense>
+          } />
+          <Route path="/projects/muse" element={
+            <Suspense fallback={<PageLoader />}>
+              <Muse />
+            </Suspense>
+          } />
+          <Route path="/projects/EL" element={
+            <Suspense fallback={<PageLoader />}>
+              <EL />
+            </Suspense>
+          } />
+          <Route path="/projects/NFI" element={
+            <Suspense fallback={<PageLoader />}>
+              <NFI />
+            </Suspense>
+          } />
+          <Route path="/projects/Naton" element={
+            <Suspense fallback={<PageLoader />}>
+              <Naton />
+            </Suspense>
+          } />
+          <Route path="/projects/sos" element={
+            <Suspense fallback={<PageLoader />}>
+              <Sos />
+            </Suspense>
+          } />
+          <Route path="/projects/sim" element={
+            <Suspense fallback={<PageLoader />}>
+              <Sim />
+            </Suspense>
+          } />
           <Route path="/Input" element={<Input />} />
           <Route path="/admin" element={<Admin />} />
 

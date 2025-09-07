@@ -1,4 +1,19 @@
 // Centralized logging utility for the entire site
+// Production-safe with conditional console output
+
+const isDevelopment = process.env.NODE_ENV === 'development';
+const enableDebugLogs = isDevelopment || localStorage.getItem('enableDebugLogs') === 'true';
+
+// Helper function for safe console logging
+function safeLog(message, data = null, type = 'log') {
+  if (enableDebugLogs) {
+    if (data) {
+      console[type](message, data);
+    } else {
+      console[type](message);
+    }
+  }
+}
 
 export const logger = {
   // Page view logging
@@ -15,17 +30,17 @@ export const logger = {
       ...additionalData
     };
 
-    console.log('\n' + '='.repeat(60));
-    console.log('📊 PAGE VIEW LOGGED');
-    console.log('Page:', pageName);
-    console.log('Time:', logData.timestamp);
-    console.log('URL:', logData.url);
-    console.log('Referrer:', logData.referrer);
-    console.log('Screen/Window:', `${logData.screenSize} / ${logData.windowSize}`);
+    safeLog('\n' + '='.repeat(60));
+    safeLog('📊 PAGE VIEW LOGGED');
+    safeLog('Page:', pageName);
+    safeLog('Time:', logData.timestamp);
+    safeLog('URL:', logData.url);
+    safeLog('Referrer:', logData.referrer);
+    safeLog('Screen/Window:', `${logData.screenSize} / ${logData.windowSize}`);
     if (Object.keys(additionalData).length > 0) {
-      console.log('Additional Data:', additionalData);
+      safeLog('Additional Data:', additionalData);
     }
-    console.log('='.repeat(60));
+    safeLog('='.repeat(60));
 
     // Store in sessionStorage for potential analytics
     try {
@@ -52,12 +67,12 @@ export const logger = {
       ...additionalData
     };
 
-    console.log('🖱️ USER INTERACTION:', action);
-    console.log('Element:', element);
-    console.log('Time:', logData.timestamp);
-    console.log('Page:', logData.page);
+    safeLog('🖱️ USER INTERACTION:', action);
+    safeLog('Element:', element);
+    safeLog('Time:', logData.timestamp);
+    safeLog('Page:', logData.page);
     if (Object.keys(additionalData).length > 0) {
-      console.log('Data:', additionalData);
+      safeLog('Data:', additionalData);
     }
   },
 
@@ -73,13 +88,16 @@ export const logger = {
       ...context
     };
 
+    // Always log errors, even in production
     console.error('\n' + '❌'.repeat(20));
     console.error('🚨 ERROR LOGGED');
     console.error('Type:', errorType);
     console.error('Message:', logData.message);
     console.error('Page:', logData.page);
     console.error('Time:', logData.timestamp);
-    console.error('Stack:', logData.stack);
+    if (enableDebugLogs) {
+      console.error('Stack:', logData.stack);
+    }
     console.error('❌'.repeat(20));
   },
 
@@ -94,9 +112,9 @@ export const logger = {
       page: window.location.pathname
     };
 
-    console.log('⚡ PERFORMANCE METRIC:', metric);
-    console.log('Value:', `${value} ${unit}`);
-    console.log('Page:', logData.page);
+    safeLog('⚡ PERFORMANCE METRIC:', metric);
+    safeLog('Value:', `${value} ${unit}`);
+    safeLog('Page:', logData.page);
   },
 
   // Get all stored logs
@@ -111,7 +129,7 @@ export const logger = {
   // Clear all logs
   clearLogs: () => {
     sessionStorage.removeItem('pageViews');
-    console.log('🧹 All logs cleared');
+    safeLog('🧹 All logs cleared');
   }
 };
 

@@ -5,6 +5,7 @@ import ThemeSwitcher from './components/ThemeSwitcher';
 import ProjectSearch, { projectsData } from './components/ProjectSearch';
 import ProjectGrid from './components/ProjectGrid';
 import ContactForm from './components/ContactForm';
+import MobileEnhancements from './components/MobileEnhancements';
 import { useTheme } from './contexts/ThemeContext';
 
 import styles from './styles/styles_page.css';
@@ -68,17 +69,11 @@ function Main() {
 
   return (
     <div className={styles.body1} id='body1'>
-      {/* Page Head */}
-      {/* Encoding */}
-      <meta charSet="UTF-8" />
-      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
-      {/* Site Tab Title */}
-      <title> GS </title>
+      {/* Page Head - These meta tags should be in the HTML head, not here */}
 
       {/* Page Body */}
       {/* Home Splash Screen */}
-      <div className="splash-screen" id="splash-screen">
+      <div className="splash-screen" id="splash-screen" role="presentation" aria-hidden="true">
         <div className="splash-logo">
           Grayden Scovil
           <div id="splash-overlay"> </div>
@@ -86,15 +81,21 @@ function Main() {
       </div>
 
       {/* Fade Out Overlay */}
-      <div className="overlay1" id="overlay" />
+      <div className="overlay1" id="overlay" role="presentation" aria-hidden="true" />
 
       {/* Page Title */}
-      <header className="header1" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'relative' }}>
-        <Link to="/admin">
-          <button className="input" id="input" onClick={() => logger.interaction('click', 'admin-access', { destination: '/admin', source: 'homepage-header' })}>
-            <h1 id="main-title"> GS </h1>
-            <h1 id="full-name"> Grayden Scovil </h1>
-            <div class="full-name-cover" id="full-name-cover"> </div>
+      <header className="header1" role="banner" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'relative' }}>
+        <Link to="/admin" aria-label="Navigate to admin panel">
+          <button 
+            className="input" 
+            id="input" 
+            onClick={() => logger.interaction('click', 'admin-access', { destination: '/admin', source: 'homepage-header' })}
+            aria-label="Grayden Scovil - Click to access admin panel"
+            title="Admin Access"
+          >
+            <h1 id="main-title" aria-hidden="true"> GS </h1>
+            <h1 id="full-name" aria-hidden="true"> Grayden Scovil </h1>
+            <div className="full-name-cover" id="full-name-cover" aria-hidden="true"> </div>
           </button>
         </Link>
         
@@ -110,15 +111,24 @@ function Main() {
       </header>
 
       {/* Main */}
-      <main className="main1" id="main1">
+      <main className="main1" id="main-content" role="main">
         {/* Home Grid */}
         <div className="grid-11">
           {/* About Section */}
-          <section className="section1" id="about">
-            <h1 className="section-header" id="about"> About </h1>
+          <section className="section1" id="about" aria-labelledby="about-heading">
+            <h2 className="section-header" id="about-heading"> About </h2>
             <p>
               Welcome welcome.
-              <svg xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -900 900 900" width="24px" fill="#000000" style={{ verticalAlign: "middle" }}>
+              <svg 
+                xmlns="http://www.w3.org/2000/svg" 
+                height="20px" 
+                viewBox="0 -900 900 900" 
+                width="24px" 
+                fill={theme.text} 
+                style={{ verticalAlign: "middle" }}
+                role="img"
+                aria-label="Sound wave icon"
+              >
                 <path d="M260-280q-26 0-43-17t-17-43q0-25 17-42.5t43-17.5q25 0 42.5 17.5T320-340q0 26-17.5 43T260-280Zm0-280q-26 0-43-17t-17-43q0-25 17-42.5t43-17.5q25 0 42.5 17.5T320-620q0 26-17.5 43T260-560Zm140 120v-80h160v80H400Zm288 200-66-44q28-43 43-92.5T680-480q0-66-21.5-124T598-709l61-51q48 57 74.5 128.5T760-480q0 67-19 127.5T688-240Z" />
               </svg>
               <br />
@@ -131,16 +141,16 @@ function Main() {
             </p>
           </section>
           {/* Contact Section */}
-          <section className="section1" id="contact">
-            <h1 className="section-header" id="contact"> Contact </h1>
+          <section className="section1" id="contact" aria-labelledby="contact-heading">
+            <h2 className="section-header" id="contact-heading"> Contact </h2>
             <ContactForm />
           </section>
         </div>
 
         <div className="grid-21" style={{ width: '100%' }}>
           {/* Projects Section */}
-          <section className="section1" id="projects" style={{ width: '100%' }}>
-            <h1 className="section-header" id="projects"> Projects </h1>
+          <section className="section1" id="projects" aria-labelledby="projects-heading" style={{ width: '100%' }}>
+            <h2 className="section-header" id="projects-heading"> Projects </h2>
             
             {/* Search & Filter Component */}
             <ProjectSearch 
@@ -158,7 +168,7 @@ function Main() {
       </main>
 
       {/* Footer */}
-      <footer className="footer1">
+      <footer className="footer1" role="contentinfo">
         {/* Copyright */}
         <div className="graphic1">
           <p> © 2025 Grayden Scovil </p>
@@ -167,11 +177,32 @@ function Main() {
         <div className="love-note1">
           <p>
             Made with
-            <svg version={1.0} id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlnsXlink="http://www.w3.org/1999/xlink" width="23px" height="13px" viewBox="0 0 64 64" enableBackground="new 0 0 64 64" xmlSpace="preserve" fill="#000000"><g id="SVGRepo_bgCarrier" strokeWidth={0} /><g id="SVGRepo_tracerCarrier" strokeLinecap="round" strokeLinejoin="round" /><g id="SVGRepo_iconCarrier"> <path fill="#231F20" d="M47.977,5.99c-4.416,0-8.414,1.792-11.308,4.686l-4.685,4.654l-4.686-4.654 C24.406,7.782,20.408,5.99,15.992,5.99C7.161,5.99,0,13.15,0,21.982c0,4.416,2.85,8.539,5.747,11.432l23.41,23.414 c1.562,1.562,4.092,1.562,5.653,0l23.349-23.352c2.896-2.893,5.81-7.078,5.81-11.494C63.969,13.15,56.808,5.99,47.977,5.99z" /> </g></svg>
+            <svg 
+              version="1.0" 
+              id="Layer_1" 
+              xmlns="http://www.w3.org/2000/svg" 
+              xmlnsXlink="http://www.w3.org/1999/xlink" 
+              width="23px" 
+              height="13px" 
+              viewBox="0 0 64 64" 
+              enableBackground="new 0 0 64 64" 
+              xmlSpace="preserve" 
+              fill={theme.danger}
+              role="img"
+              aria-label="Heart icon"
+            >
+              <g id="SVGRepo_bgCarrier" strokeWidth={0} />
+              <g id="SVGRepo_tracerCarrier" strokeLinecap="round" strokeLinejoin="round" />
+              <g id="SVGRepo_iconCarrier"> 
+                <path fill={theme.danger} d="M47.977,5.99c-4.416,0-8.414,1.792-11.308,4.686l-4.685,4.654l-4.686-4.654 C24.406,7.782,20.408,5.99,15.992,5.99C7.161,5.99,0,13.15,0,21.982c0,4.416,2.85,8.539,5.747,11.432l23.41,23.414 c1.562,1.562,4.092,1.562,5.653,0l23.349-23.352c2.896-2.893,5.81-7.078,5.81-11.494C63.969,13.15,56.808,5.99,47.977,5.99z" /> 
+              </g>
+            </svg>
           </p>
         </div>
       </footer>
 
+      {/* Mobile Enhancements */}
+      <MobileEnhancements />
     </div>
   );
 }

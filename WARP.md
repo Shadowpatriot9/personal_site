@@ -31,9 +31,9 @@ This file provides guidance to WARP (warp.dev) when working with code in this re
 ### Application Structure
 
 **Core Components:**
-- `App.js` - Main routing configuration with all project routes
-- `Main.js` - Home page with project grid, animations, and splash screen
-- `Admin.js` - Admin panel for project management (CRUD operations)
+- `App.js` - Main routing configuration with all project routes, wrapped with ThemeProvider
+- `Main.js` - Home page with project grid, animations, splash screen, and user interaction logging
+- `Admin.js` - Admin panel with project management, analytics dashboard, performance monitor, and ChatGPT integration
 - `Input.js` - Input component (referenced but purpose unclear from codebase)
 
 **Project Pages:**
@@ -41,6 +41,13 @@ All project components follow a consistent pattern in `src/projects/`:
 - Individual project pages (S9, Muse, EL, NFI, Naton, Sos, Sim)
 - `template.js` - Template for creating new project pages
 - Each project has its own route defined in `App.js`
+
+**Components:**
+- `src/components/AnalyticsDashboard.js` - Real-time analytics dashboard with visitor metrics
+- `src/components/PerformanceMonitor.js` - Core Web Vitals and performance monitoring
+- `src/components/ThemeSwitcher.js` - Theme toggle component
+- `src/contexts/ThemeContext.js` - Theme context provider for dynamic theming
+- `src/utils/logger.js` - Centralized logging utility for user interactions and analytics
 
 **Styling:**
 - Main styles: `src/styles/styles_page.css`
@@ -53,8 +60,11 @@ All project components follow a consistent pattern in `src/projects/`:
 **Admin Panel:**
 - JWT-based authentication with development fallback
 - Full CRUD operations for projects
-- Real-time project management
+- Real-time analytics dashboard with visitor metrics and page view tracking
+- Performance monitoring dashboard with Core Web Vitals (LCP, FID, CLS, FCP, TTFB)
+- ChatGPT AI assistant integration for development help
 - Development mode with mock data when MongoDB unavailable
+- Comprehensive logging of all admin interactions
 - Access via clicking "GS" button on homepage
 
 **Project Management:**
@@ -63,11 +73,21 @@ All project components follow a consistent pattern in `src/projects/`:
 - Consistent navigation and footer across all pages
 - Projects displayed in grid layout on homepage
 
+**Advanced Features:**
+- **Dynamic Theming**: Multiple color schemes with theme persistence
+- **Analytics Integration**: Real-time visitor tracking and page view analytics
+- **Performance Monitoring**: Core Web Vitals tracking and error reporting
+- **AI Integration**: ChatGPT assistant in admin panel for development help
+- **Comprehensive Logging**: User interactions, performance metrics, and error tracking
+- **Theme Switching**: User-selectable themes with context provider architecture
+
 **Deployment Configuration:**
 - Vercel static build optimization
-- API routes handled as serverless functions
+- API routes handled as serverless functions (`api/` directory)
 - MongoDB connection caching for performance
-- Environment-based configuration
+- Environment-based configuration with canonical API base URLs
+- Analytics tracking integrated with Vercel Analytics (ID: PZ9X7E3YVX)
+- Performance monitoring and error tracking in production
 
 ## Development Workflow
 
@@ -83,13 +103,24 @@ All project components follow a consistent pattern in `src/projects/`:
 - Production requires environment variables setup via `setup-admin.js`
 - Admin panel works offline in development with mock project data
 
+### API Endpoints
+- `/api/admin/login` - Admin authentication endpoint
+- `/api/admin/chatgpt` - ChatGPT AI assistant integration
+- `/api/admin/projects` - CRUD operations for project management
+- `/api/saveData` - General data storage endpoint
+- `/api/analytics` - Analytics data collection (if implemented)
+
 ### Environment Configuration
 - Development: Uses `.env.development` with fallback authentication
-- Production: Requires `ADMIN_USERNAME`, `ADMIN_PASSWORD_HASH`, `JWT_SECRET`, `MONGO_URI`
+- Production: Requires `ADMIN_USERNAME`, `ADMIN_PASSWORD_HASH`, `JWT_SECRET`, `MONGO_URI`, `OPENAI_API_KEY`
+- Optional: `REACT_APP_API_BASE` for canonical API base URL configuration
 
 ### Database Schema
-- Projects stored in MongoDB with fields: `id`, `title`, `description`, `path`, `component`
-- Data model in `api/saveData.js` for general data storage
+- **Projects**: `id`, `title`, `description`, `path`, `component`, `_id` (MongoDB ObjectId)
+- **Analytics**: User interactions, page views, performance metrics (via logger utility)
+- **Logs**: Comprehensive logging of user actions, errors, and system events
+- Data models in `api/saveData.js` for general data storage
+- MongoDB collections managed through Mongoose ODM
 
 ## Important Notes
 
@@ -100,3 +131,29 @@ All project components follow a consistent pattern in `src/projects/`:
 - All project pages maintain consistent header/footer structure
 - Splash screen animation on homepage with 500ms fade delay
 - Mobile-responsive design with separate CSS file
+
+## Recent Updates & Features
+
+### Performance Monitoring (Latest)
+- **Core Web Vitals**: Real-time tracking of LCP, FID, CLS, FCP, and TTFB
+- **Memory Usage**: JavaScript heap size monitoring in supported browsers
+- **Error Tracking**: Automatic capture of JavaScript errors and unhandled promise rejections
+- **Navigation Timing**: Page load performance metrics with performance thresholds
+- **Integration**: Fully integrated into admin panel with theme-aware UI
+
+### Analytics & Logging
+- **Centralized Logger**: `src/utils/logger.js` for all user interactions and system events
+- **Page View Tracking**: Automatic logging of page visits and navigation
+- **User Interaction Logging**: Clicks, theme changes, and admin actions
+- **Analytics Dashboard**: Real-time visitor metrics and engagement data
+
+### AI Integration
+- **ChatGPT Assistant**: Integrated into admin panel for development help
+- **Demo Mode**: Fallback responses when OpenAI API is unavailable
+- **Conversation Logging**: All AI interactions logged for analysis
+
+### Theme System
+- **Dynamic Theming**: Multiple color schemes with persistence
+- **Theme Context**: React context provider for theme management
+- **Theme Switcher**: Component for user theme selection
+- **CSS Variables**: Modern CSS custom properties for theme switching

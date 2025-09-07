@@ -1,105 +1,151 @@
 import jwt from 'jsonwebtoken';
+import crypto from 'crypto';
 
-// Simplified hardcoded credentials for both dev and production
-const ADMIN_USERNAME = 'shadowpatriot9';
-const ADMIN_PASSWORD = '16196823';
-const JWT_SECRET = process.env.JWT_SECRET || 'simple-jwt-secret-for-admin-2025';
+// Use environment variables for production security
+const ADMIN_USERNAME = process.env.ADMIN_USERNAME || 'shadowpatriot9';
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || '16196823';
+const JWT_SECRET = process.env.JWT_SECRET || crypto.randomBytes(64).toString('hex');
+
+// Rate limiting simple implementation
+const loginAttempts = new Map();
+const MAX_ATTEMPTS = 5;
+const LOCKOUT_TIME = 15 * 60 * 1000; // 15 minutes
+
+// Helper function for secure logging
+function secureLog(message, data = {}) {
+  const timestamp = new Date().toISOString();
+  // Only log in development or if explicitly enabled
+  if (process.env.NODE_ENV === 'development' || process.env.ENABLE_DEBUG_LOGS === 'true') {
+    console.log(`[${timestamp}] ${message}`, data);
+  }
+}
+
+// Rate limiting helper
+function checkRateLimit(clientIP) {
+  const now = Date.now();
+  const clientAttempts = loginAttempts.get(clientIP) || { count: 0, lastAttempt: now };
+  
+  // Reset if lockout period has passed
+  if (now - clientAttempts.lastAttempt > LOCKOUT_TIME) {
+    clientAttempts.count = 0;
+  }
+  
+  return clientAttempts.count < MAX_ATTEMPTS;
+}
+
+function recordAttempt(clientIP, success = false) {
+  const now = Date.now();
+  const clientAttempts = loginAttempts.get(clientIP) || { count: 0, lastAttempt: now };
+  
+  if (success) {
+    // Reset on successful login
+    loginAttempts.delete(clientIP);
+  } else {
+    // Increment failed attempts
+    clientAttempts.count++;
+    clientAttempts.lastAttempt = now;
+    loginAttempts.set(clientIP, clientAttempts);
+  }
+}
 
 export default async function handler(req, res) {
-  console.log('\n' + '='.repeat(50));
-  console.log('🚀 ADMIN LOGIN API CALLED');
-  console.log('Time:', new Date().toISOString());
-  console.log('Method:', req.method);
-  console.log('Headers:', JSON.stringify(req.headers, null, 2));
-  console.log('='.repeat(50));
+  const clientIP = req.headers['x-forwarded-for'] || req.connection.remoteAddress || 'unknown';
+  
+  // Security headers
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('X-XSS-Protection', '1; mode=block');
+  
+  secureLog('Admin login attempt', { method: req.method, ip: clientIP });
 
   if (req.method !== 'POST') {
-    console.log('❌ Method not allowed:', req.method);
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  console.log('Raw body:', req.body);
+  // Check rate limiting
+  if (!checkRateLimit(clientIP)) {
+    secureLog('Rate limit exceeded', { ip: clientIP });
+    return res.status(429).json({ 
+      error: 'Too many login attempts. Please try again later.',
+      retryAfter: Math.ceil(LOCKOUT_TIME / 60000) // minutes
+    });
+  }
+
   const { username, password } = req.body;
-  console.log('Parsed - Username:', username, '| Password length:', password?.length);
 
   // Input validation
   if (!username || !password) {
-    console.log('❌ Missing credentials - Username:', !!username, '| Password:', !!password);
+    recordAttempt(clientIP, false);
     return res.status(400).json({ error: 'Username and password are required' });
   }
 
+  // Input sanitization
+  const sanitizedUsername = String(username).trim().toLowerCase();
+  const sanitizedPassword = String(password);
+
   try {
-    console.log('\n🔍 SIMPLE AUTHENTICATION CHECK:');
-    console.log('Expected username:', ADMIN_USERNAME);
-    console.log('Expected password:', '[MASKED]');
-    console.log('JWT_SECRET available:', !!JWT_SECRET);
-    
-    console.log('\n🔐 VALIDATING CREDENTIALS:');
-    console.log('Provided username:', `"${username}"`);
-    console.log('Provided password length:', password?.length);
-    
-    // Simple credential check
-    const isValidUsername = username === ADMIN_USERNAME;
-    const isValidPassword = password === ADMIN_PASSWORD;
-    
-    console.log('Username valid:', isValidUsername);
-    console.log('Password valid:', isValidPassword);
+    // Secure credential validation
+    const isValidUsername = sanitizedUsername === ADMIN_USERNAME.toLowerCase();
+    const isValidPassword = sanitizedPassword === ADMIN_PASSWORD;
     
     if (!isValidUsername || !isValidPassword) {
-      console.log('❌ AUTHENTICATION FAILED - Invalid credentials');
+      recordAttempt(clientIP, false);
+      secureLog('Authentication failed', { ip: clientIP, username: sanitizedUsername });
+      
+      // Add random delay to prevent timing attacks
+      await new Promise(resolve => setTimeout(resolve, Math.random() * 1000 + 500));
+      
       return res.status(401).json({ error: 'Invalid credentials' });
     }
     
-    console.log('✅ AUTHENTICATION SUCCESSFUL');
-    const isValidCredentials = true;
+    // Success - reset rate limiting
+    recordAttempt(clientIP, true);
+    secureLog('Authentication successful', { ip: clientIP, username: sanitizedUsername });
 
-    console.log('\n📋 FINAL RESULT:');
-    console.log('Authentication successful:', isValidCredentials);
-    
-    if (!isValidCredentials) {
-      console.log('❌ This should not happen - auth already checked');
-      return res.status(401).json({ error: 'Invalid credentials' });
-    }
-
-    console.log('\n🎟️ GENERATING JWT TOKEN:');
+    // Generate secure JWT token
     try {
-      const tokenPayload = { username, role: 'admin' };
-      console.log('Token payload:', tokenPayload);
-      console.log('JWT secret length:', JWT_SECRET?.length || 0);
+      const tokenPayload = { 
+        username: sanitizedUsername, 
+        role: 'admin',
+        iat: Math.floor(Date.now() / 1000)
+      };
       
       const token = jwt.sign(
         tokenPayload,
         JWT_SECRET,
-        { expiresIn: '24h' }
+        { 
+          expiresIn: '8h', // Shorter expiration for security
+          issuer: 'mgds.me',
+          audience: 'mgds.me'
+        }
       );
-      
-      console.log('Token generated successfully, length:', token?.length || 0);
-      console.log('Token preview (first 50 chars):', token?.substring(0, 50) + '...');
       
       const responseData = {
         message: 'Login successful',
         token,
-        user: { username, role: 'admin' }
+        user: { username: sanitizedUsername, role: 'admin' },
+        expiresIn: '8h'
       };
       
-      console.log('\n✅ SENDING SUCCESS RESPONSE:');
-      console.log('Response data:', { ...responseData, token: '[MASKED]' });
-      console.log('='.repeat(50) + '\n');
-      
+      secureLog('JWT token generated', { ip: clientIP });
       res.status(200).json(responseData);
       
     } catch (tokenError) {
-      console.error('❌ JWT TOKEN GENERATION ERROR:', tokenError);
-      return res.status(500).json({ error: 'Token generation failed' });
+      secureLog('JWT token generation failed', { error: tokenError.message });
+      return res.status(500).json({ error: 'Authentication system error' });
     }
     
   } catch (error) {
-    console.log('\n⚡ UNHANDLED ERROR IN LOGIN PROCESS:');
-    console.error('Full error object:', error);
-    console.error('Error message:', error.message);
-    console.error('Error stack:', error.stack);
-    console.log('Returning 500 Internal Server Error');
-    console.log('='.repeat(50) + '\n');
-    res.status(500).json({ error: 'Internal server error' });
+    secureLog('Unhandled error in login process', { 
+      error: error.message, 
+      ip: clientIP 
+    });
+    
+    // Don't expose internal error details in production
+    const isDevelopment = process.env.NODE_ENV === 'development';
+    res.status(500).json({ 
+      error: 'Internal server error',
+      ...(isDevelopment && { details: error.message })
+    });
   }
 }
