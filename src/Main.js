@@ -4,6 +4,7 @@ import logger from './utils/logger';
 import ThemeSwitcher from './components/ThemeSwitcher';
 import ProjectSearch, { projectsData } from './components/ProjectSearch';
 import ProjectGrid from './components/ProjectGrid';
+import ContactForm from './components/ContactForm';
 import { useTheme } from './contexts/ThemeContext';
 
 import styles from './styles/styles_page.css';
@@ -132,11 +133,7 @@ function Main() {
           {/* Contact Section */}
           <section className="section1" id="contact">
             <h1 className="section-header" id="contact"> Contact </h1>
-            <div className="contact-info">
-              <p> Email: gscovil9@gmail.com </p>
-              <p> LinkedIn: <a href="https://www.linkedin.com/in/gscovil/" target="_blank"> linkedin.com/in/gscovil </a></p>
-              <p> GitHub: <a href="https://github.com/Shadowpatriot9" target="_blank"> github.com/Shadowpatriot9 </a>
-              </p></div>
+            <ContactForm />
           </section>
         </div>
 
