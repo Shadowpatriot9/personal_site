@@ -1,6 +1,10 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import logger from './utils/logger';
+import ThemeSwitcher from './components/ThemeSwitcher';
+import ProjectSearch, { projectsData } from './components/ProjectSearch';
+import ProjectGrid from './components/ProjectGrid';
+import { useTheme } from './contexts/ThemeContext';
 
 import styles from './styles/styles_page.css';
 import './styles/styles_mobile.css';
@@ -32,6 +36,9 @@ export function initializeAnimations() {
 }
 
 function Main() {
+  const { theme } = useTheme();
+  const [filteredProjects, setFilteredProjects] = useState(projectsData);
+  
   useEffect(() => {
     // Log page view
     logger.pageView('Homepage', {
@@ -81,7 +88,7 @@ function Main() {
       <div className="overlay1" id="overlay" />
 
       {/* Page Title */}
-      <header className="header1">
+      <header className="header1" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'relative' }}>
         <Link to="/admin">
           <button className="input" id="input" onClick={() => logger.interaction('click', 'admin-access', { destination: '/admin', source: 'homepage-header' })}>
             <h1 id="main-title"> GS </h1>
@@ -89,6 +96,16 @@ function Main() {
             <div class="full-name-cover" id="full-name-cover"> </div>
           </button>
         </Link>
+        
+        {/* Theme Switcher */}
+        <div style={{ 
+          position: 'absolute', 
+          top: '20px', 
+          right: '20px', 
+          zIndex: 100 
+        }}>
+          <ThemeSwitcher />
+        </div>
       </header>
 
       {/* Main */}
@@ -123,77 +140,22 @@ function Main() {
           </section>
         </div>
 
-        <div className="grid-21">
+        <div className="grid-21" style={{ width: '100%' }}>
           {/* Projects Section */}
-          <section className="section1" id="projects">
+          <section className="section1" id="projects" style={{ width: '100%' }}>
             <h1 className="section-header" id="projects"> Projects </h1>
-            <div className="projects-grid">
-
-              {/* Project Card | S_Im */}
-              <Link to="/projects/sim">
-                <button className="card1" id="s9ql-btn" onClick={() => logger.interaction('click', 'project-card', { project: 'S_im', destination: '/projects/sim' })}>
-                  <h3> S_im </h3>
-                  <p> Shadow Simulator </p>
-                </button>
-              </Link>
-
-              {/* Project Card | sOS */}
-              <Link to="/projects/sos">
-                <button className="card1" id="sos-btn" onClick={() => logger.interaction('click', 'project-card', { project: 'sOS', destination: '/projects/sos' })}>
-                  <h3> sOS </h3>
-                  <p> Shadow Operating System </p>
-                </button>
-              </Link>
-
-              {/* Project Card | S9 */}
-              <Link to="/projects/s9">
-                <button className="card1" id="s9-btn" onClick={() => logger.interaction('click', 'project-card', { project: 'S9', destination: '/projects/s9' })}>
-                  <h3>S9</h3>
-                  <p> Shadow Home Server</p>
-                </button>
-              </Link>
-
-              {/* Project Card | NFI */}
-              <Link to="/projects/NFI">
-                <button className="card1" id="nfi-btn" onClick={() => logger.interaction('click', 'project-card', { project: 'NFI', destination: '/projects/NFI' })}>
-                  <h3> NFI </h3>
-                  <p> Rocket Propulsion System </p>
-                </button>
-              </Link>
-
-              {/* Project Card | Muse */}
-              <Link to="/projects/Muse">
-                <button className="card1" id="muse-btn" onClick={() => logger.interaction('click', 'project-card', { project: 'Muse', destination: '/projects/Muse' })}>
-                  <h3> Muse </h3>
-                  <p> Automated Audio Equalizer </p>
-                </button>
-              </Link>
-
-              {/* Project Card | EyeLearn */}
-              <Link to="/projects/EL">
-                <button className="card1" id="el-btn" onClick={() => logger.interaction('click', 'project-card', { project: 'EyeLearn', destination: '/projects/EL' })}>
-                  <h3> EyeLearn </h3>
-                  <p> Academia AR/VR Headset </p>
-                </button>
-              </Link>
-
-              {/* Project Card | Naton */}
-              <Link to="/projects/Naton">
-                <button className="card1" id="naton-btn" onClick={() => logger.interaction('click', 'project-card', { project: 'Naton', destination: '/projects/Naton' })}>
-                  <h3> Naton </h3>
-                  <p> Element Converter </p>
-                </button>
-              </Link>
-
-              {/* *** Project Card Template *** */}
-              {/* Project Card | **
-                  <Link to="/projects/***">
-                    <button className="card" id="***-btn">
-                        <h3>***</h3>
-                        <p>****</p>
-                    </button>
-                  </Link> */}
-            </div>
+            
+            {/* Search & Filter Component */}
+            <ProjectSearch 
+              onFilteredResults={setFilteredProjects}
+              className="projects-search"
+            />
+            
+            {/* Dynamic Project Grid */}
+            <ProjectGrid 
+              projects={filteredProjects}
+              emptyMessage="Try adjusting your search or filters to find more projects."
+            />
           </section>
         </div>
       </main>
