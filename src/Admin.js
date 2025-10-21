@@ -1,9 +1,23 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import AnalyticsDashboard from './components/AnalyticsDashboard';
 import PerformanceMonitor from './components/PerformanceMonitor';
 import { useTheme } from './contexts/ThemeContext';
+import { ProjectCatalogProvider } from './contexts/ProjectCatalogContext';
+import ProjectsPanel from './components/admin/ProjectsPanel';
 import styles from './styles/styles_admin.css';
+
+const sortProjectsByOrder = (items) =>
+  [...items].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+
+const normalizeProject = (project, fallbackOrder = 0) => ({
+  ...project,
+  order: typeof project.order === 'number' ? project.order : fallbackOrder,
+  published: typeof project.published === 'boolean' ? project.published : true,
+});
+
+const prepareProjectsForState = (items = []) =>
+  sortProjectsByOrder(items.map((project, index) => normalizeProject(project, index)));
 
 function Admin() {
   const { theme } = useTheme();
@@ -11,16 +25,9 @@ function Admin() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [projects, setProjects] = useState([]);
-  const [editingProject, setEditingProject] = useState(null);
+  const [projectsLoading, setProjectsLoading] = useState(false);
   const [token, setToken] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [newProject, setNewProject] = useState({
-    id: '',
-    title: '',
-    description: '',
-    path: '',
-    component: ''
-  });
   const [chatPrompt, setChatPrompt] = useState('');
   const [chatResponse, setChatResponse] = useState('');
   const [chatLoading, setChatLoading] = useState(false);
@@ -220,147 +227,191 @@ function Admin() {
     setUsername('');
     setPassword('');
     setProjects([]);
-    setEditingProject(null);
     localStorage.removeItem('adminAuthenticated');
     localStorage.removeItem('adminToken');
     console.log('✅ Logout successful');
   };
 
-  const loadProjects = async (authToken) => {
-    // Check if we're in development or if token is dev-token
-    const isLocalDevelopment = window.location.hostname === 'localhost' || 
-                              window.location.hostname === '127.0.0.1' ||
-                              process.env.NODE_ENV === 'development' ||
-                              authToken === 'dev-token';
-    
-    // Development mode - load mock projects
-    if (isLocalDevelopment) {
-      const mockProjects = [
-        {
-          _id: '1',
-          id: 's9',
-          title: 'S9',
-          description: 'Shadow Home Server',
-          path: '/projects/s9',
-          component: 'S9'
-        },
-        {
-          _id: '2',
-          id: 'muse',
-          title: 'Muse',
-          description: 'Automated Audio Equalizer',
-          path: '/projects/muse',
-          component: 'Muse'
-        },
-        {
-          _id: '3',
-          id: 'el',
-          title: 'EyeLearn',
-          description: 'Academia AR/VR Headset',
-          path: '/projects/EL',
-          component: 'EL'
-        },
-        {
-          _id: '4',
-          id: 'nfi',
-          title: 'NFI',
-          description: 'Rocket Propulsion System',
-          path: '/projects/NFI',
-          component: 'NFI'
-        },
-        {
-          _id: '5',
-          id: 'naton',
-          title: 'Naton',
-          description: 'Element Converter',
-          path: '/projects/Naton',
-          component: 'Naton'
-        },
-        {
-          _id: '6',
-          id: 'sos',
-          title: 'sOS',
-          description: 'Shadow Operating System',
-          path: '/projects/sos',
-          component: 'Sos'
-        },
-        {
-          _id: '7',
-          id: 'sim',
-          title: 'S_im',
-          description: 'Shadow Simulator',
-          path: '/projects/sim',
-          component: 'Sim'
-        }
-      ];
-      setProjects(mockProjects);
-      return;
-    }
+  const getApiBase = () => process.env.REACT_APP_API_BASE || window.location.origin;
 
-    // Production mode
+  const isLocalEnvironment = useCallback((authToken) => (
+    window.location.hostname === 'localhost' ||
+    window.location.hostname === '127.0.0.1' ||
+    process.env.NODE_ENV === 'development' ||
+    token === 'dev-token' ||
+    authToken === 'dev-token'
+  ), [token]);
+
+  const loadProjects = useCallback(async (authToken) => {
+    setProjectsLoading(true);
+    const localMode = isLocalEnvironment(authToken);
+
     try {
-      const API_BASE = process.env.REACT_APP_API_BASE || window.location.origin;
-      const apiEndpoint = `${API_BASE}/api/admin/projects`;
+      if (localMode) {
+        const now = new Date().toISOString();
+        const mockProjects = prepareProjectsForState([
+          {
+            _id: '1',
+            id: 's9',
+            title: 'S9',
+            description: 'Shadow Home Server',
+            path: '/projects/s9',
+            component: 'S9',
+            published: true,
+            order: 0,
+            createdAt: now,
+            updatedAt: now,
+          },
+          {
+            _id: '2',
+            id: 'muse',
+            title: 'Muse',
+            description: 'Automated Audio Equalizer',
+            path: '/projects/muse',
+            component: 'Muse',
+            published: false,
+            order: 1,
+            createdAt: now,
+            updatedAt: now,
+          },
+          {
+            _id: '3',
+            id: 'el',
+            title: 'EyeLearn',
+            description: 'Academia AR/VR Headset',
+            path: '/projects/EL',
+            component: 'EL',
+            published: true,
+            order: 2,
+            createdAt: now,
+            updatedAt: now,
+          },
+          {
+            _id: '4',
+            id: 'nfi',
+            title: 'NFI',
+            description: 'Rocket Propulsion System',
+            path: '/projects/NFI',
+            component: 'NFI',
+            published: true,
+            order: 3,
+            createdAt: now,
+            updatedAt: now,
+          },
+          {
+            _id: '5',
+            id: 'naton',
+            title: 'Naton',
+            description: 'Element Converter',
+            path: '/projects/Naton',
+            component: 'Naton',
+            published: false,
+            order: 4,
+            createdAt: now,
+            updatedAt: now,
+          },
+          {
+            _id: '6',
+            id: 'sos',
+            title: 'sOS',
+            description: 'Shadow Operating System',
+            path: '/projects/sos',
+            component: 'Sos',
+            published: true,
+            order: 5,
+            createdAt: now,
+            updatedAt: now,
+          },
+          {
+            _id: '7',
+            id: 'sim',
+            title: 'S_im',
+            description: 'Shadow Simulator',
+            path: '/projects/sim',
+            component: 'Sim',
+            published: true,
+            order: 6,
+            createdAt: now,
+            updatedAt: now,
+          },
+        ]);
+        setProjects(mockProjects);
+        return;
+      }
+
+      const apiEndpoint = `${getApiBase()}/api/admin/projects`;
       console.log('Loading projects from:', apiEndpoint);
-      
+
       const response = await fetch(apiEndpoint, {
         headers: {
-          'Authorization': `Bearer ${authToken || token}`
-        }
+          'Authorization': `Bearer ${authToken || token}`,
+        },
       });
+
       if (response.ok) {
         const data = await response.json();
-        setProjects(data.projects);
+        setProjects(prepareProjectsForState(data.projects || []));
       } else if (response.status === 401) {
         handleLogout();
+      } else {
+        console.error('Failed to load projects:', response.statusText);
       }
     } catch (error) {
       console.error('Error loading projects:', error);
+    } finally {
+      setProjectsLoading(false);
     }
-  };
+  }, [isLocalEnvironment, token]);
 
-  const handleAddProject = async (e) => {
-    e.preventDefault();
+  const handleCreateProject = async (projectData) => {
+    const order = Number.isFinite(projectData.order) ? Number(projectData.order) : projects.length;
+    const payload = {
+      id: projectData.id,
+      title: projectData.title,
+      description: projectData.description,
+      path: projectData.path,
+      component: projectData.component,
+      published: !!projectData.published,
+      order,
+    };
 
-    // Check if we're in development
-    const isLocalDevelopment = window.location.hostname === 'localhost' || 
-                              window.location.hostname === '127.0.0.1' ||
-                              process.env.NODE_ENV === 'development' ||
-                              token === 'dev-token';
+    const timestamp = new Date().toISOString();
+    const localMode = isLocalEnvironment();
 
-    // Development mode - add to local state
-    if (isLocalDevelopment) {
-      const newProjectWithId = {
-        ...newProject,
-        _id: Date.now().toString()
-      };
-      setProjects([newProjectWithId, ...projects]);
-      setNewProject({ id: '', title: '', description: '', path: '', component: '' });
+    if (localMode) {
+      const newProject = normalizeProject({
+        ...payload,
+        _id: Date.now().toString(),
+        createdAt: timestamp,
+        updatedAt: timestamp,
+      }, order);
+
+      setProjects((prev) => prepareProjectsForState([...prev, newProject]));
       alert('Project added successfully! (Development mode)');
       return;
     }
 
-    // Production mode
     try {
-      const API_BASE = process.env.REACT_APP_API_BASE || window.location.origin;
-      const apiEndpoint = `${API_BASE}/api/admin/projects`;
-      console.log('Adding project to:', apiEndpoint);
-      
-      const response = await fetch(apiEndpoint, {
+      const response = await fetch(`${getApiBase()}/api/admin/projects`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${token}`,
         },
-        body: JSON.stringify(newProject),
+        body: JSON.stringify(payload),
       });
 
       if (response.ok) {
-        setNewProject({ id: '', title: '', description: '', path: '', component: '' });
-        loadProjects();
+        const data = await response.json();
+        if (data.project) {
+          setProjects((prev) => prepareProjectsForState([...prev, data.project]));
+        } else {
+          await loadProjects();
+        }
         alert('Project added successfully!');
       } else {
-        alert('Failed to add project');
+        const errorMessage = await response.text();
+        throw new Error(errorMessage || 'Failed to add project');
       }
     } catch (error) {
       console.error('Error adding project:', error);
@@ -368,94 +419,155 @@ function Admin() {
     }
   };
 
-  const handleUpdateProject = async (e) => {
-    e.preventDefault();
+  const handleUpdateProject = async (projectId, updates) => {
+    const localMode = isLocalEnvironment();
+    const previousProjects = prepareProjectsForState(projects.map((project) => ({ ...project })));
+    const sanitizedUpdates = { ...updates };
+    delete sanitizedUpdates._id;
 
-    // Check if we're in development
-    const isLocalDevelopment = window.location.hostname === 'localhost' || 
-                              window.location.hostname === '127.0.0.1' ||
-                              process.env.NODE_ENV === 'development' ||
-                              token === 'dev-token';
+    if (Object.prototype.hasOwnProperty.call(sanitizedUpdates, 'order')) {
+      sanitizedUpdates.order = Number.isFinite(sanitizedUpdates.order)
+        ? Number(sanitizedUpdates.order)
+        : undefined;
+    }
 
-    // Development mode - update local state
-    if (isLocalDevelopment) {
-      setProjects(projects.map(p =>
-        p._id === editingProject._id ? editingProject : p
-      ));
-      setEditingProject(null);
+    const optimisticProjects = sortProjectsByOrder(projects.map((project) => {
+      if (project._id !== projectId) {
+        return project;
+      }
+
+      const nextOrder = sanitizedUpdates.order ?? project.order ?? 0;
+      return normalizeProject({
+        ...project,
+        ...sanitizedUpdates,
+        updatedAt: new Date().toISOString(),
+        order: nextOrder,
+      }, nextOrder);
+    }));
+
+    setProjects(optimisticProjects);
+
+    if (localMode) {
       alert('Project updated successfully! (Development mode)');
       return;
     }
 
-    // Production mode
     try {
-      const API_BASE = process.env.REACT_APP_API_BASE || window.location.origin;
-      const apiEndpoint = `${API_BASE}/api/admin/projects/${editingProject._id}`;
-      console.log('Updating project at:', apiEndpoint);
-      
-      const response = await fetch(apiEndpoint, {
+      const response = await fetch(`${getApiBase()}/api/admin/projects/${projectId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${token}`,
         },
-        body: JSON.stringify(editingProject),
+        body: JSON.stringify(sanitizedUpdates),
       });
 
       if (response.ok) {
-        setEditingProject(null);
-        loadProjects();
+        const data = await response.json();
+        if (data.project) {
+          setProjects((prev) => sortProjectsByOrder(prev.map((project) => (
+            project._id === projectId
+              ? normalizeProject(data.project, data.project.order ?? 0)
+              : project
+          ))));
+        } else {
+          await loadProjects();
+        }
         alert('Project updated successfully!');
       } else {
-        alert('Failed to update project');
+        const errorMessage = await response.text();
+        throw new Error(errorMessage || 'Failed to update project');
       }
     } catch (error) {
       console.error('Error updating project:', error);
+      setProjects(previousProjects);
       alert('Failed to update project');
     }
   };
 
   const handleDeleteProject = async (projectId) => {
-    if (window.confirm('Are you sure you want to delete this project?')) {
+    if (!window.confirm('Are you sure you want to delete this project?')) {
+      return;
+    }
 
-      // Check if we're in development
-      const isLocalDevelopment = window.location.hostname === 'localhost' || 
-                                window.location.hostname === '127.0.0.1' ||
-                                process.env.NODE_ENV === 'development' ||
-                                token === 'dev-token';
+    const localMode = isLocalEnvironment();
+    const previousProjects = prepareProjectsForState(projects.map((project) => ({ ...project })));
+    setProjects((prev) => prev.filter((project) => project._id !== projectId));
 
-      // Development mode - remove from local state
-      if (isLocalDevelopment) {
-        setProjects(projects.filter(p => p._id !== projectId));
-        alert('Project deleted successfully! (Development mode)');
-        return;
+    if (localMode) {
+      alert('Project deleted successfully! (Development mode)');
+      return;
+    }
+
+    try {
+      const response = await fetch(`${getApiBase()}/api/admin/projects/${projectId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok) {
+        alert('Project deleted successfully!');
+      } else {
+        const errorMessage = await response.text();
+        throw new Error(errorMessage || 'Failed to delete project');
       }
-
-      // Production mode
-      try {
-        const API_BASE = process.env.REACT_APP_API_BASE || window.location.origin;
-        const apiEndpoint = `${API_BASE}/api/admin/projects/${projectId}`;
-        console.log('Deleting project at:', apiEndpoint);
-        
-        const response = await fetch(apiEndpoint, {
-          method: 'DELETE',
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
-
-        if (response.ok) {
-          loadProjects();
-          alert('Project deleted successfully!');
-        } else {
-          alert('Failed to delete project');
-        }
-      } catch (error) {
-        console.error('Error deleting project:', error);
-        alert('Failed to delete project');
-      }
+    } catch (error) {
+      console.error('Error deleting project:', error);
+      setProjects(previousProjects);
+      alert('Failed to delete project');
     }
   };
+
+  const handleTogglePublish = async (projectId, nextPublished) => {
+    await handleUpdateProject(projectId, { published: nextPublished });
+  };
+
+  const handleReorderProjects = async (nextProjects) => {
+    const localMode = isLocalEnvironment();
+    const normalized = sortProjectsByOrder(nextProjects.map((project, index) =>
+      normalizeProject(project, typeof project.order === 'number' ? project.order : index)
+    ).map((project, index) => ({ ...project, order: index })));
+    const previousProjects = prepareProjectsForState(projects.map((project) => ({ ...project })));
+
+    setProjects(normalized);
+
+    if (localMode) {
+      alert('Project order updated (Development mode)');
+      return;
+    }
+
+    try {
+      const responses = await Promise.all(normalized.map((project) =>
+        fetch(`${getApiBase()}/api/admin/projects/${project._id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+          body: JSON.stringify({ order: project.order }),
+        })
+      ));
+
+      const failedResponse = responses.find((response) => !response.ok);
+      if (failedResponse) {
+        const errorMessage = await failedResponse.text();
+        throw new Error(errorMessage || 'Failed to update project order');
+      }
+    } catch (error) {
+      console.error('Error updating project order:', error);
+      setProjects(previousProjects);
+      alert('Failed to update project order');
+    }
+  };
+
+  const catalogValue = useMemo(() => ({
+    projects,
+    setProjects,
+    refresh: loadProjects,
+    loading: projectsLoading,
+  }), [projects, projectsLoading, loadProjects]);
 
   const handleChatGPT = async (e) => {
     e.preventDefault();
@@ -647,142 +759,15 @@ function Admin() {
           )}
         </section>
 
-        {/* Add New Project */}
-        <section className="add-project-section">
-          <h2>Add New Project</h2>
-          <form onSubmit={handleAddProject} className="project-form">
-            <div className="form-row">
-              <div className="form-group">
-                <label>ID:</label>
-                <input
-                  type="text"
-                  value={newProject.id}
-                  onChange={(e) => setNewProject({ ...newProject, id: e.target.value })}
-                  required
-                />
-              </div>
-              <div className="form-group">
-                <label>Title:</label>
-                <input
-                  type="text"
-                  value={newProject.title}
-                  onChange={(e) => setNewProject({ ...newProject, title: e.target.value })}
-                  required
-                />
-              </div>
-            </div>
-            <div className="form-group">
-              <label>Description:</label>
-              <input
-                type="text"
-                value={newProject.description}
-                onChange={(e) => setNewProject({ ...newProject, description: e.target.value })}
-                required
-              />
-            </div>
-            <div className="form-row">
-              <div className="form-group">
-                <label>Path:</label>
-                <input
-                  type="text"
-                  value={newProject.path}
-                  onChange={(e) => setNewProject({ ...newProject, path: e.target.value })}
-                  required
-                />
-              </div>
-              <div className="form-group">
-                <label>Component:</label>
-                <input
-                  type="text"
-                  value={newProject.component}
-                  onChange={(e) => setNewProject({ ...newProject, component: e.target.value })}
-                  required
-                />
-              </div>
-            </div>
-            <button type="submit" className="add-btn">Add Project</button>
-          </form>
-        </section>
-
-        {/* Existing Projects */}
-        <section className="projects-section">
-          <h2>Existing Projects</h2>
-          <div className="projects-list">
-            {projects.map((project) => (
-              <div key={project._id} className="project-item">
-                {editingProject && editingProject._id === project._id ? (
-                  <form onSubmit={handleUpdateProject} className="edit-form">
-                    <div className="form-row">
-                      <div className="form-group">
-                        <label>ID:</label>
-                        <input
-                          type="text"
-                          value={editingProject.id}
-                          onChange={(e) => setEditingProject({ ...editingProject, id: e.target.value })}
-                          required
-                        />
-                      </div>
-                      <div className="form-group">
-                        <label>Title:</label>
-                        <input
-                          type="text"
-                          value={editingProject.title}
-                          onChange={(e) => setEditingProject({ ...editingProject, title: e.target.value })}
-                          required
-                        />
-                      </div>
-                    </div>
-                    <div className="form-group">
-                      <label>Description:</label>
-                      <input
-                        type="text"
-                        value={editingProject.description}
-                        onChange={(e) => setEditingProject({ ...editingProject, description: e.target.value })}
-                        required
-                      />
-                    </div>
-                    <div className="form-row">
-                      <div className="form-group">
-                        <label>Path:</label>
-                        <input
-                          type="text"
-                          value={editingProject.path}
-                          onChange={(e) => setEditingProject({ ...editingProject, path: e.target.value })}
-                          required
-                        />
-                      </div>
-                      <div className="form-group">
-                        <label>Component:</label>
-                        <input
-                          type="text"
-                          value={editingProject.component}
-                          onChange={(e) => setEditingProject({ ...editingProject, component: e.target.value })}
-                          required
-                        />
-                      </div>
-                    </div>
-                    <div className="edit-actions">
-                      <button type="submit" className="save-btn">Save</button>
-                      <button type="button" onClick={() => setEditingProject(null)} className="cancel-btn">Cancel</button>
-                    </div>
-                  </form>
-                ) : (
-                  <div className="project-info">
-                    <h3>{project.title}</h3>
-                    <p><strong>ID:</strong> {project.id}</p>
-                    <p><strong>Description:</strong> {project.description}</p>
-                    <p><strong>Path:</strong> {project.path}</p>
-                    <p><strong>Component:</strong> {project.component}</p>
-                    <div className="project-actions">
-                      <button onClick={() => setEditingProject(project)} className="edit-btn">Edit</button>
-                      <button onClick={() => handleDeleteProject(project._id)} className="delete-btn">Delete</button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        </section>
+        <ProjectCatalogProvider value={catalogValue}>
+          <ProjectsPanel
+            onCreateProject={handleCreateProject}
+            onUpdateProject={handleUpdateProject}
+            onDeleteProject={handleDeleteProject}
+            onTogglePublish={handleTogglePublish}
+            onReorder={handleReorderProjects}
+          />
+        </ProjectCatalogProvider>
       </main>
     </div>
   );
