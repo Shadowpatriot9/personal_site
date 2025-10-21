@@ -2,6 +2,17 @@ import mongoose from 'mongoose';
 
 const MONGO_URI = process.env.MONGO_URI;
 
+if (!MONGO_URI) {
+  throw new Error('MONGO_URI environment variable is not defined');
+}
+
+let cached = global.mongoose;
+
+if (!cached) {
+  cached = global.mongoose = { conn: null, promise: null };
+}
+
+async function connectToDatabase() {
 const cached = global.mongoose || { conn: null, promise: null };
 if (!global.mongoose) {
   global.mongoose = cached;
@@ -33,6 +44,21 @@ const ProjectSchema = new mongoose.Schema({
   description: { type: String, required: true },
   path: { type: String, required: true },
   component: { type: String, required: true },
+  createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now }
+});
+
+let ProjectModel;
+
+export async function getProjectModel() {
+  await connectToDatabase();
+  if (!ProjectModel) {
+    ProjectModel = mongoose.models.Project || mongoose.model('Project', ProjectSchema);
+  }
+  return ProjectModel;
+}
+
+export { connectToDatabase };
   category: { type: String, default: 'General' },
   status: { type: String, default: 'Active' },
   technology: { type: [String], default: [] },

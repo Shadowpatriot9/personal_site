@@ -1,6 +1,14 @@
-import jwt from 'jsonwebtoken';
-import crypto from 'crypto';
+import {
+  createAccessToken,
+  createRefreshToken,
+  getTokenExpiry,
+  ACCESS_TOKEN_EXPIRATION,
+  REFRESH_TOKEN_EXPIRATION,
+} from '../_lib/auth';
 
+// Use environment variables for production security
+const ADMIN_USERNAME = process.env.ADMIN_USERNAME || 'shadowpatriot9';
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || '16196823';
 const DEFAULT_ADMIN_USERNAME = 'shadowpatriot9';
 const DEFAULT_ADMIN_PASSWORD = '16196823';
 
@@ -91,7 +99,7 @@ function checkRateLimit(clientIP) {
 function recordAttempt(clientIP, success = false) {
   const now = Date.now();
   const clientAttempts = loginAttempts.get(clientIP) || { count: 0, lastAttempt: now };
-  
+
   if (success) {
     // Reset on successful login
     loginAttempts.delete(clientIP);
@@ -164,7 +172,7 @@ export default async function handler(req, res) {
     recordAttempt(clientIP, true);
     secureLog('Authentication successful', { ip: clientIP, username: sanitizedUsername });
 
-    // Generate secure JWT token
+    // Generate secure JWT tokens
     try {
       const tokenPayload = {
         sub: sanitizedUsername,
@@ -173,6 +181,23 @@ export default async function handler(req, res) {
         tokenType: 'access'
       };
 
+      const token = createAccessToken(tokenPayload);
+      const refreshToken = createRefreshToken(tokenPayload);
+      const tokenExpiresAt = getTokenExpiry(token);
+      const refreshExpiresAt = getTokenExpiry(refreshToken);
+
+      const responseData = {
+        message: 'Login successful',
+        token,
+        refreshToken,
+        user: { username: sanitizedUsername, role: 'admin' },
+        expiresIn: ACCESS_TOKEN_EXPIRATION,
+        refreshExpiresIn: REFRESH_TOKEN_EXPIRATION,
+        tokenExpiresAt,
+        refreshExpiresAt
+      };
+
+      secureLog('JWT token generated', { ip: clientIP });
       const accessToken = jwt.sign(
         tokenPayload,
         JWT_SECRET,
@@ -220,7 +245,7 @@ export default async function handler(req, res) {
 
       secureLog('JWT tokens generated', { ip: clientIP });
       res.status(200).json(responseData);
-      
+
     } catch (tokenError) {
       secureLog('JWT token generation failed', { error: tokenError.message });
       return res.status(500).json({ error: 'Authentication system error' });
