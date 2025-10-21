@@ -120,6 +120,30 @@
   box-shadow: 0 0 0 2px var(--color-primary)33;
 }
 
+.checkbox-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.checkbox-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 500;
+  color: var(--color-text);
+}
+
+.checkbox-label input {
+  width: auto;
+}
+
+.field-hint {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--color-textSecondary);
+}
+
 .login-btn {
   width: 100%;
   background-color: var(--color-primary);
@@ -144,6 +168,35 @@
   padding: 2rem;
 }
 
+.security-notices {
+  border: 1px solid var(--color-border);
+  background-color: var(--color-secondary);
+  border-radius: 6px;
+  padding: 1rem 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.security-notices h2 {
+  margin-top: 0;
+  margin-bottom: 0.75rem;
+  font-size: 1.1rem;
+  color: var(--color-warning);
+}
+
+.security-notices ul {
+  margin: 0;
+  padding-left: 1.25rem;
+}
+
+.security-notices li {
+  margin-bottom: 0.5rem;
+  color: var(--color-text);
+}
+
+.security-notices li:last-child {
+  margin-bottom: 0;
+}
+
 .add-project-section,
 .projects-section {
   background: var(--color-cardBg);
@@ -153,6 +206,28 @@
   margin-bottom: 2rem;
   box-shadow: 2px 2px 2px 3px var(--color-shadow);
   transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+.preview-section {
+  margin-top: 1.5rem;
+  padding: 1.5rem;
+  border: 1px dashed var(--color-border);
+  border-radius: 8px;
+  background-color: var(--color-secondary);
+}
+
+.preview-section h3 {
+  margin-top: 0;
+  margin-bottom: 0.5rem;
+  color: var(--color-text);
+}
+
+.preview-card-wrapper {
+  margin-top: 1rem;
+}
+
+.preview-card-wrapper > * {
+  pointer-events: none;
 }
 
 .add-project-section h2,
@@ -225,10 +300,80 @@
   transition: color 0.3s ease;
 }
 
+.project-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0.25rem 0.6rem;
+  border-radius: 999px;
+}
+
+.status-badge--published {
+  background-color: var(--color-success);
+  color: var(--color-cardBg);
+}
+
+.status-badge--draft {
+  background-color: var(--color-warning);
+  color: var(--color-text);
+}
+
+.project-meta {
+  margin: 0.35rem 0;
+  color: var(--color-textSecondary);
+}
+
+.project-meta--timestamp {
+  font-size: 0.85rem;
+  opacity: 0.85;
+}
+
 .project-actions {
   margin-top: 1rem;
   display: flex;
   gap: 0.5rem;
+}
+
+.publish-btn,
+.unpublish-btn {
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: background-color 0.2s, border-color 0.2s;
+}
+
+.publish-btn {
+  background-color: var(--color-success);
+  color: var(--color-cardBg);
+  border: 1px solid var(--color-success);
+}
+
+.publish-btn:hover {
+  background-color: var(--color-success);
+  filter: brightness(0.9);
+}
+
+.unpublish-btn {
+  background-color: var(--color-warning);
+  color: var(--color-text);
+  border: 1px solid var(--color-warning);
+}
+
+.unpublish-btn:hover {
+  background-color: var(--color-warning);
+  filter: brightness(0.9);
 }
 
 .edit-btn {
@@ -247,7 +392,8 @@
   filter: brightness(0.9);
 }
 
-.delete-btn {
+.delete-btn,
+.danger-btn {
   background-color: var(--color-danger);
   color: var(--color-cardBg);
   border: 1px solid var(--color-danger);
@@ -258,7 +404,8 @@
   transition: background-color 0.2s, border-color 0.2s;
 }
 
-.delete-btn:hover {
+.delete-btn:hover,
+.danger-btn:hover {
   background-color: var(--color-danger);
   filter: brightness(0.9);
 }
@@ -319,6 +466,46 @@
   clip: rect(0, 0, 0, 0) !important;
   white-space: nowrap !important;
   border: 0 !important;
+}
+
+.confirmation-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.confirmation-modal {
+  background-color: var(--color-cardBg);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 1.5rem;
+  width: min(420px, 90%);
+  box-shadow: 0 12px 32px var(--color-shadow);
+}
+
+.reauth-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+}
+
+.error-text {
+  color: var(--color-danger);
+  font-size: 0.85rem;
+  margin: 0;
 }
 
 /* Responsive Design */

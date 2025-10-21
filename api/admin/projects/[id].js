@@ -1,37 +1,10 @@
-import mongoose from 'mongoose';
 import jwt from 'jsonwebtoken';
+import { connectToDatabase } from '../../_lib/db.js';
+import { ProjectModel } from '../../_lib/models.js';
+import { logProjectMutation } from '../../_lib/audit.js';
 
-const MONGO_URI = process.env.MONGO_URI;
 const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-key-change-in-production';
 
-let cachedDb = null;
-
-async function connectToDatabase() {
-  if (cachedDb) {
-    return cachedDb;
-  }
-  const client = await mongoose.connect(MONGO_URI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-  });
-  cachedDb = client;
-  return client;
-}
-
-// Project Schema
-const ProjectSchema = new mongoose.Schema({
-  id: { type: String, required: true, unique: true },
-  title: { type: String, required: true },
-  description: { type: String, required: true },
-  path: { type: String, required: true },
-  component: { type: String, required: true },
-  createdAt: { type: Date, default: Date.now },
-  updatedAt: { type: Date, default: Date.now }
-});
-
-const ProjectModel = mongoose.models.Project || mongoose.model('Project', ProjectSchema);
-
-// Middleware to verify JWT token
 function verifyToken(req, res, next) {
   const authHeader = req.headers.authorization;
   if (!authHeader) {
@@ -48,53 +21,93 @@ function verifyToken(req, res, next) {
   }
 }
 
+function normalizePublishedValue(value, fallback) {
+  if (typeof value === 'boolean') {
+    return value;
+  }
+
+  if (typeof value === 'string') {
+    return value.toLowerCase() === 'true';
+  }
+
+  return typeof fallback === 'boolean' ? fallback : false;
+}
+
 export default async function handler(req, res) {
-  // Verify authentication for all operations
   verifyToken(req, res, async () => {
     try {
       await connectToDatabase();
       const { id } = req.query;
 
       switch (req.method) {
-        case 'PUT':
-          // Update project
-          const { title, description, path, component } = req.body;
-          
-          const updatedProject = await ProjectModel.findByIdAndUpdate(
-            id,
-            {
-              title,
-              description,
-              path,
-              component,
-              updatedAt: Date.now()
-            },
-            { new: true, runValidators: true }
-          );
+        case 'PUT': {
+          const { title, description, path, component, published } = req.body;
+          const project = await ProjectModel.findById(id);
 
-          if (!updatedProject) {
+          if (!project) {
             return res.status(404).json({ error: 'Project not found' });
           }
 
-          res.status(200).json({ 
-            message: 'Project updated successfully', 
-            project: updatedProject 
+          const before = project.toObject();
+
+          if (typeof title !== 'undefined') project.title = title;
+          if (typeof description !== 'undefined') project.description = description;
+          if (typeof path !== 'undefined') project.path = path;
+          if (typeof component !== 'undefined') project.component = component;
+          if (typeof published !== 'undefined') {
+            project.published = normalizePublishedValue(published, project.published);
+          }
+          project.updatedAt = new Date();
+
+          await project.save();
+
+          const after = project.toObject();
+          const publishedChanged = typeof published !== 'undefined' && before.published !== after.published;
+
+          await logProjectMutation({
+            projectId: project._id,
+            projectIdentifier: project.id,
+            action: 'update',
+            actor: req.user?.username,
+            before,
+            after,
+            summary: publishedChanged
+              ? `Project "${project.title}" was ${project.published ? 'published' : 'unpublished'}`
+              : `Project "${project.title}" was updated`,
+          });
+
+          res.status(200).json({
+            message: 'Project updated successfully',
+            project: after,
           });
           break;
+        }
 
-        case 'DELETE':
-          // Delete project
-          const deletedProject = await ProjectModel.findByIdAndDelete(id);
-          
-          if (!deletedProject) {
+        case 'DELETE': {
+          const project = await ProjectModel.findById(id);
+
+          if (!project) {
             return res.status(404).json({ error: 'Project not found' });
           }
 
-          res.status(200).json({ 
-            message: 'Project deleted successfully', 
-            project: deletedProject 
+          const before = project.toObject();
+          await project.deleteOne();
+
+          await logProjectMutation({
+            projectId: before._id,
+            projectIdentifier: before.id,
+            action: 'delete',
+            actor: req.user?.username,
+            before,
+            summary: `Project "${before.title}" was deleted`,
+          });
+
+          res.status(200).json({
+            message: 'Project deleted successfully',
+            project: before,
           });
           break;
+        }
 
         default:
           res.status(405).json({ error: 'Method not allowed' });
@@ -104,4 +117,4 @@ export default async function handler(req, res) {
       res.status(500).json({ error: 'Internal server error' });
     }
   });
-} 
+}
