@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import AnalyticsDashboard from './components/AnalyticsDashboard';
 import PerformanceMonitor from './components/PerformanceMonitor';
@@ -13,6 +13,9 @@ function Admin() {
   const [projects, setProjects] = useState([]);
   const [editingProject, setEditingProject] = useState(null);
   const [token, setToken] = useState('');
+  const [refreshToken, setRefreshToken] = useState('');
+  const [tokenExpiry, setTokenExpiry] = useState(null);
+  const [refreshExpiry, setRefreshExpiry] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [newProject, setNewProject] = useState({
     id: '',
@@ -25,20 +28,159 @@ function Admin() {
   const [chatResponse, setChatResponse] = useState('');
   const [chatLoading, setChatLoading] = useState(false);
 
+  const refreshTimeoutRef = useRef(null);
+  const refreshPromiseRef = useRef(null);
+  const sessionExpiredRef = useRef(false);
+
+  const getApiBase = () => process.env.REACT_APP_API_BASE || window.location.origin;
+
+  const clearScheduledRefresh = () => {
+    if (refreshTimeoutRef.current) {
+      clearTimeout(refreshTimeoutRef.current);
+      refreshTimeoutRef.current = null;
+    }
+  };
+
+  function scheduleTokenRefresh(expiresAt, currentRefreshToken) {
+    if (!expiresAt || !currentRefreshToken || currentRefreshToken === 'dev-refresh') {
+      return;
+    }
+
+    const now = Date.now();
+    const refreshBuffer = 60 * 1000;
+    const delay = Math.max(expiresAt - now - refreshBuffer, 0);
+
+    clearScheduledRefresh();
+    refreshTimeoutRef.current = setTimeout(() => {
+      refreshAccessToken(currentRefreshToken);
+    }, delay);
+  }
+
+  async function refreshAccessToken(currentRefreshToken) {
+    if (!currentRefreshToken || currentRefreshToken === 'dev-refresh') {
+      return null;
+    }
+
+    if (refreshPromiseRef.current) {
+      return refreshPromiseRef.current;
+    }
+
+    const API_BASE = getApiBase();
+
+    const promise = (async () => {
+      try {
+        const response = await fetch(`${API_BASE}/api/admin/refresh`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ refreshToken: currentRefreshToken })
+        });
+
+        if (!response.ok) {
+          throw new Error(`Refresh failed with status ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        setToken(data.token);
+        setRefreshToken(data.refreshToken);
+        setTokenExpiry(data.tokenExpiresAt || null);
+        setRefreshExpiry(data.refreshExpiresAt || null);
+        sessionExpiredRef.current = false;
+
+        localStorage.setItem('adminToken', data.token);
+        localStorage.setItem('adminRefreshToken', data.refreshToken);
+        if (data.tokenExpiresAt) {
+          localStorage.setItem('adminTokenExpiry', String(data.tokenExpiresAt));
+        } else {
+          localStorage.removeItem('adminTokenExpiry');
+        }
+        if (data.refreshExpiresAt) {
+          localStorage.setItem('adminRefreshExpiry', String(data.refreshExpiresAt));
+        } else {
+          localStorage.removeItem('adminRefreshExpiry');
+        }
+
+        scheduleTokenRefresh(data.tokenExpiresAt, data.refreshToken);
+
+        return data.token;
+      } catch (error) {
+        console.error('Failed to refresh token:', error);
+        clearScheduledRefresh();
+        if (!sessionExpiredRef.current) {
+          sessionExpiredRef.current = true;
+          alert('Your session has expired. Please log in again.');
+        }
+        handleLogout();
+        return null;
+      } finally {
+        refreshPromiseRef.current = null;
+      }
+    })();
+
+    refreshPromiseRef.current = promise;
+    return promise;
+  }
+
   // Check if user is already authenticated
   useEffect(() => {
     const authStatus = localStorage.getItem('adminAuthenticated');
     const savedToken = localStorage.getItem('adminToken');
-    
+    const savedRefreshToken = localStorage.getItem('adminRefreshToken');
+    const savedTokenExpiry = localStorage.getItem('adminTokenExpiry');
+    const savedRefreshExpiry = localStorage.getItem('adminRefreshExpiry');
+
     if (authStatus === 'true' && savedToken) {
       console.log('🔄 Restoring authentication from localStorage');
       setIsAuthenticated(true);
       setToken(savedToken);
+
+      if (savedToken === 'dev-token') {
+        setRefreshToken('');
+        setTokenExpiry(null);
+        setRefreshExpiry(null);
+        loadProjects(savedToken);
+        return;
+      }
+
+      if (!savedRefreshToken || !savedTokenExpiry || !savedRefreshExpiry) {
+        console.log('⚠️ Missing refresh token data. Logging out.');
+        handleLogout();
+        return;
+      }
+
+      const tokenExpiryTime = Number(savedTokenExpiry);
+      const refreshExpiryTime = Number(savedRefreshExpiry);
+
+      setRefreshToken(savedRefreshToken);
+      setTokenExpiry(tokenExpiryTime);
+      setRefreshExpiry(refreshExpiryTime);
+
+      if (Date.now() >= refreshExpiryTime) {
+        refreshAccessToken(savedRefreshToken);
+        return;
+      }
+
+      const refreshBuffer = 60 * 1000;
+      if (Date.now() >= tokenExpiryTime - refreshBuffer) {
+        refreshAccessToken(savedRefreshToken).then((newToken) => {
+          if (newToken) {
+            loadProjects(newToken);
+          }
+        });
+        return;
+      }
+
+      scheduleTokenRefresh(tokenExpiryTime, savedRefreshToken);
       loadProjects(savedToken);
     } else {
       console.log('🔓 No saved authentication found');
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => () => clearScheduledRefresh(), []);
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -75,7 +217,7 @@ function Admin() {
     console.log('\n🔌 ATTEMPTING API AUTHENTICATION:');
     
     // Use canonical API base URL to avoid domain issues
-    const API_BASE = process.env.REACT_APP_API_BASE || window.location.origin;
+    const API_BASE = getApiBase();
     const apiEndpoint = `${API_BASE}/api/admin/login`;
     const requestBody = { username, password };
     const requestHeaders = { 'Content-Type': 'application/json' };
@@ -130,14 +272,37 @@ function Admin() {
         console.log('\n💾 UPDATING FRONTEND STATE:');
         setIsAuthenticated(true);
         console.log('setIsAuthenticated(true) called');
-        
+
         setToken(data.token);
         console.log('setToken called with token');
-        
+
+        setRefreshToken(data.refreshToken || '');
+        setTokenExpiry(data.tokenExpiresAt || null);
+        setRefreshExpiry(data.refreshExpiresAt || null);
+
         localStorage.setItem('adminAuthenticated', 'true');
         localStorage.setItem('adminToken', data.token);
+        if (data.refreshToken) {
+          localStorage.setItem('adminRefreshToken', data.refreshToken);
+        } else {
+          localStorage.removeItem('adminRefreshToken');
+        }
+        if (data.tokenExpiresAt) {
+          localStorage.setItem('adminTokenExpiry', String(data.tokenExpiresAt));
+        } else {
+          localStorage.removeItem('adminTokenExpiry');
+        }
+        if (data.refreshExpiresAt) {
+          localStorage.setItem('adminRefreshExpiry', String(data.refreshExpiresAt));
+        } else {
+          localStorage.removeItem('adminRefreshExpiry');
+        }
         console.log('localStorage updated');
-        
+
+        sessionExpiredRef.current = false;
+        clearScheduledRefresh();
+        scheduleTokenRefresh(data.tokenExpiresAt, data.refreshToken);
+
         console.log('📁 Loading projects...');
         loadProjects(data.token);
         
@@ -167,8 +332,16 @@ function Admin() {
           
           setIsAuthenticated(true);
           setToken('dev-token');
+          setRefreshToken('');
+          setTokenExpiry(null);
+          setRefreshExpiry(null);
+          clearScheduledRefresh();
+          sessionExpiredRef.current = false;
           localStorage.setItem('adminAuthenticated', 'true');
           localStorage.setItem('adminToken', 'dev-token');
+          localStorage.removeItem('adminRefreshToken');
+          localStorage.removeItem('adminTokenExpiry');
+          localStorage.removeItem('adminRefreshExpiry');
           loadProjects('dev-token');
           setIsLoading(false);
           console.log('✅ DEVELOPMENT FALLBACK SUCCESSFUL');
@@ -193,8 +366,16 @@ function Admin() {
         
         setIsAuthenticated(true);
         setToken('dev-token');
+        setRefreshToken('');
+        setTokenExpiry(null);
+        setRefreshExpiry(null);
+        clearScheduledRefresh();
+        sessionExpiredRef.current = false;
         localStorage.setItem('adminAuthenticated', 'true');
         localStorage.setItem('adminToken', 'dev-token');
+        localStorage.removeItem('adminRefreshToken');
+        localStorage.removeItem('adminTokenExpiry');
+        localStorage.removeItem('adminRefreshExpiry');
         loadProjects('dev-token');
         setIsLoading(false);
         console.log('✅ DEVELOPMENT FALLBACK AFTER NETWORK ERROR SUCCESSFUL');
@@ -217,21 +398,31 @@ function Admin() {
     console.log('🚪 Logging out...');
     setIsAuthenticated(false);
     setToken('');
+    setRefreshToken('');
+    setTokenExpiry(null);
+    setRefreshExpiry(null);
     setUsername('');
     setPassword('');
     setProjects([]);
     setEditingProject(null);
+    clearScheduledRefresh();
+    refreshPromiseRef.current = null;
+    sessionExpiredRef.current = false;
     localStorage.removeItem('adminAuthenticated');
     localStorage.removeItem('adminToken');
+    localStorage.removeItem('adminRefreshToken');
+    localStorage.removeItem('adminTokenExpiry');
+    localStorage.removeItem('adminRefreshExpiry');
     console.log('✅ Logout successful');
   };
 
-  const loadProjects = async (authToken) => {
+  const loadProjects = async (authToken, shouldRetry = true) => {
     // Check if we're in development or if token is dev-token
-    const isLocalDevelopment = window.location.hostname === 'localhost' || 
+    const isLocalDevelopment = window.location.hostname === 'localhost' ||
                               window.location.hostname === '127.0.0.1' ||
                               process.env.NODE_ENV === 'development' ||
-                              authToken === 'dev-token';
+                              authToken === 'dev-token' ||
+                              token === 'dev-token';
     
     // Development mode - load mock projects
     if (isLocalDevelopment) {
@@ -299,10 +490,10 @@ function Admin() {
 
     // Production mode
     try {
-      const API_BASE = process.env.REACT_APP_API_BASE || window.location.origin;
+      const API_BASE = getApiBase();
       const apiEndpoint = `${API_BASE}/api/admin/projects`;
       console.log('Loading projects from:', apiEndpoint);
-      
+
       const response = await fetch(apiEndpoint, {
         headers: {
           'Authorization': `Bearer ${authToken || token}`
@@ -311,6 +502,11 @@ function Admin() {
       if (response.ok) {
         const data = await response.json();
         setProjects(data.projects);
+      } else if (response.status === 401 && shouldRetry && refreshToken) {
+        const newToken = await refreshAccessToken(refreshToken);
+        if (newToken) {
+          return loadProjects(newToken, false);
+        }
       } else if (response.status === 401) {
         handleLogout();
       }
@@ -342,18 +538,29 @@ function Admin() {
 
     // Production mode
     try {
-      const API_BASE = process.env.REACT_APP_API_BASE || window.location.origin;
+      const API_BASE = getApiBase();
       const apiEndpoint = `${API_BASE}/api/admin/projects`;
       console.log('Adding project to:', apiEndpoint);
-      
-      const response = await fetch(apiEndpoint, {
+
+      const submitRequest = (authToken) => fetch(apiEndpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${authToken}`
         },
         body: JSON.stringify(newProject),
       });
+
+      let response = await submitRequest(token);
+
+      if (response.status === 401 && refreshToken) {
+        const newToken = await refreshAccessToken(refreshToken);
+        if (newToken) {
+          response = await submitRequest(newToken);
+        } else {
+          return;
+        }
+      }
 
       if (response.ok) {
         setNewProject({ id: '', title: '', description: '', path: '', component: '' });
@@ -389,18 +596,29 @@ function Admin() {
 
     // Production mode
     try {
-      const API_BASE = process.env.REACT_APP_API_BASE || window.location.origin;
+      const API_BASE = getApiBase();
       const apiEndpoint = `${API_BASE}/api/admin/projects/${editingProject._id}`;
       console.log('Updating project at:', apiEndpoint);
-      
-      const response = await fetch(apiEndpoint, {
+
+      const submitRequest = (authToken) => fetch(apiEndpoint, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${authToken}`
         },
         body: JSON.stringify(editingProject),
       });
+
+      let response = await submitRequest(token);
+
+      if (response.status === 401 && refreshToken) {
+        const newToken = await refreshAccessToken(refreshToken);
+        if (newToken) {
+          response = await submitRequest(newToken);
+        } else {
+          return;
+        }
+      }
 
       if (response.ok) {
         setEditingProject(null);
@@ -433,16 +651,27 @@ function Admin() {
 
       // Production mode
       try {
-        const API_BASE = process.env.REACT_APP_API_BASE || window.location.origin;
+        const API_BASE = getApiBase();
         const apiEndpoint = `${API_BASE}/api/admin/projects/${projectId}`;
         console.log('Deleting project at:', apiEndpoint);
-        
-        const response = await fetch(apiEndpoint, {
+
+        const submitRequest = (authToken) => fetch(apiEndpoint, {
           method: 'DELETE',
           headers: {
-            'Authorization': `Bearer ${token}`
+            'Authorization': `Bearer ${authToken}`
           }
         });
+
+        let response = await submitRequest(token);
+
+        if (response.status === 401 && refreshToken) {
+          const newToken = await refreshAccessToken(refreshToken);
+          if (newToken) {
+            response = await submitRequest(newToken);
+          } else {
+            return;
+          }
+        }
 
         if (response.ok) {
           loadProjects();
@@ -469,18 +698,29 @@ function Admin() {
     console.log('Prompt:', chatPrompt);
 
     try {
-      const API_BASE = process.env.REACT_APP_API_BASE || window.location.origin;
+      const API_BASE = getApiBase();
       const apiEndpoint = `${API_BASE}/api/admin/chatgpt`;
       console.log('ChatGPT endpoint:', apiEndpoint);
 
-      const response = await fetch(apiEndpoint, {
+      const submitRequest = (authToken) => fetch(apiEndpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${authToken}`
         },
         body: JSON.stringify({ prompt: chatPrompt })
       });
+
+      let response = await submitRequest(token);
+
+      if (response.status === 401 && refreshToken) {
+        const newToken = await refreshAccessToken(refreshToken);
+        if (newToken) {
+          response = await submitRequest(newToken);
+        } else {
+          return;
+        }
+      }
 
       if (response.ok) {
         const data = await response.json();

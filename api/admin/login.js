@@ -1,10 +1,14 @@
-import jwt from 'jsonwebtoken';
-import crypto from 'crypto';
+import {
+  createAccessToken,
+  createRefreshToken,
+  getTokenExpiry,
+  ACCESS_TOKEN_EXPIRATION,
+  REFRESH_TOKEN_EXPIRATION,
+} from '../_lib/auth';
 
 // Use environment variables for production security
 const ADMIN_USERNAME = process.env.ADMIN_USERNAME || 'shadowpatriot9';
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || '16196823';
-const JWT_SECRET = process.env.JWT_SECRET || crypto.randomBytes(64).toString('hex');
 
 // Rate limiting simple implementation
 const loginAttempts = new Map();
@@ -36,7 +40,7 @@ function checkRateLimit(clientIP) {
 function recordAttempt(clientIP, success = false) {
   const now = Date.now();
   const clientAttempts = loginAttempts.get(clientIP) || { count: 0, lastAttempt: now };
-  
+
   if (success) {
     // Reset on successful login
     loginAttempts.delete(clientIP);
@@ -102,34 +106,33 @@ export default async function handler(req, res) {
     recordAttempt(clientIP, true);
     secureLog('Authentication successful', { ip: clientIP, username: sanitizedUsername });
 
-    // Generate secure JWT token
+    // Generate secure JWT tokens
     try {
-      const tokenPayload = { 
-        username: sanitizedUsername, 
+      const tokenPayload = {
+        username: sanitizedUsername,
         role: 'admin',
         iat: Math.floor(Date.now() / 1000)
       };
-      
-      const token = jwt.sign(
-        tokenPayload,
-        JWT_SECRET,
-        { 
-          expiresIn: '8h', // Shorter expiration for security
-          issuer: 'mgds.me',
-          audience: 'mgds.me'
-        }
-      );
-      
+
+      const token = createAccessToken(tokenPayload);
+      const refreshToken = createRefreshToken(tokenPayload);
+      const tokenExpiresAt = getTokenExpiry(token);
+      const refreshExpiresAt = getTokenExpiry(refreshToken);
+
       const responseData = {
         message: 'Login successful',
         token,
+        refreshToken,
         user: { username: sanitizedUsername, role: 'admin' },
-        expiresIn: '8h'
+        expiresIn: ACCESS_TOKEN_EXPIRATION,
+        refreshExpiresIn: REFRESH_TOKEN_EXPIRATION,
+        tokenExpiresAt,
+        refreshExpiresAt
       };
-      
+
       secureLog('JWT token generated', { ip: clientIP });
       res.status(200).json(responseData);
-      
+
     } catch (tokenError) {
       secureLog('JWT token generation failed', { error: tokenError.message });
       return res.status(500).json({ error: 'Authentication system error' });

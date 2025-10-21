@@ -8,6 +8,7 @@ Your personal site now includes an admin panel that allows you to manage project
 - **Project Management**: Add, edit, and delete projects
 - **Real-time Updates**: Changes are immediately reflected on the site
 - **Responsive Design**: Works on desktop and mobile devices
+- **Public Feed API**: Read-only `/api/projects` endpoint for showcasing projects without exposing admin privileges
 
 ## Setup Instructions
 
@@ -34,6 +35,7 @@ Go to your Vercel dashboard and add these environment variables:
 - `ADMIN_USERNAME`: shadowpatriot9
 - `ADMIN_PASSWORD_HASH`: [generated hash from setup script]
 - `JWT_SECRET`: [generated secret from setup script]
+- `REFRESH_TOKEN_SECRET`: [generated refresh secret from setup script]
 - `MONGO_URI`: [your MongoDB connection string]
 
 ### 4. Deploy
@@ -74,6 +76,7 @@ Once logged in, you can:
 
 ## Security Features
 - **JWT Authentication**: Secure token-based authentication
+- **Refresh Tokens**: Automatic token renewal with dedicated refresh secret
 - **Password Hashing**: Passwords are hashed using bcrypt
 - **Token Expiration**: JWT tokens expire after 24 hours
 - **Protected Routes**: All admin operations require authentication
@@ -90,6 +93,7 @@ api/
 │   ├── projects.js         # Project CRUD operations
 │   └── projects/
 │       └── [id].js         # Individual project operations
+├── projects.js             # Public read-only projects feed
 ```
 
 ## Troubleshooting
