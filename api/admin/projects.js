@@ -1,8 +1,7 @@
-import mongoose from 'mongoose';
 import jwt from 'jsonwebtoken';
 import ProjectModel, { sanitizeProjectPayload, validateProjectPayload } from './projectModel.js';
+import { connectToDatabase, ProjectModel } from '../_lib/projects';
 
-const MONGO_URI = process.env.MONGO_URI;
 const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-key-change-in-production';
 
 let cachedDb = null;
@@ -31,25 +30,43 @@ function verifyToken(req, res, next) {
   if (!authHeader) {
     console.log('❌ TOKEN VERIFICATION FAILED: No authorization header');
     return res.status(401).json({ error: 'No token provided' });
+import {
+  connectToDatabase,
+  ProjectModel,
+  ensureAuthenticated,
+  normalizeProjectInput,
+  buildBulkDeleteQuery,
+} from '../../lib/adminProjects';
+
+function collectIdentifiers(body) {
+  if (!body) {
+    return [];
   }
 
-  const token = authHeader.split(' ')[1];
-  console.log('Extracted token:', token ? `[${token.length} chars]` : 'MISSING');
-  console.log('Token format check:', authHeader.startsWith('Bearer ') ? 'Valid Bearer format' : 'Invalid format');
-  
-  try {
-    console.log('Attempting JWT verification with secret length:', JWT_SECRET?.length || 0);
-    const decoded = jwt.verify(token, JWT_SECRET);
-    console.log('✅ TOKEN VERIFIED SUCCESSFULLY');
-    console.log('Decoded payload:', decoded);
-    req.user = decoded;
-    next();
-  } catch (error) {
-    console.log('❌ TOKEN VERIFICATION FAILED');
-    console.error('JWT error:', error.message);
-    console.error('Error type:', error.name);
-    return res.status(401).json({ error: 'Invalid token' });
+  if (Array.isArray(body)) {
+    return body;
   }
+
+  if (typeof body === 'string' || typeof body === 'number') {
+    return [body];
+  }
+
+  const identifiers = new Set();
+
+  ['ids', 'projectIds', 'slugs', 'identifiers'].forEach((key) => {
+    const value = body[key];
+    if (Array.isArray(value)) {
+      value.forEach((item) => identifiers.add(item));
+    }
+  });
+
+  ['id', '_id', 'identifier'].forEach((key) => {
+    if (body[key]) {
+      identifiers.add(body[key]);
+    }
+  });
+
+  return Array.from(identifiers);
 }
 
 export default async function handler(req, res) {
@@ -97,17 +114,147 @@ export default async function handler(req, res) {
           }
 
           const newProject = new ProjectModel(sanitizedProject);
+  if (!ensureAuthenticated(req, res)) {
+    return;
+  }
 
-          await newProject.save();
-          res.status(201).json({ message: 'Project created successfully', project: newProject });
-          break;
+  try {
+    await connectToDatabase();
+  } catch (error) {
+    console.error('Projects API connection error:', error);
+    return res.status(500).json({ error: 'Failed to connect to database' });
+  }
 
-        default:
-          res.status(405).json({ error: 'Method not allowed' });
+  try {
+    switch (req.method) {
+      case 'GET': {
+        const projects = await ProjectModel.find().sort({ createdAt: -1 });
+        return res.status(200).json({ projects });
       }
-    } catch (error) {
-      console.error('Projects API error:', error);
-      res.status(500).json({ error: 'Internal server error' });
+
+      case 'POST': {
+        let payload;
+        try {
+          payload = normalizeProjectInput(req.body);
+        } catch (error) {
+          return res.status(400).json({ error: error.message });
+        }
+
+        const requiredFields = ['id', 'title', 'description'];
+        const missingFields = requiredFields.filter((field) => !payload[field]);
+
+        if (missingFields.length > 0) {
+          return res.status(400).json({
+            error: `Missing required fields: ${missingFields.join(', ')}`,
+          });
+        }
+
+        if (!payload.component) {
+          return res.status(400).json({ error: 'Missing required field: component' });
+        }
+
+        const existingProject = await ProjectModel.findOne({ id: payload.id });
+        if (existingProject) {
+          return res.status(400).json({ error: 'Project with this ID already exists' });
+        }
+
+        if (!payload.dateCreated) {
+          payload.dateCreated = new Date();
+        }
+
+        payload.route = payload.route || payload.path || `/projects/${payload.id}`;
+        payload.path = payload.path || payload.route;
+
+        const newProject = await ProjectModel.create(payload);
+        return res.status(201).json({
+          message: 'Project created successfully',
+          project: newProject,
+        });
+      }
+
+      case 'PUT': {
+        let payload;
+        try {
+          payload = normalizeProjectInput(req.body);
+        } catch (error) {
+          return res.status(400).json({ error: error.message });
+        }
+
+        const projectId = payload.id || (typeof req.body?.id === 'string' ? req.body.id.trim() : null);
+
+        if (!projectId) {
+          return res.status(400).json({ error: 'Project id is required' });
+        }
+
+        payload.id = projectId;
+
+        const existingProject = await ProjectModel.findOne({ id: projectId });
+        const isUpdate = Boolean(existingProject);
+
+        if (!isUpdate) {
+          const requiredFields = ['title', 'description', 'component'];
+          const missingFields = requiredFields.filter((field) => !payload[field]);
+
+          if (missingFields.length > 0) {
+            return res.status(400).json({
+              error: `Missing required fields for creation: ${missingFields.join(', ')}`,
+            });
+          }
+
+          if (!payload.dateCreated) {
+            payload.dateCreated = new Date();
+          }
+        }
+
+        payload.route = payload.route || payload.path || `/projects/${payload.id}`;
+        payload.path = payload.path || payload.route;
+
+        const updatedProject = await ProjectModel.findOneAndUpdate(
+          { id: projectId },
+          { $set: payload },
+          {
+            new: true,
+            runValidators: true,
+            upsert: !isUpdate,
+            setDefaultsOnInsert: true,
+          },
+        );
+
+        return res.status(isUpdate ? 200 : 201).json({
+          message: isUpdate ? 'Project updated successfully' : 'Project created successfully',
+          project: updatedProject,
+        });
+      }
+
+      case 'DELETE': {
+        const identifiers = collectIdentifiers(req.body);
+        const query = buildBulkDeleteQuery(identifiers);
+
+        if (!query) {
+          return res.status(400).json({ error: 'No valid project identifiers provided' });
+        }
+
+        const result = await ProjectModel.deleteMany(query);
+
+        if (result.deletedCount === 0) {
+          return res.status(404).json({ error: 'No matching projects found to delete' });
+        }
+
+        return res.status(200).json({
+          message: `Deleted ${result.deletedCount} project(s)`,
+          deletedCount: result.deletedCount,
+        });
+      }
+
+      default:
+        res.setHeader('Allow', ['GET', 'POST', 'PUT', 'DELETE']);
+        return res.status(405).json({ error: 'Method not allowed' });
     }
-  });
-} 
+  } catch (error) {
+    console.error('Projects API error:', error);
+    if (error && error.code === 11000) {
+      return res.status(409).json({ error: 'Project with this ID already exists' });
+    }
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+}

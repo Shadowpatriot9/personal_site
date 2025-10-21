@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import AnalyticsDashboard from './components/AnalyticsDashboard';
 import PerformanceMonitor from './components/PerformanceMonitor';
@@ -377,9 +377,20 @@ const prepareProjectForSubmission = (project) => {
     thumbnail: trimmed(project.thumbnail || '')
   };
 };
+import { useProjects } from './contexts/ProjectsContext';
+import styles from './styles/styles_admin.css';
+
+class SessionExpiredError extends Error {
+  constructor(message, status) {
+    super(message);
+    this.name = 'SessionExpiredError';
+    this.status = status;
+  }
+}
 
 function Admin() {
   const { theme } = useTheme();
+  const { refresh: refreshProjectCatalog, syncProjects } = useProjects();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -393,26 +404,214 @@ function Admin() {
   const [chatPrompt, setChatPrompt] = useState('');
   const [chatResponse, setChatResponse] = useState('');
   const [chatLoading, setChatLoading] = useState(false);
+  const [sessionStatus, setSessionStatus] = useState('');
 
-  // Check if user is already authenticated
+  const persistToken = useCallback((value) => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    try {
+      if (value) {
+        sessionStorage.setItem('adminToken', value);
+      } else {
+        sessionStorage.removeItem('adminToken');
+      }
+    } catch (storageError) {
+      console.warn('Unable to access sessionStorage for admin token persistence', storageError);
+    }
+  }, []);
+
+  const clearAuthState = useCallback(() => {
+    setIsAuthenticated(false);
+    setToken('');
+    setProjects([]);
+    setEditingProject(null);
+    persistToken(null);
+  }, [persistToken]);
+
+  const handleSessionExpired = useCallback((message) => {
+    clearAuthState();
+    setUsername('');
+    setPassword('');
+    setSessionStatus(message || 'Your session has expired. Please log in again.');
+  }, [clearAuthState]);
+
+  const fetchWithAuth = useCallback(async (input, config = {}, overrideToken) => {
+    const isBrowser = typeof window !== 'undefined';
+    let storedToken = '';
+
+    if (isBrowser) {
+      try {
+        storedToken = sessionStorage.getItem('adminToken') || '';
+      } catch (storageError) {
+        console.warn('Unable to read sessionStorage for admin token', storageError);
+      }
+    }
+
+    const activeToken = overrideToken || token || storedToken;
+
+    if (!activeToken) {
+      const missingTokenMessage = 'Your session has expired. Please log in again.';
+      handleSessionExpired(missingTokenMessage);
+      throw new SessionExpiredError(missingTokenMessage, 401);
+    }
+
+    const headers = new Headers(config.headers || {});
+    if (!headers.has('Authorization')) {
+      headers.set('Authorization', `Bearer ${activeToken}`);
+    }
+
+    const requestConfig = { ...config, headers };
+    const response = await fetch(input, requestConfig);
+
+    if (response.status === 401 || response.status === 403) {
+      let message = 'Your session has expired. Please log in again.';
+
+      try {
+        const errorData = await response.clone().json();
+        if (errorData && typeof errorData === 'object' && errorData.error) {
+          message = errorData.error;
+        }
+      } catch (jsonError) {
+        try {
+          const errorText = await response.clone().text();
+          if (errorText) {
+            message = errorText;
+          }
+        } catch (textError) {
+          // Ignore parsing errors and use default message
+        }
+      }
+
+      handleSessionExpired(message);
+      throw new SessionExpiredError(message, response.status);
+    }
+
+    return response;
+  }, [token, handleSessionExpired]);
+
+  const loadProjects = useCallback(async (authTokenOverride) => {
+    const isBrowser = typeof window !== 'undefined';
+    const activeToken = authTokenOverride || token;
+    const isLocalDevelopment = isBrowser && (
+      window.location.hostname === 'localhost' ||
+      window.location.hostname === '127.0.0.1' ||
+      process.env.NODE_ENV === 'development' ||
+      activeToken === 'dev-token'
+    );
+
+    if (isLocalDevelopment) {
+      const mockProjects = [
+        {
+          _id: '1',
+          id: 's9',
+          title: 'S9',
+          description: 'Shadow Home Server',
+          path: '/projects/s9',
+          component: 'S9'
+        },
+        {
+          _id: '2',
+          id: 'muse',
+          title: 'Muse',
+          description: 'Automated Audio Equalizer',
+          path: '/projects/muse',
+          component: 'Muse'
+        },
+        {
+          _id: '3',
+          id: 'el',
+          title: 'EyeLearn',
+          description: 'Academia AR/VR Headset',
+          path: '/projects/EL',
+          component: 'EL'
+        },
+        {
+          _id: '4',
+          id: 'nfi',
+          title: 'NFI',
+          description: 'Rocket Propulsion System',
+          path: '/projects/NFI',
+          component: 'NFI'
+        },
+        {
+          _id: '5',
+          id: 'naton',
+          title: 'Naton',
+          description: 'Element Converter',
+          path: '/projects/Naton',
+          component: 'Naton'
+        },
+        {
+          _id: '6',
+          id: 'sos',
+          title: 'sOS',
+          description: 'Shadow Operating System',
+          path: '/projects/sos',
+          component: 'Sos'
+        },
+        {
+          _id: '7',
+          id: 'sim',
+          title: 'S_im',
+          description: 'Shadow Simulator',
+          path: '/projects/sim',
+          component: 'Sim'
+        }
+      ];
+      setProjects(mockProjects);
+      return;
+    }
+
+    if (!isBrowser) {
+      return;
+    }
+
+    try {
+      const API_BASE = process.env.REACT_APP_API_BASE || window.location.origin;
+      const apiEndpoint = `${API_BASE}/api/admin/projects`;
+      console.log('Loading projects from:', apiEndpoint);
+
+      const response = await fetchWithAuth(apiEndpoint, {}, authTokenOverride);
+      if (response.ok) {
+        const data = await response.json();
+        setProjects(data.projects);
+      } else {
+        const errorText = await response.text().catch(() => 'Unknown error');
+        console.error('Failed to load projects', response.status, errorText);
+      }
+    } catch (error) {
+      if (error instanceof SessionExpiredError) {
+        return;
+      }
+      console.error('Error loading projects:', error);
+    }
+  }, [fetchWithAuth, token]);
+
   useEffect(() => {
-    const authStatus = localStorage.getItem('adminAuthenticated');
-    const savedToken = localStorage.getItem('adminToken');
-    
-    if (authStatus === 'true' && savedToken) {
-      console.log('🔄 Restoring authentication from localStorage');
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    const savedToken = sessionStorage.getItem('adminToken');
+
+    if (savedToken) {
+      console.log('🔄 Restoring authentication from sessionStorage');
       setIsAuthenticated(true);
       setToken(savedToken);
+      setSessionStatus('');
       loadProjects(savedToken);
     } else {
       console.log('🔓 No saved authentication found');
     }
-  }, []);
+  }, [loadProjects]);
 
   const handleLogin = async (e) => {
     e.preventDefault();
     setIsLoading(true);
-    
+    setSessionStatus('');
+
     console.log('\n' + '='.repeat(60));
     console.log('🛡️ FRONTEND LOGIN ATTEMPT STARTED');
     console.log('Time:', new Date().toISOString());
@@ -499,17 +698,19 @@ function Admin() {
         console.log('\n💾 UPDATING FRONTEND STATE:');
         setIsAuthenticated(true);
         console.log('setIsAuthenticated(true) called');
-        
+
         setToken(data.token);
         console.log('setToken called with token');
-        
-        localStorage.setItem('adminAuthenticated', 'true');
-        localStorage.setItem('adminToken', data.token);
-        console.log('localStorage updated');
-        
+
+        persistToken(data.token);
+        console.log('sessionStorage token persisted');
+
+        setSessionStatus('');
+        console.log('Session status cleared');
+
         console.log('📁 Loading projects...');
-        loadProjects(data.token);
-        
+        await loadProjects(data.token);
+
         setIsLoading(false);
         console.log('✅ LOGIN PROCESS COMPLETED SUCCESSFULLY');
         return;
@@ -533,12 +734,12 @@ function Admin() {
         if (isLocalDevelopment && username === 'shadowpatriot9' && password === '16196823') {
           console.log('\n🔧 API FAILED - ATTEMPTING DEVELOPMENT FALLBACK:');
           console.log('Fallback conditions met - switching to dev mode');
-          
+
           setIsAuthenticated(true);
           setToken('dev-token');
-          localStorage.setItem('adminAuthenticated', 'true');
-          localStorage.setItem('adminToken', 'dev-token');
-          loadProjects('dev-token');
+          persistToken('dev-token');
+          setSessionStatus('');
+          await loadProjects('dev-token');
           setIsLoading(false);
           console.log('✅ DEVELOPMENT FALLBACK SUCCESSFUL');
           return;
@@ -559,12 +760,12 @@ function Admin() {
       if (isLocalDevelopment && username === 'shadowpatriot9' && password === '16196823') {
         console.log('\n🔧 NETWORK ERROR - ATTEMPTING DEVELOPMENT FALLBACK:');
         console.log('Fallback conditions met - switching to dev mode');
-        
+
         setIsAuthenticated(true);
         setToken('dev-token');
-        localStorage.setItem('adminAuthenticated', 'true');
-        localStorage.setItem('adminToken', 'dev-token');
-        loadProjects('dev-token');
+        persistToken('dev-token');
+        setSessionStatus('');
+        await loadProjects('dev-token');
         setIsLoading(false);
         console.log('✅ DEVELOPMENT FALLBACK AFTER NETWORK ERROR SUCCESSFUL');
         return;
@@ -582,10 +783,9 @@ function Admin() {
     }
   };
 
-  const handleLogout = () => {
+  const handleLogout = useCallback(() => {
     console.log('🚪 Logging out...');
-    setIsAuthenticated(false);
-    setToken('');
+    clearAuthState();
     setUsername('');
     setPassword('');
     setProjects([]);
@@ -595,7 +795,9 @@ function Admin() {
     setEditProjectErrors([]);
     localStorage.removeItem('adminAuthenticated');
     localStorage.removeItem('adminToken');
+    setSessionStatus('');
     console.log('✅ Logout successful');
+  }, [clearAuthState]);
   };
 
   const loadProjects = async (authToken) => {
@@ -715,6 +917,8 @@ function Admin() {
         }
       ];
       setProjects(mockProjects.map(transformProjectFromApi));
+      setProjects(mockProjects);
+      refreshProjectCatalog();
       return;
     }
 
@@ -735,6 +939,8 @@ function Admin() {
           ? data.projects.map(transformProjectFromApi)
           : [];
         setProjects(safeProjects);
+        setProjects(data.projects);
+        syncProjects(data.projects);
       } else if (response.status === 401) {
         handleLogout();
       }
@@ -781,6 +987,14 @@ function Admin() {
       const newProjectWithId = transformProjectFromApi({ ...submission, _id: Date.now().toString() });
       setProjects([newProjectWithId, ...projects]);
       setNewProject(createDefaultProject());
+      const newProjectWithId = {
+        ...newProject,
+        _id: Date.now().toString()
+      };
+      const updatedProjects = [newProjectWithId, ...projects];
+      setProjects(updatedProjects);
+      syncProjects(updatedProjects);
+      setNewProject({ id: '', title: '', description: '', path: '', component: '' });
       alert('Project added successfully! (Development mode)');
       return;
     }
@@ -790,12 +1004,11 @@ function Admin() {
       const API_BASE = process.env.REACT_APP_API_BASE || window.location.origin;
       const apiEndpoint = `${API_BASE}/api/admin/projects`;
       console.log('Adding project to:', apiEndpoint);
-      
-      const response = await fetch(apiEndpoint, {
+
+      const response = await fetchWithAuth(apiEndpoint, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify(submission),
       });
@@ -810,8 +1023,18 @@ function Admin() {
         const errorMessage = errorData.error || 'Failed to add project';
         setNewProjectErrors([errorMessage]);
         alert(`Failed to add project: ${errorMessage}`);
+        setNewProject({ id: '', title: '', description: '', path: '', component: '' });
+        await loadProjects();
+        alert('Project added successfully!');
+      } else {
+        const errorDetails = await response.text().catch(() => 'Failed to add project');
+        console.error('Failed to add project:', response.status, errorDetails);
+        alert('Failed to add project');
       }
     } catch (error) {
+      if (error instanceof SessionExpiredError) {
+        return;
+      }
       console.error('Error adding project:', error);
       setNewProjectErrors([error.message || 'Unexpected error while adding project']);
       alert('Failed to add project');
@@ -853,6 +1076,11 @@ function Admin() {
       setProjects(projects.map((project) =>
         project._id === editingProject._id ? updatedProjectForState : project
       ));
+      const updatedProjects = projects.map(p =>
+        p._id === editingProject._id ? editingProject : p
+      );
+      setProjects(updatedProjects);
+      syncProjects(updatedProjects);
       setEditingProject(null);
       setEditProjectErrors([]);
       alert('Project updated successfully! (Development mode)');
@@ -864,12 +1092,11 @@ function Admin() {
       const API_BASE = process.env.REACT_APP_API_BASE || window.location.origin;
       const apiEndpoint = `${API_BASE}/api/admin/projects/${editingProject._id}`;
       console.log('Updating project at:', apiEndpoint);
-      
-      const response = await fetch(apiEndpoint, {
+
+      const response = await fetchWithAuth(apiEndpoint, {
         method: 'PUT',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify(submission),
       });
@@ -884,8 +1111,17 @@ function Admin() {
         const errorMessage = errorData.error || 'Failed to update project';
         setEditProjectErrors([errorMessage]);
         alert(`Failed to update project: ${errorMessage}`);
+        await loadProjects();
+        alert('Project updated successfully!');
+      } else {
+        const errorDetails = await response.text().catch(() => 'Failed to update project');
+        console.error('Failed to update project:', response.status, errorDetails);
+        alert('Failed to update project');
       }
     } catch (error) {
+      if (error instanceof SessionExpiredError) {
+        return;
+      }
       console.error('Error updating project:', error);
       setEditProjectErrors([error.message || 'Unexpected error while updating project']);
       alert('Failed to update project');
@@ -908,6 +1144,9 @@ function Admin() {
           setEditingProject(null);
         }
         setEditProjectErrors([]);
+        const updatedProjects = projects.filter(p => p._id !== projectId);
+        setProjects(updatedProjects);
+        syncProjects(updatedProjects);
         alert('Project deleted successfully! (Development mode)');
         return;
       }
@@ -917,12 +1156,9 @@ function Admin() {
         const API_BASE = process.env.REACT_APP_API_BASE || window.location.origin;
         const apiEndpoint = `${API_BASE}/api/admin/projects/${projectId}`;
         console.log('Deleting project at:', apiEndpoint);
-        
-        const response = await fetch(apiEndpoint, {
-          method: 'DELETE',
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
+
+        const response = await fetchWithAuth(apiEndpoint, {
+          method: 'DELETE'
         });
 
         if (response.ok) {
@@ -931,11 +1167,17 @@ function Admin() {
             setEditingProject(null);
           }
           setEditProjectErrors([]);
+          await loadProjects();
           alert('Project deleted successfully!');
         } else {
+          const errorDetails = await response.text().catch(() => 'Failed to delete project');
+          console.error('Failed to delete project:', response.status, errorDetails);
           alert('Failed to delete project');
         }
       } catch (error) {
+        if (error instanceof SessionExpiredError) {
+          return;
+        }
         console.error('Error deleting project:', error);
         alert('Failed to delete project');
       }
@@ -958,11 +1200,10 @@ function Admin() {
       const apiEndpoint = `${API_BASE}/api/admin/chatgpt`;
       console.log('ChatGPT endpoint:', apiEndpoint);
 
-      const response = await fetch(apiEndpoint, {
+      const response = await fetchWithAuth(apiEndpoint, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({ prompt: chatPrompt })
       });
@@ -977,6 +1218,10 @@ function Admin() {
         setChatResponse(`Error: ${errorData.error || 'Failed to get response'}`);
       }
     } catch (error) {
+      if (error instanceof SessionExpiredError) {
+        setChatResponse('Session expired. Please log in again.');
+        return;
+      }
       console.error('❌ ChatGPT network error:', error);
       setChatResponse(`Network Error: ${error.message}`);
     } finally {
@@ -993,10 +1238,28 @@ function Admin() {
             <button className="gs-btn" title="Return to homepage">GS</button>
           </Link>
           <h1>Admin Login</h1>
+          {sessionStatus && (
+            <div
+              className="session-status"
+              role="alert"
+              aria-live="assertive"
+              style={{
+                color: theme.danger,
+                border: `1px solid ${theme.danger}`,
+                backgroundColor: `${theme.danger}20`,
+                padding: '12px',
+                borderRadius: '6px',
+                marginTop: '12px',
+                marginBottom: '12px'
+              }}
+            >
+              {sessionStatus}
+            </div>
+          )}
           {(window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || process.env.NODE_ENV === 'development') && (
-            <div id="dev-credentials" style={{ 
-              color: theme.warning, 
-              fontSize: '0.9rem', 
+            <div id="dev-credentials" style={{
+              color: theme.warning,
+              fontSize: '0.9rem',
               textAlign: 'center', 
               padding: '10px', 
               border: `1px solid ${theme.warning}`, 
