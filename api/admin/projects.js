@@ -25,6 +25,8 @@ const ProjectSchema = new mongoose.Schema({
   description: { type: String, required: true },
   path: { type: String, required: true },
   component: { type: String, required: true },
+  displayOrder: { type: Number, default: 0 },
+  published: { type: Boolean, default: true },
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now }
 });
@@ -83,27 +85,35 @@ export default async function handler(req, res) {
 
       switch (req.method) {
         case 'GET':
-          // Get all projects
-          const projects = await ProjectModel.find().sort({ createdAt: -1 });
+          // Get all projects ordered by display order first then creation time
+          const projects = await ProjectModel.find().sort({ displayOrder: 1, createdAt: -1 });
           res.status(200).json({ projects });
           break;
 
         case 'POST':
           // Create new project
-          const { id, title, description, path, component } = req.body;
-          
+          const { id, title, description, path, component, displayOrder, published } = req.body;
+
           // Check if project with same ID already exists
           const existingProject = await ProjectModel.findOne({ id });
           if (existingProject) {
             return res.status(400).json({ error: 'Project with this ID already exists' });
           }
 
+          const projectCount = await ProjectModel.countDocuments();
+          const parsedOrder = Number(displayOrder);
+          const normalizedOrder = Number.isFinite(parsedOrder) ? parsedOrder : projectCount;
+
+          const normalizedPublished = published === false || published === 'false' ? false : true;
+
           const newProject = new ProjectModel({
             id,
             title,
             description,
             path,
-            component
+            component,
+            displayOrder: normalizedOrder,
+            published: normalizedPublished
           });
 
           await newProject.save();

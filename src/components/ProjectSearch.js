@@ -13,7 +13,9 @@ export const projectsData = [
     status: 'In Progress',
     dateCreated: '2024-01-01',
     tags: ['simulation', 'software', 'development'],
-    route: '/projects/sim'
+    route: '/projects/sim',
+    displayOrder: 2,
+    published: true
   },
   {
     id: 'sos',
@@ -24,7 +26,9 @@ export const projectsData = [
     status: 'In Progress',
     dateCreated: '2023-06-15',
     tags: ['os', 'system', 'low-level', 'kernel'],
-    route: '/projects/sos'
+    route: '/projects/sos',
+    displayOrder: 3,
+    published: true
   },
   {
     id: 's9',
@@ -35,7 +39,9 @@ export const projectsData = [
     status: 'Active',
     dateCreated: '2024-10-01',
     tags: ['server', 'networking', 'nas', 'ubuntu', 'homelab'],
-    route: '/projects/s9'
+    route: '/projects/s9',
+    displayOrder: 1,
+    published: true
   },
   {
     id: 'nfi',
@@ -46,7 +52,9 @@ export const projectsData = [
     status: 'Completed',
     dateCreated: '2022-03-01',
     tags: ['rocket', 'propulsion', 'aerospace', 'engineering'],
-    route: '/projects/NFI'
+    route: '/projects/NFI',
+    displayOrder: 4,
+    published: true
   },
   {
     id: 'muse',
@@ -57,7 +65,9 @@ export const projectsData = [
     status: 'Discontinued',
     dateCreated: '2018-03-01',
     tags: ['audio', 'music', 'equalizer', 'electronics'],
-    route: '/projects/Muse'
+    route: '/projects/Muse',
+    displayOrder: 7,
+    published: true
   },
   {
     id: 'el',
@@ -68,7 +78,9 @@ export const projectsData = [
     status: 'Paused',
     dateCreated: '2021-09-01',
     tags: ['ar', 'vr', 'education', 'headset', 'learning'],
-    route: '/projects/EL'
+    route: '/projects/EL',
+    displayOrder: 5,
+    published: true
   },
   {
     id: 'naton',
@@ -79,9 +91,13 @@ export const projectsData = [
     status: 'Completed',
     dateCreated: '2020-01-15',
     tags: ['chemistry', 'physics', 'converter', 'elements'],
-    route: '/projects/Naton'
+    route: '/projects/Naton',
+    displayOrder: 6,
+    published: true
   }
 ];
+
+export const publishedProjectsData = projectsData.filter(project => project.published !== false);
 
 const ProjectSearch = ({ onFilteredResults, className = '' }) => {
   const { theme } = useTheme();
@@ -92,17 +108,30 @@ const ProjectSearch = ({ onFilteredResults, className = '' }) => {
   const [isExpanded, setIsExpanded] = useState(false);
 
   // Get unique categories and statuses
-  const categories = ['All', ...new Set(projectsData.map(p => p.category))];
-  const statuses = ['All', ...new Set(projectsData.map(p => p.status))];
+  const categories = ['All', ...new Set(publishedProjectsData.map(p => p.category))];
+  const statuses = ['All', ...new Set(publishedProjectsData.map(p => p.status))];
+
+  const compareDisplayOrder = (a, b) => {
+    const parsedOrderA = Number(a.displayOrder);
+    const parsedOrderB = Number(b.displayOrder);
+    const orderA = Number.isFinite(parsedOrderA) ? parsedOrderA : Number.MAX_SAFE_INTEGER;
+    const orderB = Number.isFinite(parsedOrderB) ? parsedOrderB : Number.MAX_SAFE_INTEGER;
+
+    if (orderA === orderB) {
+      return 0;
+    }
+
+    return orderA - orderB;
+  };
 
   // Filter and sort projects
   const filteredProjects = React.useMemo(() => {
-    let filtered = projectsData.filter(project => {
-      const matchesSearch = searchTerm === '' || 
+    let filtered = publishedProjectsData.filter(project => {
+      const matchesSearch = searchTerm === '' ||
         project.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
         project.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
         project.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()));
-      
+
       const matchesCategory = selectedCategory === 'All' || project.category === selectedCategory;
       const matchesStatus = selectedStatus === 'All' || project.status === selectedStatus;
       
@@ -111,17 +140,31 @@ const ProjectSearch = ({ onFilteredResults, className = '' }) => {
 
     // Sort results
     filtered.sort((a, b) => {
+      const orderComparison = compareDisplayOrder(a, b);
+
       switch (sortBy) {
         case 'newest':
+          if (orderComparison !== 0) {
+            return orderComparison;
+          }
           return new Date(b.dateCreated) - new Date(a.dateCreated);
         case 'oldest':
+          if (orderComparison !== 0) {
+            return orderComparison;
+          }
           return new Date(a.dateCreated) - new Date(b.dateCreated);
         case 'alphabetical':
-          return a.title.localeCompare(b.title);
+          {
+            const alphaComparison = a.title.localeCompare(b.title);
+            return alphaComparison !== 0 ? alphaComparison : orderComparison;
+          }
         case 'status':
-          return a.status.localeCompare(b.status);
+          {
+            const statusComparison = a.status.localeCompare(b.status);
+            return statusComparison !== 0 ? statusComparison : orderComparison;
+          }
         default:
-          return 0;
+          return orderComparison;
       }
     });
 

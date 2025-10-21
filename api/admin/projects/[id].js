@@ -25,6 +25,8 @@ const ProjectSchema = new mongoose.Schema({
   description: { type: String, required: true },
   path: { type: String, required: true },
   component: { type: String, required: true },
+  displayOrder: { type: Number, default: 0 },
+  published: { type: Boolean, default: true },
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now }
 });
@@ -58,17 +60,28 @@ export default async function handler(req, res) {
       switch (req.method) {
         case 'PUT':
           // Update project
-          const { title, description, path, component } = req.body;
-          
+          const allowedFields = ['id', 'title', 'description', 'path', 'component', 'displayOrder', 'published'];
+          const updateData = { updatedAt: Date.now() };
+
+          allowedFields.forEach((field) => {
+            if (req.body[field] !== undefined) {
+              if (field === 'displayOrder') {
+                const parsedOrder = Number(req.body[field]);
+                if (Number.isFinite(parsedOrder)) {
+                  updateData.displayOrder = parsedOrder;
+                }
+              } else if (field === 'published') {
+                const value = req.body[field];
+                updateData.published = value === false || value === 'false' ? false : true;
+              } else {
+                updateData[field] = req.body[field];
+              }
+            }
+          });
+
           const updatedProject = await ProjectModel.findByIdAndUpdate(
             id,
-            {
-              title,
-              description,
-              path,
-              component,
-              updatedAt: Date.now()
-            },
+            updateData,
             { new: true, runValidators: true }
           );
 

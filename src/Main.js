@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import logger from './utils/logger';
 import ThemeSwitcher from './components/ThemeSwitcher';
-import ProjectSearch, { projectsData } from './components/ProjectSearch';
+import ProjectSearch, { publishedProjectsData } from './components/ProjectSearch';
 import ProjectGrid from './components/ProjectGrid';
 import ContactForm from './components/ContactForm';
 import MobileEnhancements from './components/MobileEnhancements';
@@ -39,14 +39,14 @@ export function initializeAnimations() {
 
 function Main() {
   const { theme } = useTheme();
-  const [filteredProjects, setFilteredProjects] = useState(projectsData);
+  const [filteredProjects, setFilteredProjects] = useState(publishedProjectsData);
   
   useEffect(() => {
     // Log page view
     logger.pageView('Homepage', {
       hasProjects: true,
       sections: ['about', 'contact', 'projects'],
-      projectCount: 7
+      projectCount: publishedProjectsData.length
     });
     
     // Log performance timing
