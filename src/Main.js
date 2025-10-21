@@ -2,11 +2,12 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import logger from './utils/logger';
 import ThemeSwitcher from './components/ThemeSwitcher';
-import ProjectSearch, { projectsData } from './components/ProjectSearch';
+import ProjectSearch from './components/ProjectSearch';
 import ProjectGrid from './components/ProjectGrid';
 import ContactForm from './components/ContactForm';
 import MobileEnhancements from './components/MobileEnhancements';
 import { useTheme } from './contexts/ThemeContext';
+import { useProjects } from './contexts/ProjectsContext';
 
 import styles from './styles/styles_page.css';
 import './styles/styles_mobile.css';
@@ -39,14 +40,19 @@ export function initializeAnimations() {
 
 function Main() {
   const { theme } = useTheme();
-  const [filteredProjects, setFilteredProjects] = useState(projectsData);
+  const { projects, loading: projectsLoading, error: projectsError, refresh: refreshProjects } = useProjects();
+  const [filteredProjects, setFilteredProjects] = useState([]);
+
+  useEffect(() => {
+    setFilteredProjects(projects);
+  }, [projects]);
   
   useEffect(() => {
     // Log page view
     logger.pageView('Homepage', {
       hasProjects: true,
       sections: ['about', 'contact', 'projects'],
-      projectCount: 7
+      projectCount: projects.length
     });
     
     // Log performance timing
@@ -159,8 +165,11 @@ function Main() {
             />
             
             {/* Dynamic Project Grid */}
-            <ProjectGrid 
+            <ProjectGrid
               projects={filteredProjects}
+              loading={projectsLoading}
+              error={projectsError}
+              onRetry={refreshProjects}
               emptyMessage="Try adjusting your search or filters to find more projects."
             />
           </section>
