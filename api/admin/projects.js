@@ -18,6 +18,19 @@ async function connectToDatabase() {
   return client;
 }
 
+// Project Schema
+const ProjectSchema = new mongoose.Schema({
+  id: { type: String, required: true, unique: true },
+  title: { type: String, required: true },
+  description: { type: String, required: true },
+  path: { type: String, required: true },
+  component: { type: String, required: true },
+  published: { type: Boolean, default: true },
+  order: { type: Number, default: 0 },
+}, { timestamps: true });
+
+const ProjectModel = mongoose.models.Project || mongoose.model('Project', ProjectSchema);
+
 // Middleware to verify JWT token
 function verifyToken(req, res, next) {
   console.log('\n' + '='.repeat(50));
@@ -88,6 +101,8 @@ export default async function handler(req, res) {
 
       switch (req.method) {
         case 'GET':
+          // Get all projects
+          const projects = await ProjectModel.find().sort({ order: 1, createdAt: -1 });
           // Get all projects, newest first by project date
           const projects = await ProjectModel.find().sort({ dateCreated: -1 });
           res.status(200).json({ projects });
@@ -95,6 +110,7 @@ export default async function handler(req, res) {
 
         case 'POST':
           // Create new project
+          const { id, title, description, path, component, published = true, order } = req.body;
           let sanitizedProject;
           try {
             sanitizedProject = sanitizeProjectPayload(req.body, { applyDefaults: true });
@@ -113,6 +129,22 @@ export default async function handler(req, res) {
             return res.status(400).json({ error: 'Project with this ID already exists' });
           }
 
+          const highestOrder = await ProjectModel.findOne().sort({ order: -1 });
+          const parsedOrder = Number(order);
+          const nextOrder = Number.isFinite(parsedOrder)
+            ? parsedOrder
+            : highestOrder
+              ? highestOrder.order + 1
+              : 0;
+
+          const newProject = new ProjectModel({
+            id,
+            title,
+            description,
+            path,
+            component,
+            published,
+            order: nextOrder,
           const newProject = new ProjectModel(sanitizedProject);
   if (!ensureAuthenticated(req, res)) {
     return;
