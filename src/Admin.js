@@ -3,6 +3,380 @@ import { Link } from 'react-router-dom';
 import AnalyticsDashboard from './components/AnalyticsDashboard';
 import PerformanceMonitor from './components/PerformanceMonitor';
 import { useTheme } from './contexts/ThemeContext';
+import {
+  PROJECT_STATUS_OPTIONS,
+  PROJECT_CATEGORY_OPTIONS,
+  PROJECT_ROUTE_PATTERN,
+  DEFAULT_PROJECT_STATUS,
+  DEFAULT_PROJECT_CATEGORY
+} from './constants/projectMetadata';
+import styles from './styles/styles_admin.css';
+
+const getStatusColor = (status, theme) => {
+  switch (status) {
+    case 'Active':
+      return theme.success;
+    case 'Completed':
+      return '#4caf50';
+    case 'In Progress':
+      return theme.warning;
+    case 'Paused':
+      return '#ff9800';
+    case 'Discontinued':
+      return theme.danger;
+    default:
+      return theme.textSecondary;
+  }
+};
+
+const getStatusIcon = (status) => {
+  switch (status) {
+    case 'Active':
+      return '🟢';
+    case 'Completed':
+      return '✅';
+    case 'In Progress':
+      return '🔄';
+    case 'Paused':
+      return '⏸️';
+    case 'Discontinued':
+      return '❌';
+    default:
+      return '⚫';
+  }
+};
+
+const formatDateForInput = (isoString) => {
+  if (!isoString) {
+    return '';
+  }
+  const date = new Date(isoString);
+  if (Number.isNaN(date.getTime())) {
+    return '';
+  }
+  return date.toISOString().slice(0, 10);
+};
+
+const formatDateForDisplay = (isoString) => {
+  if (!isoString) {
+    return '—';
+  }
+  const date = new Date(isoString);
+  if (Number.isNaN(date.getTime())) {
+    return '—';
+  }
+  return date.toLocaleDateString();
+};
+
+const sanitizeArrayValues = (values = [], { transform, dedupeKey }) => {
+  const array = Array.isArray(values)
+    ? values
+    : typeof values === 'string'
+      ? values.split(',')
+      : [];
+
+  const seen = new Set();
+  const result = [];
+
+  array.forEach((item) => {
+    if (typeof item !== 'string') {
+      return;
+    }
+    const trimmed = item.trim();
+    if (!trimmed) {
+      return;
+    }
+    const value = transform(trimmed);
+    const key = dedupeKey(value);
+    if (seen.has(key)) {
+      return;
+    }
+    seen.add(key);
+    result.push(value);
+  });
+
+  return result;
+};
+
+const createDefaultProject = () => ({
+  id: '',
+  title: '',
+  description: '',
+  path: '',
+  component: '',
+  category: DEFAULT_PROJECT_CATEGORY,
+  status: DEFAULT_PROJECT_STATUS,
+  technology: [],
+  tags: [],
+  dateCreated: new Date().toISOString(),
+  route: '',
+  thumbnail: ''
+});
+
+const transformProjectFromApi = (project = {}) => {
+  if (!project) {
+    return createDefaultProject();
+  }
+
+  const technology = sanitizeArrayValues(project.technology, {
+    transform: (value) => value,
+    dedupeKey: (value) => value.toLowerCase()
+  });
+
+  const tags = sanitizeArrayValues(project.tags, {
+    transform: (value) => value.toLowerCase(),
+    dedupeKey: (value) => value.toLowerCase()
+  });
+
+  const normalisedStatus = PROJECT_STATUS_OPTIONS.includes(project.status)
+    ? project.status
+    : DEFAULT_PROJECT_STATUS;
+
+  return {
+    ...project,
+    technology,
+    tags,
+    status: normalisedStatus,
+    category: project.category || DEFAULT_PROJECT_CATEGORY,
+    dateCreated: project.dateCreated ? new Date(project.dateCreated).toISOString() : new Date().toISOString(),
+    route: project.route || project.path || '',
+    path: project.path || project.route || '',
+    thumbnail: typeof project.thumbnail === 'string' ? project.thumbnail.trim() : ''
+  };
+};
+
+const cloneProjectForEditing = (project) => {
+  const normalised = transformProjectFromApi(project);
+  return {
+    ...normalised,
+    technology: [...normalised.technology],
+    tags: [...normalised.tags]
+  };
+};
+
+const findDuplicateValue = (values = [], normalise = (value) => value) => {
+  const seen = new Set();
+  for (const rawValue of values) {
+    if (typeof rawValue !== 'string') {
+      continue;
+    }
+    const key = normalise(rawValue.trim());
+    if (!key) {
+      continue;
+    }
+    if (seen.has(key)) {
+      return rawValue.trim();
+    }
+    seen.add(key);
+  }
+  return null;
+};
+
+const ChipEditor = ({
+  label,
+  items,
+  onChange,
+  placeholder,
+  theme,
+  normaliseValue = (value) => value.trim(),
+  dedupeKey = (value) => value.toLowerCase(),
+  helperText,
+  inputAriaLabel
+}) => {
+  const [chipInput, setChipInput] = useState('');
+
+  const addChip = () => {
+    const rawValue = chipInput.trim();
+    if (!rawValue) {
+      return;
+    }
+    const normalisedValue = normaliseValue(rawValue);
+    if (!normalisedValue) {
+      setChipInput('');
+      return;
+    }
+    const key = dedupeKey(normalisedValue);
+    if (items.some((item) => dedupeKey(item) === key)) {
+      setChipInput('');
+      return;
+    }
+    onChange([...items, normalisedValue]);
+    setChipInput('');
+  };
+
+  const removeChipAt = (index) => {
+    const nextItems = items.filter((_, itemIndex) => itemIndex !== index);
+    onChange(nextItems);
+  };
+
+  const handleKeyDown = (event) => {
+    if (event.key === 'Enter' || event.key === ',') {
+      event.preventDefault();
+      addChip();
+    } else if (event.key === 'Backspace' && !chipInput && items.length) {
+      event.preventDefault();
+      removeChipAt(items.length - 1);
+    }
+  };
+
+  return (
+    <div className="form-group">
+      <label>{label}</label>
+      <div
+        style={{
+          border: `1px solid ${theme.border}`,
+          borderRadius: '4px',
+          padding: '6px',
+          backgroundColor: theme.cardBg,
+          minHeight: '44px'
+        }}
+      >
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+          {items.map((item, index) => (
+            <span
+              key={`${item}-${index}`}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                backgroundColor: theme.primary + '20',
+                color: theme.primary,
+                padding: '4px 8px',
+                borderRadius: '999px',
+                fontSize: '12px',
+                fontWeight: 500
+              }}
+            >
+              {item}
+              <button
+                type="button"
+                onClick={() => removeChipAt(index)}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  color: theme.primary,
+                  cursor: 'pointer',
+                  fontSize: '12px'
+                }}
+                aria-label={`Remove ${item}`}
+              >
+                ×
+              </button>
+            </span>
+          ))}
+          <input
+            type="text"
+            value={chipInput}
+            onChange={(event) => setChipInput(event.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder={placeholder}
+            aria-label={inputAriaLabel || label}
+            style={{
+              flex: '1 0 160px',
+              minWidth: '140px',
+              border: 'none',
+              outline: 'none',
+              background: 'transparent',
+              color: theme.text
+            }}
+          />
+        </div>
+      </div>
+      {helperText && (
+        <small style={{ color: theme.textSecondary, display: 'block', marginTop: '4px' }}>
+          {helperText}
+        </small>
+      )}
+    </div>
+  );
+};
+
+const validateProjectForm = (project) => {
+  const errors = [];
+  const trimmed = (value) => (typeof value === 'string' ? value.trim() : '');
+
+  const requiredFields = [
+    ['id', 'ID'],
+    ['title', 'Title'],
+    ['description', 'Description'],
+    ['component', 'Component'],
+    ['category', 'Category'],
+    ['status', 'Status'],
+    ['route', 'Route']
+  ];
+
+  requiredFields.forEach(([key, label]) => {
+    if (!trimmed(project[key])) {
+      errors.push(`${label} is required`);
+    }
+  });
+
+  const routeValue = trimmed(project.route);
+  if (routeValue) {
+    if (!PROJECT_ROUTE_PATTERN.test(routeValue)) {
+      errors.push('Route must start with "/" and contain only letters, numbers, slashes, underscores, or hyphens');
+    }
+  }
+
+  if (!PROJECT_STATUS_OPTIONS.includes(project.status)) {
+    errors.push(`Status must be one of: ${PROJECT_STATUS_OPTIONS.join(', ')}`);
+  }
+
+  const technologyList = Array.isArray(project.technology) ? project.technology : [];
+  if (technologyList.length === 0) {
+    errors.push('Add at least one technology');
+  }
+  const duplicateTech = findDuplicateValue(technologyList, (value) => value.trim().toLowerCase());
+  if (duplicateTech) {
+    errors.push(`Duplicate technology found: ${duplicateTech}`);
+  }
+
+  const tagList = Array.isArray(project.tags) ? project.tags : [];
+  if (tagList.length === 0) {
+    errors.push('Add at least one tag');
+  }
+  const duplicateTag = findDuplicateValue(tagList, (value) => value.trim().toLowerCase());
+  if (duplicateTag) {
+    errors.push(`Duplicate tag found: ${duplicateTag}`);
+  }
+
+  const date = project.dateCreated ? new Date(project.dateCreated) : null;
+  if (!project.dateCreated || Number.isNaN(date?.getTime())) {
+    errors.push('Date Created must be a valid date');
+  }
+
+  return errors;
+};
+
+const prepareProjectForSubmission = (project) => {
+  const trimmed = (value) => (typeof value === 'string' ? value.trim() : '');
+  const isoDate = project.dateCreated ? new Date(project.dateCreated).toISOString() : new Date().toISOString();
+
+  const technology = sanitizeArrayValues(project.technology, {
+    transform: (value) => value,
+    dedupeKey: (value) => value.toLowerCase()
+  });
+
+  const tags = sanitizeArrayValues(project.tags, {
+    transform: (value) => value.toLowerCase(),
+    dedupeKey: (value) => value.toLowerCase()
+  });
+
+  return {
+    id: trimmed(project.id),
+    title: trimmed(project.title),
+    description: trimmed(project.description),
+    path: trimmed(project.path) || trimmed(project.route),
+    component: trimmed(project.component),
+    category: trimmed(project.category) || DEFAULT_PROJECT_CATEGORY,
+    status: PROJECT_STATUS_OPTIONS.includes(project.status) ? project.status : DEFAULT_PROJECT_STATUS,
+    technology,
+    tags,
+    dateCreated: isoDate,
+    route: trimmed(project.route),
+    thumbnail: trimmed(project.thumbnail || '')
+  };
+};
 import { useProjects } from './contexts/ProjectsContext';
 import styles from './styles/styles_admin.css';
 
@@ -24,13 +398,9 @@ function Admin() {
   const [editingProject, setEditingProject] = useState(null);
   const [token, setToken] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [newProject, setNewProject] = useState({
-    id: '',
-    title: '',
-    description: '',
-    path: '',
-    component: ''
-  });
+  const [newProject, setNewProject] = useState(() => createDefaultProject());
+  const [newProjectErrors, setNewProjectErrors] = useState([]);
+  const [editProjectErrors, setEditProjectErrors] = useState([]);
   const [chatPrompt, setChatPrompt] = useState('');
   const [chatResponse, setChatResponse] = useState('');
   const [chatLoading, setChatLoading] = useState(false);
@@ -418,6 +788,13 @@ function Admin() {
     clearAuthState();
     setUsername('');
     setPassword('');
+    setProjects([]);
+    setEditingProject(null);
+    setNewProject(createDefaultProject());
+    setNewProjectErrors([]);
+    setEditProjectErrors([]);
+    localStorage.removeItem('adminAuthenticated');
+    localStorage.removeItem('adminToken');
     setSessionStatus('');
     console.log('✅ Logout successful');
   }, [clearAuthState]);
@@ -439,15 +816,29 @@ function Admin() {
           title: 'S9',
           description: 'Shadow Home Server',
           path: '/projects/s9',
-          component: 'S9'
+          component: 'S9',
+          category: 'Hardware',
+          status: 'Active',
+          technology: ['Server', 'Networking', 'Linux'],
+          tags: ['server', 'networking', 'nas', 'ubuntu', 'homelab'],
+          dateCreated: '2024-10-01T00:00:00.000Z',
+          route: '/projects/s9',
+          thumbnail: ''
         },
         {
           _id: '2',
           id: 'muse',
           title: 'Muse',
           description: 'Automated Audio Equalizer',
-          path: '/projects/muse',
-          component: 'Muse'
+          path: '/projects/Muse',
+          component: 'Muse',
+          category: 'Hardware',
+          status: 'Discontinued',
+          technology: ['Audio', 'Electronics'],
+          tags: ['audio', 'music', 'equalizer', 'electronics'],
+          dateCreated: '2018-03-01T00:00:00.000Z',
+          route: '/projects/Muse',
+          thumbnail: ''
         },
         {
           _id: '3',
@@ -455,7 +846,14 @@ function Admin() {
           title: 'EyeLearn',
           description: 'Academia AR/VR Headset',
           path: '/projects/EL',
-          component: 'EL'
+          component: 'EL',
+          category: 'Hardware',
+          status: 'Paused',
+          technology: ['AR/VR', 'Education'],
+          tags: ['ar', 'vr', 'education', 'headset', 'learning'],
+          dateCreated: '2021-09-01T00:00:00.000Z',
+          route: '/projects/EL',
+          thumbnail: ''
         },
         {
           _id: '4',
@@ -463,7 +861,14 @@ function Admin() {
           title: 'NFI',
           description: 'Rocket Propulsion System',
           path: '/projects/NFI',
-          component: 'NFI'
+          component: 'NFI',
+          category: 'Hardware',
+          status: 'Completed',
+          technology: ['Aerospace', 'Engineering'],
+          tags: ['rocket', 'propulsion', 'aerospace', 'engineering'],
+          dateCreated: '2022-03-01T00:00:00.000Z',
+          route: '/projects/NFI',
+          thumbnail: ''
         },
         {
           _id: '5',
@@ -471,7 +876,14 @@ function Admin() {
           title: 'Naton',
           description: 'Element Converter',
           path: '/projects/Naton',
-          component: 'Naton'
+          component: 'Naton',
+          category: 'Hardware',
+          status: 'Completed',
+          technology: ['Chemistry', 'Physics'],
+          tags: ['chemistry', 'physics', 'converter', 'elements'],
+          dateCreated: '2020-01-15T00:00:00.000Z',
+          route: '/projects/Naton',
+          thumbnail: ''
         },
         {
           _id: '6',
@@ -479,7 +891,14 @@ function Admin() {
           title: 'sOS',
           description: 'Shadow Operating System',
           path: '/projects/sos',
-          component: 'Sos'
+          component: 'Sos',
+          category: 'Software',
+          status: 'In Progress',
+          technology: ['Operating System', 'Low-level'],
+          tags: ['os', 'system', 'low-level', 'kernel'],
+          dateCreated: '2023-06-15T00:00:00.000Z',
+          route: '/projects/sos',
+          thumbnail: ''
         },
         {
           _id: '7',
@@ -487,9 +906,17 @@ function Admin() {
           title: 'S_im',
           description: 'Shadow Simulator',
           path: '/projects/sim',
-          component: 'Sim'
+          component: 'Sim',
+          category: 'Software',
+          status: 'In Progress',
+          technology: ['Simulation', 'Software'],
+          tags: ['simulation', 'software', 'development'],
+          dateCreated: '2024-01-01T00:00:00.000Z',
+          route: '/projects/sim',
+          thumbnail: ''
         }
       ];
+      setProjects(mockProjects.map(transformProjectFromApi));
       setProjects(mockProjects);
       refreshProjectCatalog();
       return;
@@ -508,6 +935,10 @@ function Admin() {
       });
       if (response.ok) {
         const data = await response.json();
+        const safeProjects = Array.isArray(data.projects)
+          ? data.projects.map(transformProjectFromApi)
+          : [];
+        setProjects(safeProjects);
         setProjects(data.projects);
         syncProjects(data.projects);
       } else if (response.status === 401) {
@@ -518,17 +949,44 @@ function Admin() {
     }
   };
 
+  const updateNewProject = (partial) => {
+    setNewProject((prev) => ({ ...prev, ...partial }));
+  };
+
+  const updateEditingProject = (partial) => {
+    setEditingProject((prev) => (prev ? { ...prev, ...partial } : prev));
+  };
+
   const handleAddProject = async (e) => {
     e.preventDefault();
 
+    const validationMessages = validateProjectForm(newProject);
+    if (validationMessages.length > 0) {
+      setNewProjectErrors(validationMessages);
+      return;
+    }
+
+    let submission;
+    try {
+      submission = prepareProjectForSubmission(newProject);
+    } catch (error) {
+      setNewProjectErrors([error.message]);
+      return;
+    }
+
+    setNewProjectErrors([]);
+
     // Check if we're in development
-    const isLocalDevelopment = window.location.hostname === 'localhost' || 
+    const isLocalDevelopment = window.location.hostname === 'localhost' ||
                               window.location.hostname === '127.0.0.1' ||
                               process.env.NODE_ENV === 'development' ||
                               token === 'dev-token';
 
     // Development mode - add to local state
     if (isLocalDevelopment) {
+      const newProjectWithId = transformProjectFromApi({ ...submission, _id: Date.now().toString() });
+      setProjects([newProjectWithId, ...projects]);
+      setNewProject(createDefaultProject());
       const newProjectWithId = {
         ...newProject,
         _id: Date.now().toString()
@@ -552,10 +1010,19 @@ function Admin() {
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify(newProject),
+        body: JSON.stringify(submission),
       });
 
       if (response.ok) {
+        setNewProject(createDefaultProject());
+        setNewProjectErrors([]);
+        loadProjects();
+        alert('Project added successfully!');
+      } else {
+        const errorData = await response.json().catch(() => ({ error: 'Failed to add project' }));
+        const errorMessage = errorData.error || 'Failed to add project';
+        setNewProjectErrors([errorMessage]);
+        alert(`Failed to add project: ${errorMessage}`);
         setNewProject({ id: '', title: '', description: '', path: '', component: '' });
         await loadProjects();
         alert('Project added successfully!');
@@ -569,6 +1036,7 @@ function Admin() {
         return;
       }
       console.error('Error adding project:', error);
+      setNewProjectErrors([error.message || 'Unexpected error while adding project']);
       alert('Failed to add project');
     }
   };
@@ -576,20 +1044,45 @@ function Admin() {
   const handleUpdateProject = async (e) => {
     e.preventDefault();
 
+    if (!editingProject) {
+      return;
+    }
+
+    const validationMessages = validateProjectForm(editingProject);
+    if (validationMessages.length > 0) {
+      setEditProjectErrors(validationMessages);
+      return;
+    }
+
+    let submission;
+    try {
+      submission = prepareProjectForSubmission(editingProject);
+    } catch (error) {
+      setEditProjectErrors([error.message]);
+      return;
+    }
+
+    setEditProjectErrors([]);
+
     // Check if we're in development
-    const isLocalDevelopment = window.location.hostname === 'localhost' || 
+    const isLocalDevelopment = window.location.hostname === 'localhost' ||
                               window.location.hostname === '127.0.0.1' ||
                               process.env.NODE_ENV === 'development' ||
                               token === 'dev-token';
 
     // Development mode - update local state
     if (isLocalDevelopment) {
+      const updatedProjectForState = transformProjectFromApi({ ...submission, _id: editingProject._id });
+      setProjects(projects.map((project) =>
+        project._id === editingProject._id ? updatedProjectForState : project
+      ));
       const updatedProjects = projects.map(p =>
         p._id === editingProject._id ? editingProject : p
       );
       setProjects(updatedProjects);
       syncProjects(updatedProjects);
       setEditingProject(null);
+      setEditProjectErrors([]);
       alert('Project updated successfully! (Development mode)');
       return;
     }
@@ -605,11 +1098,19 @@ function Admin() {
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify(editingProject),
+        body: JSON.stringify(submission),
       });
 
       if (response.ok) {
         setEditingProject(null);
+        setEditProjectErrors([]);
+        loadProjects();
+        alert('Project updated successfully!');
+      } else {
+        const errorData = await response.json().catch(() => ({ error: 'Failed to update project' }));
+        const errorMessage = errorData.error || 'Failed to update project';
+        setEditProjectErrors([errorMessage]);
+        alert(`Failed to update project: ${errorMessage}`);
         await loadProjects();
         alert('Project updated successfully!');
       } else {
@@ -622,6 +1123,7 @@ function Admin() {
         return;
       }
       console.error('Error updating project:', error);
+      setEditProjectErrors([error.message || 'Unexpected error while updating project']);
       alert('Failed to update project');
     }
   };
@@ -630,13 +1132,18 @@ function Admin() {
     if (window.confirm('Are you sure you want to delete this project?')) {
 
       // Check if we're in development
-      const isLocalDevelopment = window.location.hostname === 'localhost' || 
+      const isLocalDevelopment = window.location.hostname === 'localhost' ||
                                 window.location.hostname === '127.0.0.1' ||
                                 process.env.NODE_ENV === 'development' ||
                                 token === 'dev-token';
 
       // Development mode - remove from local state
       if (isLocalDevelopment) {
+        setProjects(projects.filter(p => p._id !== projectId));
+        if (editingProject && editingProject._id === projectId) {
+          setEditingProject(null);
+        }
+        setEditProjectErrors([]);
         const updatedProjects = projects.filter(p => p._id !== projectId);
         setProjects(updatedProjects);
         syncProjects(updatedProjects);
@@ -655,6 +1162,11 @@ function Admin() {
         });
 
         if (response.ok) {
+          loadProjects();
+          if (editingProject && editingProject._id === projectId) {
+            setEditingProject(null);
+          }
+          setEditProjectErrors([]);
           await loadProjects();
           alert('Project deleted successfully!');
         } else {
@@ -886,6 +1398,26 @@ function Admin() {
         {/* Add New Project */}
         <section className="add-project-section">
           <h2>Add New Project</h2>
+          {newProjectErrors.length > 0 && (
+            <div
+              role="alert"
+              style={{
+                border: `1px solid ${theme.danger}`,
+                backgroundColor: `${theme.danger}15`,
+                color: theme.danger,
+                padding: '12px',
+                borderRadius: '6px',
+                marginBottom: '16px'
+              }}
+            >
+              <strong style={{ display: 'block', marginBottom: '6px' }}>Please resolve the following:</strong>
+              <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                {newProjectErrors.map((error) => (
+                  <li key={error}>{error}</li>
+                ))}
+              </ul>
+            </div>
+          )}
           <form onSubmit={handleAddProject} className="project-form">
             <div className="form-row">
               <div className="form-group">
@@ -893,27 +1425,98 @@ function Admin() {
                 <input
                   type="text"
                   value={newProject.id}
-                  onChange={(e) => setNewProject({ ...newProject, id: e.target.value })}
+                  onChange={(e) => updateNewProject({ id: e.target.value })}
                   required
                 />
               </div>
+              <div className="form-group">
+                <label>Route:</label>
+                <input
+                  type="text"
+                  value={newProject.route}
+                  placeholder="/projects/my-project"
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    setNewProject((prev) => {
+                      const next = { ...prev, route: value };
+                      if (!prev.path || prev.path === prev.route) {
+                        next.path = value;
+                      }
+                      return next;
+                    });
+                  }}
+                  required
+                />
+                <small style={{ display: 'block', color: theme.textSecondary, marginTop: '4px' }}>
+                  Must start with “/” and use letters, numbers, slashes, underscores, or hyphens.
+                </small>
+              </div>
+            </div>
+            <div className="form-row">
               <div className="form-group">
                 <label>Title:</label>
                 <input
                   type="text"
                   value={newProject.title}
-                  onChange={(e) => setNewProject({ ...newProject, title: e.target.value })}
+                  onChange={(e) => updateNewProject({ title: e.target.value })}
+                  required
+                />
+              </div>
+              <div className="form-group">
+                <label>Category:</label>
+                <select
+                  value={newProject.category}
+                  onChange={(e) => updateNewProject({ category: e.target.value })}
+                  required
+                >
+                  {PROJECT_CATEGORY_OPTIONS.map((option) => (
+                    <option key={option} value={option}>{option}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            <div className="form-row">
+              <div className="form-group">
+                <label>Status:</label>
+                <select
+                  value={newProject.status}
+                  onChange={(e) => updateNewProject({ status: e.target.value })}
+                  required
+                >
+                  {PROJECT_STATUS_OPTIONS.map((status) => (
+                    <option key={status} value={status}>{status}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="form-group">
+                <label>Date Created:</label>
+                <input
+                  type="date"
+                  value={formatDateForInput(newProject.dateCreated)}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    updateNewProject({ dateCreated: value ? new Date(value).toISOString() : '' });
+                  }}
                   required
                 />
               </div>
             </div>
             <div className="form-group">
               <label>Description:</label>
-              <input
-                type="text"
+              <textarea
                 value={newProject.description}
-                onChange={(e) => setNewProject({ ...newProject, description: e.target.value })}
+                onChange={(e) => updateNewProject({ description: e.target.value })}
+                rows={2}
                 required
+                style={{
+                  width: '100%',
+                  padding: '10px',
+                  border: `1px solid ${theme.border}`,
+                  borderRadius: '4px',
+                  backgroundColor: theme.cardBg,
+                  color: theme.text,
+                  resize: 'vertical'
+                }}
               />
             </div>
             <div className="form-row">
@@ -922,8 +1525,8 @@ function Admin() {
                 <input
                   type="text"
                   value={newProject.path}
-                  onChange={(e) => setNewProject({ ...newProject, path: e.target.value })}
-                  required
+                  onChange={(e) => updateNewProject({ path: e.target.value })}
+                  placeholder="Defaults to route if left empty"
                 />
               </div>
               <div className="form-group">
@@ -931,11 +1534,40 @@ function Admin() {
                 <input
                   type="text"
                   value={newProject.component}
-                  onChange={(e) => setNewProject({ ...newProject, component: e.target.value })}
+                  onChange={(e) => updateNewProject({ component: e.target.value })}
                   required
                 />
               </div>
             </div>
+            <div className="form-group">
+              <label>Thumbnail URL (optional):</label>
+              <input
+                type="url"
+                value={newProject.thumbnail}
+                onChange={(e) => updateNewProject({ thumbnail: e.target.value })}
+                placeholder="https://example.com/thumbnail.jpg"
+              />
+            </div>
+            <ChipEditor
+              label="Technology"
+              items={newProject.technology}
+              onChange={(items) => updateNewProject({ technology: items })}
+              placeholder="Press Enter to add a technology"
+              theme={theme}
+              helperText="List the key technologies that will display on the project card."
+              inputAriaLabel="Add technology"
+            />
+            <ChipEditor
+              label="Tags"
+              items={newProject.tags}
+              onChange={(items) => updateNewProject({ tags: items })}
+              placeholder="Press Enter to add a tag"
+              theme={theme}
+              normaliseValue={(value) => value.trim().toLowerCase()}
+              dedupeKey={(value) => value.toLowerCase()}
+              helperText="Tags are saved in lowercase and power search and filtering."
+              inputAriaLabel="Add tag"
+            />
             <button type="submit" className="add-btn">Add Project</button>
           </form>
         </section>
@@ -948,33 +1580,126 @@ function Admin() {
               <div key={project._id} className="project-item">
                 {editingProject && editingProject._id === project._id ? (
                   <form onSubmit={handleUpdateProject} className="edit-form">
+                    {editProjectErrors.length > 0 && (
+                      <div
+                        role="alert"
+                        style={{
+                          border: `1px solid ${theme.danger}`,
+                          backgroundColor: `${theme.danger}15`,
+                          color: theme.danger,
+                          padding: '12px',
+                          borderRadius: '6px',
+                          marginBottom: '16px'
+                        }}
+                      >
+                        <strong style={{ display: 'block', marginBottom: '6px' }}>Please resolve the following:</strong>
+                        <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                          {editProjectErrors.map((error) => (
+                            <li key={error}>{error}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
                     <div className="form-row">
                       <div className="form-group">
                         <label>ID:</label>
                         <input
                           type="text"
                           value={editingProject.id}
-                          onChange={(e) => setEditingProject({ ...editingProject, id: e.target.value })}
+                          onChange={(e) => updateEditingProject({ id: e.target.value })}
                           required
                         />
                       </div>
+                      <div className="form-group">
+                        <label>Route:</label>
+                        <input
+                          type="text"
+                          value={editingProject.route}
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            setEditingProject((prev) => {
+                              if (!prev) {
+                                return prev;
+                              }
+                              const next = { ...prev, route: value };
+                              if (!prev.path || prev.path === prev.route) {
+                                next.path = value;
+                              }
+                              return next;
+                            });
+                          }}
+                          required
+                        />
+                        <small style={{ display: 'block', color: theme.textSecondary, marginTop: '4px' }}>
+                          Must start with “/” and use letters, numbers, slashes, underscores, or hyphens.
+                        </small>
+                      </div>
+                    </div>
+                    <div className="form-row">
                       <div className="form-group">
                         <label>Title:</label>
                         <input
                           type="text"
                           value={editingProject.title}
-                          onChange={(e) => setEditingProject({ ...editingProject, title: e.target.value })}
+                          onChange={(e) => updateEditingProject({ title: e.target.value })}
+                          required
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label>Category:</label>
+                        <select
+                          value={editingProject.category}
+                          onChange={(e) => updateEditingProject({ category: e.target.value })}
+                          required
+                        >
+                          {PROJECT_CATEGORY_OPTIONS.map((option) => (
+                            <option key={option} value={option}>{option}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                    <div className="form-row">
+                      <div className="form-group">
+                        <label>Status:</label>
+                        <select
+                          value={editingProject.status}
+                          onChange={(e) => updateEditingProject({ status: e.target.value })}
+                          required
+                        >
+                          {PROJECT_STATUS_OPTIONS.map((status) => (
+                            <option key={status} value={status}>{status}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="form-group">
+                        <label>Date Created:</label>
+                        <input
+                          type="date"
+                          value={formatDateForInput(editingProject.dateCreated)}
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            updateEditingProject({ dateCreated: value ? new Date(value).toISOString() : '' });
+                          }}
                           required
                         />
                       </div>
                     </div>
                     <div className="form-group">
                       <label>Description:</label>
-                      <input
-                        type="text"
+                      <textarea
                         value={editingProject.description}
-                        onChange={(e) => setEditingProject({ ...editingProject, description: e.target.value })}
+                        onChange={(e) => updateEditingProject({ description: e.target.value })}
+                        rows={2}
                         required
+                        style={{
+                          width: '100%',
+                          padding: '10px',
+                          border: `1px solid ${theme.border}`,
+                          borderRadius: '4px',
+                          backgroundColor: theme.cardBg,
+                          color: theme.text,
+                          resize: 'vertical'
+                        }}
                       />
                     </div>
                     <div className="form-row">
@@ -983,8 +1708,8 @@ function Admin() {
                         <input
                           type="text"
                           value={editingProject.path}
-                          onChange={(e) => setEditingProject({ ...editingProject, path: e.target.value })}
-                          required
+                          onChange={(e) => updateEditingProject({ path: e.target.value })}
+                          placeholder="Defaults to route if left empty"
                         />
                       </div>
                       <div className="form-group">
@@ -992,25 +1717,177 @@ function Admin() {
                         <input
                           type="text"
                           value={editingProject.component}
-                          onChange={(e) => setEditingProject({ ...editingProject, component: e.target.value })}
+                          onChange={(e) => updateEditingProject({ component: e.target.value })}
                           required
                         />
                       </div>
                     </div>
+                    <div className="form-group">
+                      <label>Thumbnail URL (optional):</label>
+                      <input
+                        type="url"
+                        value={editingProject.thumbnail}
+                        onChange={(e) => updateEditingProject({ thumbnail: e.target.value })}
+                        placeholder="https://example.com/thumbnail.jpg"
+                      />
+                    </div>
+                    <ChipEditor
+                      label="Technology"
+                      items={editingProject.technology}
+                      onChange={(items) => updateEditingProject({ technology: items })}
+                      placeholder="Press Enter to update technology"
+                      theme={theme}
+                      helperText="These appear on the public project grid."
+                      inputAriaLabel="Edit technology"
+                    />
+                    <ChipEditor
+                      label="Tags"
+                      items={editingProject.tags}
+                      onChange={(items) => updateEditingProject({ tags: items })}
+                      placeholder="Press Enter to update tag"
+                      theme={theme}
+                      normaliseValue={(value) => value.trim().toLowerCase()}
+                      dedupeKey={(value) => value.toLowerCase()}
+                      helperText="Tags remain lowercase for consistent filtering."
+                      inputAriaLabel="Edit tag"
+                    />
                     <div className="edit-actions">
                       <button type="submit" className="save-btn">Save</button>
-                      <button type="button" onClick={() => setEditingProject(null)} className="cancel-btn">Cancel</button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditingProject(null);
+                          setEditProjectErrors([]);
+                        }}
+                        className="cancel-btn"
+                      >
+                        Cancel
+                      </button>
                     </div>
                   </form>
                 ) : (
                   <div className="project-info">
-                    <h3>{project.title}</h3>
-                    <p><strong>ID:</strong> {project.id}</p>
-                    <p><strong>Description:</strong> {project.description}</p>
-                    <p><strong>Path:</strong> {project.path}</p>
-                    <p><strong>Component:</strong> {project.component}</p>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '16px' }}>
+                      <div>
+                        <div style={{
+                          display: 'inline-block',
+                          background: theme.secondary,
+                          color: theme.textSecondary,
+                          padding: '4px 8px',
+                          borderRadius: '6px',
+                          fontSize: '11px',
+                          fontWeight: 500,
+                          marginBottom: '8px'
+                        }}>
+                          {project.category}
+                        </div>
+                        <h3 style={{ margin: '0 0 8px 0', color: theme.text }}>{project.title}</h3>
+                        <p style={{ margin: 0, color: theme.textSecondary }}>{project.description}</p>
+                      </div>
+                      <div style={{
+                        background: getStatusColor(project.status, theme),
+                        color: '#fff',
+                        padding: '6px 10px',
+                        borderRadius: '12px',
+                        fontSize: '12px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        fontWeight: 600
+                      }}>
+                        <span>{getStatusIcon(project.status)}</span>
+                        {project.status}
+                      </div>
+                    </div>
+                    <div style={{
+                      display: 'grid',
+                      gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+                      gap: '8px',
+                      marginTop: '16px',
+                      color: theme.text
+                    }}>
+                      <div><strong>ID:</strong> {project.id}</div>
+                      <div><strong>Route:</strong> {project.route || '—'}</div>
+                      <div><strong>Path:</strong> {project.path || '—'}</div>
+                      <div><strong>Component:</strong> {project.component || '—'}</div>
+                      <div><strong>Date Created:</strong> {formatDateForDisplay(project.dateCreated)}</div>
+                      <div><strong>Thumbnail:</strong> {project.thumbnail ? 'Provided' : 'Not set'}</div>
+                    </div>
+                    <div style={{ marginTop: '12px' }}>
+                      <strong>Technology:</strong>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '6px' }}>
+                        {project.technology && project.technology.length > 0 ? (
+                          project.technology.map((tech, index) => (
+                            <span
+                              key={`${project._id}-tech-${index}`}
+                              style={{
+                                background: theme.primary + '20',
+                                color: theme.primary,
+                                padding: '4px 8px',
+                                borderRadius: '999px',
+                                fontSize: '12px',
+                                fontWeight: 500
+                              }}
+                            >
+                              {tech}
+                            </span>
+                          ))
+                        ) : (
+                          <span style={{ color: theme.textSecondary }}>No technology listed</span>
+                        )}
+                      </div>
+                    </div>
+                    <div style={{ marginTop: '12px' }}>
+                      <strong>Tags:</strong>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '6px' }}>
+                        {project.tags && project.tags.length > 0 ? (
+                          project.tags.map((tag, index) => (
+                            <span
+                              key={`${project._id}-tag-${index}`}
+                              style={{
+                                background: theme.surface,
+                                border: `1px solid ${theme.border}`,
+                                color: theme.textSecondary,
+                                padding: '3px 8px',
+                                borderRadius: '999px',
+                                fontSize: '12px'
+                              }}
+                            >
+                              #{tag}
+                            </span>
+                          ))
+                        ) : (
+                          <span style={{ color: theme.textSecondary }}>No tags added</span>
+                        )}
+                      </div>
+                    </div>
+                    {project.thumbnail && (
+                      <div style={{ marginTop: '12px' }}>
+                        <strong>Thumbnail preview:</strong>
+                        <div style={{ marginTop: '8px' }}>
+                          <img
+                            src={project.thumbnail}
+                            alt={`${project.title} thumbnail`}
+                            style={{
+                              maxWidth: '200px',
+                              borderRadius: '8px',
+                              border: `1px solid ${theme.border}`,
+                              boxShadow: `0 2px 6px ${theme.shadow}`
+                            }}
+                          />
+                        </div>
+                      </div>
+                    )}
                     <div className="project-actions">
-                      <button onClick={() => setEditingProject(project)} className="edit-btn">Edit</button>
+                      <button
+                        onClick={() => {
+                          setEditProjectErrors([]);
+                          setEditingProject(cloneProjectForEditing(project));
+                        }}
+                        className="edit-btn"
+                      >
+                        Edit
+                      </button>
                       <button onClick={() => handleDeleteProject(project._id)} className="delete-btn">Delete</button>
                     </div>
                   </div>

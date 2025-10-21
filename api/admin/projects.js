@@ -1,7 +1,22 @@
 import jwt from 'jsonwebtoken';
+import ProjectModel, { sanitizeProjectPayload, validateProjectPayload } from './projectModel.js';
 import { connectToDatabase, ProjectModel } from '../_lib/projects';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-key-change-in-production';
+
+let cachedDb = null;
+
+async function connectToDatabase() {
+  if (cachedDb) {
+    return cachedDb;
+  }
+  const client = await mongoose.connect(MONGO_URI, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+  });
+  cachedDb = client;
+  return client;
+}
 
 // Middleware to verify JWT token
 function verifyToken(req, res, next) {
@@ -55,6 +70,50 @@ function collectIdentifiers(body) {
 }
 
 export default async function handler(req, res) {
+  console.log('\n' + '='.repeat(50));
+  console.log('📁 ADMIN PROJECTS API CALLED');
+  console.log('Time:', new Date().toISOString());
+  console.log('Method:', req.method);
+  console.log('URL:', req.url);
+  console.log('Headers:', JSON.stringify(req.headers, null, 2));
+  console.log('='.repeat(50));
+  
+  // Verify authentication for all operations
+  verifyToken(req, res, async () => {
+    console.log('\n💾 DATABASE CONNECTION:');
+    try {
+      console.log('Attempting to connect to database...');
+      await connectToDatabase();
+      console.log('✅ Database connected successfully');
+
+      switch (req.method) {
+        case 'GET':
+          // Get all projects, newest first by project date
+          const projects = await ProjectModel.find().sort({ dateCreated: -1 });
+          res.status(200).json({ projects });
+          break;
+
+        case 'POST':
+          // Create new project
+          let sanitizedProject;
+          try {
+            sanitizedProject = sanitizeProjectPayload(req.body, { applyDefaults: true });
+          } catch (validationError) {
+            return res.status(400).json({ error: validationError.message });
+          }
+
+          const validationErrors = validateProjectPayload(sanitizedProject, { requireAllFields: true });
+          if (validationErrors.length > 0) {
+            return res.status(400).json({ error: validationErrors.join(', ') });
+          }
+
+          // Check if project with same ID already exists
+          const existingProject = await ProjectModel.findOne({ id: sanitizedProject.id });
+          if (existingProject) {
+            return res.status(400).json({ error: 'Project with this ID already exists' });
+          }
+
+          const newProject = new ProjectModel(sanitizedProject);
   if (!ensureAuthenticated(req, res)) {
     return;
   }
