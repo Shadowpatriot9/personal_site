@@ -25,6 +25,11 @@ const ProjectSchema = new mongoose.Schema({
   description: { type: String, required: true },
   path: { type: String, required: true },
   component: { type: String, required: true },
+  displayOrder: { type: Number, default: 0 },
+  published: { type: Boolean, default: true },
+  createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now }
+});
   published: { type: Boolean, default: true },
   order: { type: Number, default: 0 },
 }, { timestamps: true });
@@ -101,6 +106,8 @@ export default async function handler(req, res) {
 
       switch (req.method) {
         case 'GET':
+          // Get all projects ordered by display order first then creation time
+          const projects = await ProjectModel.find().sort({ displayOrder: 1, createdAt: -1 });
           // Get all projects
           const projects = await ProjectModel.find().sort({ order: 1, createdAt: -1 });
           // Get all projects, newest first by project date
@@ -110,6 +117,7 @@ export default async function handler(req, res) {
 
         case 'POST':
           // Create new project
+          const { id, title, description, path, component, displayOrder, published } = req.body;
           const { id, title, description, path, component, published = true, order } = req.body;
           let sanitizedProject;
           try {
@@ -129,6 +137,11 @@ export default async function handler(req, res) {
             return res.status(400).json({ error: 'Project with this ID already exists' });
           }
 
+          const projectCount = await ProjectModel.countDocuments();
+          const parsedOrder = Number(displayOrder);
+          const normalizedOrder = Number.isFinite(parsedOrder) ? parsedOrder : projectCount;
+
+          const normalizedPublished = published === false || published === 'false' ? false : true;
           const highestOrder = await ProjectModel.findOne().sort({ order: -1 });
           const parsedOrder = Number(order);
           const nextOrder = Number.isFinite(parsedOrder)
@@ -143,6 +156,8 @@ export default async function handler(req, res) {
             description,
             path,
             component,
+            displayOrder: normalizedOrder,
+            published: normalizedPublished
             published,
             order: nextOrder,
           const newProject = new ProjectModel(sanitizedProject);

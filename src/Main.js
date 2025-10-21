@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import logger from './utils/logger';
 import ThemeSwitcher from './components/ThemeSwitcher';
+import ProjectSearch, { publishedProjectsData } from './components/ProjectSearch';
 import ProjectSearch from './components/ProjectSearch';
 import ProjectGrid from './components/ProjectGrid';
 import ContactForm from './components/ContactForm';
@@ -40,6 +41,7 @@ export function initializeAnimations() {
 
 function Main() {
   const { theme } = useTheme();
+  const [filteredProjects, setFilteredProjects] = useState(publishedProjectsData);
   const [filteredProjects, setFilteredProjects] = useState([]);
   const [isProjectLoading, setIsProjectLoading] = useState(true);
   const { projects, loading: projectsLoading, error: projectsError, refresh: refreshProjects } = useProjects();
@@ -54,6 +56,7 @@ function Main() {
     logger.pageView('Homepage', {
       hasProjects: true,
       sections: ['about', 'contact', 'projects'],
+      projectCount: publishedProjectsData.length
       projectCount: projects.length
     });
     
