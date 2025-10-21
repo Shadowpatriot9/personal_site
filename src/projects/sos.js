@@ -1,9 +1,24 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import logger from '../utils/logger';
+import { useProjectMetadata } from '../contexts/ProjectsContext';
 import styles from './../styles/styles_sub.module.css';
 
 
 function Sos() {
+  const { project } = useProjectMetadata('sos');
+  const projectTitle = project?.title || 'sOS';
+  const projectDescription = project?.description || 'Shadow Operating System';
+
+  useEffect(() => {
+    logger.pageView(`${projectTitle} Project Page`, {
+      project: project?.id || 'sos',
+      projectType: projectDescription,
+      dateOfOrigin: '12/2024',
+      status: 'Active'
+    });
+  }, [projectTitle, projectDescription, project?.id]);
+
   return (
     <div className={styles.body2}>
       {/* Page Head */}
@@ -11,7 +26,7 @@ function Sos() {
       <meta charSet="UTF-8" name="viewport" content="width=device-width, initial-scale=1.0" />
 
       {/* Site Tab Title */}
-      <title> sOS </title>
+      <title> {projectTitle} </title>
 
       {/* Fade Out Overlay */}
       <div className="overlay" id="overlay" />
@@ -31,11 +46,19 @@ function Sos() {
           <div className="grid-1">
             {/* Section | S9 */}
             <section className={styles.title}>
-              <h1> sOS </h1>
+              <h1> {projectTitle} </h1>
+              {projectDescription && (
+                <p style={{ marginTop: '8px' }}>
+                  <strong>{projectDescription}</strong>
+                </p>
+              )}
             </section>
             {/* Section | Brief */}
             <section className={`${styles.section} ${styles.brief}`}>
-              <h3> Description: <p> (Date of origin: 12/2024) </p> </h3>
+              <h3> Description: </h3>
+              <p>
+                <span>(Date of origin: 12/2024)</span>
+              </p>
               WIP, see link below <br />
               <a href="https://github.com/Shadowpatriot9/sOS"> Link </a>
             </section>
