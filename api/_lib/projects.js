@@ -13,11 +13,21 @@ if (!cached) {
 }
 
 async function connectToDatabase() {
+const cached = global.mongoose || { conn: null, promise: null };
+if (!global.mongoose) {
+  global.mongoose = cached;
+}
+
+export async function connectToDatabase() {
   if (cached.conn) {
     return cached.conn;
   }
 
   if (!cached.promise) {
+    if (!MONGO_URI) {
+      throw new Error('MONGO_URI environment variable is not defined');
+    }
+
     cached.promise = mongoose.connect(MONGO_URI, {
       useNewUrlParser: true,
       useUnifiedTopology: true,
@@ -49,3 +59,13 @@ export async function getProjectModel() {
 }
 
 export { connectToDatabase };
+  category: { type: String, default: 'General' },
+  status: { type: String, default: 'Active' },
+  technology: { type: [String], default: [] },
+  tags: { type: [String], default: [] },
+  dateCreated: { type: Date, default: Date.now },
+  createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now },
+}, { minimize: false });
+
+export const ProjectModel = mongoose.models.Project || mongoose.model('Project', ProjectSchema);

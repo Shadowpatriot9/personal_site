@@ -1,32 +1,786 @@
 import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import AnalyticsDashboard from './components/AnalyticsDashboard';
 import PerformanceMonitor from './components/PerformanceMonitor';
 import { useTheme } from './contexts/ThemeContext';
+import { ProjectCatalogProvider } from './contexts/ProjectCatalogContext';
+import ProjectsPanel from './components/admin/ProjectsPanel';
 import styles from './styles/styles_admin.css';
+import { ProjectCard } from './components/ProjectGrid';
+
+const FEATURE_FLAGS = {
+  devAuthBypass: process.env.REACT_APP_ENABLE_DEV_AUTH_BYPASS === 'true',
+  showMfaPrompt: process.env.REACT_APP_SHOW_ADMIN_MFA_PROMPT === 'true',
+  showPasswordRotationReminder: process.env.REACT_APP_SHOW_PASSWORD_ROTATION_REMINDER === 'true',
+};
+
+const DEFAULT_REAUTH_THRESHOLD_MS = 4 * 60 * 60 * 1000;
+const REAUTH_THRESHOLD_MS = (() => {
+  const parsed = parseInt(process.env.REACT_APP_ADMIN_REAUTH_THRESHOLD_MS || '', 10);
+  return Number.isNaN(parsed) ? DEFAULT_REAUTH_THRESHOLD_MS : parsed;
+})();
+const REAUTH_THRESHOLD_MINUTES = Math.round(REAUTH_THRESHOLD_MS / 60000);
+
+const DEV_CREDENTIALS = {
+  username: 'shadowpatriot9',
+  password: '16196823',
+};
+
+const sortProjectsByOrder = (items) =>
+  [...items].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+
+const normalizeProject = (project, fallbackOrder = 0) => ({
+  ...project,
+  order: typeof project.order === 'number' ? project.order : fallbackOrder,
+  published: typeof project.published === 'boolean' ? project.published : true,
+});
+
+const prepareProjectsForState = (items = []) =>
+  sortProjectsByOrder(items.map((project, index) => normalizeProject(project, index)));
+import {
+  PROJECT_STATUS_OPTIONS,
+  PROJECT_CATEGORY_OPTIONS,
+  PROJECT_ROUTE_PATTERN,
+  DEFAULT_PROJECT_STATUS,
+  DEFAULT_PROJECT_CATEGORY
+} from './constants/projectMetadata';
+import styles from './styles/styles_admin.css';
+
+const getDefaultProjectValues = (overrides = {}) => ({
+const getStatusColor = (status, theme) => {
+  switch (status) {
+    case 'Active':
+      return theme.success;
+    case 'Completed':
+      return '#4caf50';
+    case 'In Progress':
+      return theme.warning;
+    case 'Paused':
+      return '#ff9800';
+    case 'Discontinued':
+      return theme.danger;
+    default:
+      return theme.textSecondary;
+  }
+};
+
+const getStatusIcon = (status) => {
+  switch (status) {
+    case 'Active':
+      return '🟢';
+    case 'Completed':
+      return '✅';
+    case 'In Progress':
+      return '🔄';
+    case 'Paused':
+      return '⏸️';
+    case 'Discontinued':
+      return '❌';
+    default:
+      return '⚫';
+  }
+};
+
+const formatDateForInput = (isoString) => {
+  if (!isoString) {
+    return '';
+  }
+  const date = new Date(isoString);
+  if (Number.isNaN(date.getTime())) {
+    return '';
+  }
+  return date.toISOString().slice(0, 10);
+};
+
+const formatDateForDisplay = (isoString) => {
+  if (!isoString) {
+    return '—';
+  }
+  const date = new Date(isoString);
+  if (Number.isNaN(date.getTime())) {
+    return '—';
+  }
+  return date.toLocaleDateString();
+};
+
+const sanitizeArrayValues = (values = [], { transform, dedupeKey }) => {
+  const array = Array.isArray(values)
+    ? values
+    : typeof values === 'string'
+      ? values.split(',')
+      : [];
+
+  const seen = new Set();
+  const result = [];
+
+  array.forEach((item) => {
+    if (typeof item !== 'string') {
+      return;
+    }
+    const trimmed = item.trim();
+    if (!trimmed) {
+      return;
+    }
+    const value = transform(trimmed);
+    const key = dedupeKey(value);
+    if (seen.has(key)) {
+      return;
+    }
+    seen.add(key);
+    result.push(value);
+  });
+
+  return result;
+};
+
+const createDefaultProject = () => ({
+  id: '',
+  title: '',
+  description: '',
+  path: '',
+  component: '',
+  displayOrder: 1,
+  published: false,
+  ...overrides
+});
+
+const parseDisplayOrder = (value, fallback) => {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
+};
+
+const normalizePublished = (value, defaultValue = true) => {
+  if (value === false || value === 'false') {
+    return false;
+  }
+  if (value === true || value === 'true') {
+    return true;
+  }
+  return defaultValue;
+};
+
+const sortProjectsByDisplayOrder = (a, b) => {
+  const orderA = parseDisplayOrder(a?.displayOrder, Number.MAX_SAFE_INTEGER);
+  const orderB = parseDisplayOrder(b?.displayOrder, Number.MAX_SAFE_INTEGER);
+
+  if (orderA !== orderB) {
+    return orderA - orderB;
+  }
+
+  const dateA = a?.createdAt ? new Date(a.createdAt).getTime() : 0;
+  const dateB = b?.createdAt ? new Date(b.createdAt).getTime() : 0;
+
+  if (dateA !== dateB) {
+    return dateB - dateA;
+  }
+
+  return (a?.title || '').localeCompare(b?.title || '');
+};
+  category: DEFAULT_PROJECT_CATEGORY,
+  status: DEFAULT_PROJECT_STATUS,
+  technology: [],
+  tags: [],
+  dateCreated: new Date().toISOString(),
+  route: '',
+  thumbnail: ''
+});
+
+const transformProjectFromApi = (project = {}) => {
+  if (!project) {
+    return createDefaultProject();
+  }
+
+  const technology = sanitizeArrayValues(project.technology, {
+    transform: (value) => value,
+    dedupeKey: (value) => value.toLowerCase()
+  });
+
+  const tags = sanitizeArrayValues(project.tags, {
+    transform: (value) => value.toLowerCase(),
+    dedupeKey: (value) => value.toLowerCase()
+  });
+
+  const normalisedStatus = PROJECT_STATUS_OPTIONS.includes(project.status)
+    ? project.status
+    : DEFAULT_PROJECT_STATUS;
+
+  return {
+    ...project,
+    technology,
+    tags,
+    status: normalisedStatus,
+    category: project.category || DEFAULT_PROJECT_CATEGORY,
+    dateCreated: project.dateCreated ? new Date(project.dateCreated).toISOString() : new Date().toISOString(),
+    route: project.route || project.path || '',
+    path: project.path || project.route || '',
+    thumbnail: typeof project.thumbnail === 'string' ? project.thumbnail.trim() : ''
+  };
+};
+
+const cloneProjectForEditing = (project) => {
+  const normalised = transformProjectFromApi(project);
+  return {
+    ...normalised,
+    technology: [...normalised.technology],
+    tags: [...normalised.tags]
+  };
+};
+
+const findDuplicateValue = (values = [], normalise = (value) => value) => {
+  const seen = new Set();
+  for (const rawValue of values) {
+    if (typeof rawValue !== 'string') {
+      continue;
+    }
+    const key = normalise(rawValue.trim());
+    if (!key) {
+      continue;
+    }
+    if (seen.has(key)) {
+      return rawValue.trim();
+    }
+    seen.add(key);
+  }
+  return null;
+};
+
+const ChipEditor = ({
+  label,
+  items,
+  onChange,
+  placeholder,
+  theme,
+  normaliseValue = (value) => value.trim(),
+  dedupeKey = (value) => value.toLowerCase(),
+  helperText,
+  inputAriaLabel
+}) => {
+  const [chipInput, setChipInput] = useState('');
+
+  const addChip = () => {
+    const rawValue = chipInput.trim();
+    if (!rawValue) {
+      return;
+    }
+    const normalisedValue = normaliseValue(rawValue);
+    if (!normalisedValue) {
+      setChipInput('');
+      return;
+    }
+    const key = dedupeKey(normalisedValue);
+    if (items.some((item) => dedupeKey(item) === key)) {
+      setChipInput('');
+      return;
+    }
+    onChange([...items, normalisedValue]);
+    setChipInput('');
+  };
+
+  const removeChipAt = (index) => {
+    const nextItems = items.filter((_, itemIndex) => itemIndex !== index);
+    onChange(nextItems);
+  };
+
+  const handleKeyDown = (event) => {
+    if (event.key === 'Enter' || event.key === ',') {
+      event.preventDefault();
+      addChip();
+    } else if (event.key === 'Backspace' && !chipInput && items.length) {
+      event.preventDefault();
+      removeChipAt(items.length - 1);
+    }
+  };
+
+  return (
+    <div className="form-group">
+      <label>{label}</label>
+      <div
+        style={{
+          border: `1px solid ${theme.border}`,
+          borderRadius: '4px',
+          padding: '6px',
+          backgroundColor: theme.cardBg,
+          minHeight: '44px'
+        }}
+      >
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+          {items.map((item, index) => (
+            <span
+              key={`${item}-${index}`}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                backgroundColor: theme.primary + '20',
+                color: theme.primary,
+                padding: '4px 8px',
+                borderRadius: '999px',
+                fontSize: '12px',
+                fontWeight: 500
+              }}
+            >
+              {item}
+              <button
+                type="button"
+                onClick={() => removeChipAt(index)}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  color: theme.primary,
+                  cursor: 'pointer',
+                  fontSize: '12px'
+                }}
+                aria-label={`Remove ${item}`}
+              >
+                ×
+              </button>
+            </span>
+          ))}
+          <input
+            type="text"
+            value={chipInput}
+            onChange={(event) => setChipInput(event.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder={placeholder}
+            aria-label={inputAriaLabel || label}
+            style={{
+              flex: '1 0 160px',
+              minWidth: '140px',
+              border: 'none',
+              outline: 'none',
+              background: 'transparent',
+              color: theme.text
+            }}
+          />
+        </div>
+      </div>
+      {helperText && (
+        <small style={{ color: theme.textSecondary, display: 'block', marginTop: '4px' }}>
+          {helperText}
+        </small>
+      )}
+    </div>
+  );
+};
+
+const validateProjectForm = (project) => {
+  const errors = [];
+  const trimmed = (value) => (typeof value === 'string' ? value.trim() : '');
+
+  const requiredFields = [
+    ['id', 'ID'],
+    ['title', 'Title'],
+    ['description', 'Description'],
+    ['component', 'Component'],
+    ['category', 'Category'],
+    ['status', 'Status'],
+    ['route', 'Route']
+  ];
+
+  requiredFields.forEach(([key, label]) => {
+    if (!trimmed(project[key])) {
+      errors.push(`${label} is required`);
+    }
+  });
+
+  const routeValue = trimmed(project.route);
+  if (routeValue) {
+    if (!PROJECT_ROUTE_PATTERN.test(routeValue)) {
+      errors.push('Route must start with "/" and contain only letters, numbers, slashes, underscores, or hyphens');
+    }
+  }
+
+  if (!PROJECT_STATUS_OPTIONS.includes(project.status)) {
+    errors.push(`Status must be one of: ${PROJECT_STATUS_OPTIONS.join(', ')}`);
+  }
+
+  const technologyList = Array.isArray(project.technology) ? project.technology : [];
+  if (technologyList.length === 0) {
+    errors.push('Add at least one technology');
+  }
+  const duplicateTech = findDuplicateValue(technologyList, (value) => value.trim().toLowerCase());
+  if (duplicateTech) {
+    errors.push(`Duplicate technology found: ${duplicateTech}`);
+  }
+
+  const tagList = Array.isArray(project.tags) ? project.tags : [];
+  if (tagList.length === 0) {
+    errors.push('Add at least one tag');
+  }
+  const duplicateTag = findDuplicateValue(tagList, (value) => value.trim().toLowerCase());
+  if (duplicateTag) {
+    errors.push(`Duplicate tag found: ${duplicateTag}`);
+  }
+
+  const date = project.dateCreated ? new Date(project.dateCreated) : null;
+  if (!project.dateCreated || Number.isNaN(date?.getTime())) {
+    errors.push('Date Created must be a valid date');
+  }
+
+  return errors;
+};
+
+const prepareProjectForSubmission = (project) => {
+  const trimmed = (value) => (typeof value === 'string' ? value.trim() : '');
+  const isoDate = project.dateCreated ? new Date(project.dateCreated).toISOString() : new Date().toISOString();
+
+  const technology = sanitizeArrayValues(project.technology, {
+    transform: (value) => value,
+    dedupeKey: (value) => value.toLowerCase()
+  });
+
+  const tags = sanitizeArrayValues(project.tags, {
+    transform: (value) => value.toLowerCase(),
+    dedupeKey: (value) => value.toLowerCase()
+  });
+
+  return {
+    id: trimmed(project.id),
+    title: trimmed(project.title),
+    description: trimmed(project.description),
+    path: trimmed(project.path) || trimmed(project.route),
+    component: trimmed(project.component),
+    category: trimmed(project.category) || DEFAULT_PROJECT_CATEGORY,
+    status: PROJECT_STATUS_OPTIONS.includes(project.status) ? project.status : DEFAULT_PROJECT_STATUS,
+    technology,
+    tags,
+    dateCreated: isoDate,
+    route: trimmed(project.route),
+    thumbnail: trimmed(project.thumbnail || '')
+  };
+};
+import { useProjects } from './contexts/ProjectsContext';
+import styles from './styles/styles_admin.css';
+
+class SessionExpiredError extends Error {
+  constructor(message, status) {
+    super(message);
+    this.name = 'SessionExpiredError';
+    this.status = status;
+  }
+}
 
 function Admin() {
   const { theme } = useTheme();
+  const { refresh: refreshProjectCatalog, syncProjects } = useProjects();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [projects, setProjects] = useState([]);
-  const [editingProject, setEditingProject] = useState(null);
+  const [projectsLoading, setProjectsLoading] = useState(false);
   const [token, setToken] = useState('');
   const [refreshToken, setRefreshToken] = useState('');
   const [tokenExpiry, setTokenExpiry] = useState(null);
   const [refreshExpiry, setRefreshExpiry] = useState(null);
+  const [authTimestamp, setAuthTimestamp] = useState(null);
+  const [lastAuthUsername, setLastAuthUsername] = useState('');
+  const [confirmationModal, setConfirmationModal] = useState(null);
+  const [reauthCredentials, setReauthCredentials] = useState({ username: '', password: '' });
+  const [isProcessingAction, setIsProcessingAction] = useState(false);
+  const [reauthError, setReauthError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [newProject, setNewProject] = useState({
     id: '',
     title: '',
     description: '',
     path: '',
-    component: ''
+    component: '',
+    published: false,
   });
+  const [newProject, setNewProject] = useState(() => getDefaultProjectValues());
   const [chatPrompt, setChatPrompt] = useState('');
   const [chatResponse, setChatResponse] = useState('');
   const [chatLoading, setChatLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState('published');
+
+  const isLocalEnvironment = (overrideToken) => {
+    const activeToken = overrideToken ?? token;
+    return window.location.hostname === 'localhost' ||
+      window.location.hostname === '127.0.0.1' ||
+      process.env.NODE_ENV === 'development' ||
+      activeToken === 'dev-token';
+  };
+
+  const computeNextDisplayOrder = () => {
+    if (!projects.length) {
+      return 1;
+    }
+
+    const parsedOrders = projects.map((project, index) => {
+      const parsed = Number(project?.displayOrder);
+      return Number.isFinite(parsed) ? parsed : index;
+    });
+
+    const maxOrder = Math.max(...parsedOrders);
+    return (Number.isFinite(maxOrder) ? maxOrder : projects.length) + 1;
+  };
+
+  const createEmptyProject = () => getDefaultProjectValues({ displayOrder: computeNextDisplayOrder() });
+
+  const buildProjectPayload = (project, { defaultPublished = true, fallbackDisplayOrder } = {}) => {
+    if (!project) {
+      return {};
+    }
+
+    const fallbackOrder = fallbackDisplayOrder ?? computeNextDisplayOrder();
+
+    return {
+      id: project.id,
+      title: project.title,
+      description: project.description,
+      path: project.path,
+      component: project.component,
+      displayOrder: parseDisplayOrder(project.displayOrder, fallbackOrder),
+      published: normalizePublished(project.published, defaultPublished)
+    };
+  };
+
+  const persistProjectUpdate = async (projectId, payload) => {
+    const API_BASE = process.env.REACT_APP_API_BASE || window.location.origin;
+    const apiEndpoint = `${API_BASE}/api/admin/projects/${projectId}`;
+
+    const response = await fetch(apiEndpoint, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(errorText || 'Failed to update project');
+    }
+
+    return response.json();
+  };
+  const [newProject, setNewProject] = useState(() => createDefaultProject());
+  const [newProjectErrors, setNewProjectErrors] = useState([]);
+  const [editProjectErrors, setEditProjectErrors] = useState([]);
+  const [chatPrompt, setChatPrompt] = useState('');
+  const [chatResponse, setChatResponse] = useState('');
+  const [chatLoading, setChatLoading] = useState(false);
+  const [sessionStatus, setSessionStatus] = useState('');
+
+  const persistToken = useCallback((value) => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    try {
+      if (value) {
+        sessionStorage.setItem('adminToken', value);
+      } else {
+        sessionStorage.removeItem('adminToken');
+      }
+    } catch (storageError) {
+      console.warn('Unable to access sessionStorage for admin token persistence', storageError);
+    }
+  }, []);
+
+  const clearAuthState = useCallback(() => {
+    setIsAuthenticated(false);
+    setToken('');
+    setProjects([]);
+    setEditingProject(null);
+    persistToken(null);
+  }, [persistToken]);
+
+  const handleSessionExpired = useCallback((message) => {
+    clearAuthState();
+    setUsername('');
+    setPassword('');
+    setSessionStatus(message || 'Your session has expired. Please log in again.');
+  }, [clearAuthState]);
+
+  const fetchWithAuth = useCallback(async (input, config = {}, overrideToken) => {
+    const isBrowser = typeof window !== 'undefined';
+    let storedToken = '';
+
+    if (isBrowser) {
+      try {
+        storedToken = sessionStorage.getItem('adminToken') || '';
+      } catch (storageError) {
+        console.warn('Unable to read sessionStorage for admin token', storageError);
+      }
+    }
+
+    const activeToken = overrideToken || token || storedToken;
+
+    if (!activeToken) {
+      const missingTokenMessage = 'Your session has expired. Please log in again.';
+      handleSessionExpired(missingTokenMessage);
+      throw new SessionExpiredError(missingTokenMessage, 401);
+    }
+
+    const headers = new Headers(config.headers || {});
+    if (!headers.has('Authorization')) {
+      headers.set('Authorization', `Bearer ${activeToken}`);
+    }
+
+    const requestConfig = { ...config, headers };
+    const response = await fetch(input, requestConfig);
+
+    if (response.status === 401 || response.status === 403) {
+      let message = 'Your session has expired. Please log in again.';
+
+      try {
+        const errorData = await response.clone().json();
+        if (errorData && typeof errorData === 'object' && errorData.error) {
+          message = errorData.error;
+        }
+      } catch (jsonError) {
+        try {
+          const errorText = await response.clone().text();
+          if (errorText) {
+            message = errorText;
+          }
+        } catch (textError) {
+          // Ignore parsing errors and use default message
+        }
+      }
+
+      handleSessionExpired(message);
+      throw new SessionExpiredError(message, response.status);
+    }
+
+    return response;
+  }, [token, handleSessionExpired]);
+
+  const loadProjects = useCallback(async (authTokenOverride) => {
+    const isBrowser = typeof window !== 'undefined';
+    const activeToken = authTokenOverride || token;
+    const isLocalDevelopment = isBrowser && (
+      window.location.hostname === 'localhost' ||
+      window.location.hostname === '127.0.0.1' ||
+      process.env.NODE_ENV === 'development' ||
+      activeToken === 'dev-token'
+    );
+
+    if (isLocalDevelopment) {
+      const mockProjects = [
+        {
+          _id: '1',
+          id: 's9',
+          title: 'S9',
+          description: 'Shadow Home Server',
+          path: '/projects/s9',
+          component: 'S9'
+        },
+        {
+          _id: '2',
+          id: 'muse',
+          title: 'Muse',
+          description: 'Automated Audio Equalizer',
+          path: '/projects/muse',
+          component: 'Muse'
+        },
+        {
+          _id: '3',
+          id: 'el',
+          title: 'EyeLearn',
+          description: 'Academia AR/VR Headset',
+          path: '/projects/EL',
+          component: 'EL'
+        },
+        {
+          _id: '4',
+          id: 'nfi',
+          title: 'NFI',
+          description: 'Rocket Propulsion System',
+          path: '/projects/NFI',
+          component: 'NFI'
+        },
+        {
+          _id: '5',
+          id: 'naton',
+          title: 'Naton',
+          description: 'Element Converter',
+          path: '/projects/Naton',
+          component: 'Naton'
+        },
+        {
+          _id: '6',
+          id: 'sos',
+          title: 'sOS',
+          description: 'Shadow Operating System',
+          path: '/projects/sos',
+          component: 'Sos'
+        },
+        {
+          _id: '7',
+          id: 'sim',
+          title: 'S_im',
+          description: 'Shadow Simulator',
+          path: '/projects/sim',
+          component: 'Sim'
+        }
+      ];
+      setProjects(mockProjects);
+      return;
+    }
+
+    if (!isBrowser) {
+      return;
+    }
+
+    try {
+      const API_BASE = process.env.REACT_APP_API_BASE || window.location.origin;
+      const apiEndpoint = `${API_BASE}/api/admin/projects`;
+      console.log('Loading projects from:', apiEndpoint);
+
+      const response = await fetchWithAuth(apiEndpoint, {}, authTokenOverride);
+      if (response.ok) {
+        const data = await response.json();
+        setProjects(data.projects);
+      } else {
+        const errorText = await response.text().catch(() => 'Unknown error');
+        console.error('Failed to load projects', response.status, errorText);
+      }
+    } catch (error) {
+      if (error instanceof SessionExpiredError) {
+        return;
+      }
+      console.error('Error loading projects:', error);
+    }
+  }, [fetchWithAuth, token]);
+
+  const clientIsDevelopment =
+    window.location.hostname === 'localhost' ||
+    window.location.hostname === '127.0.0.1' ||
+    process.env.NODE_ENV === 'development';
+
+  const isDevelopmentSession = () =>
+    clientIsDevelopment || token === 'dev-token';
+
+  const securityNotices = useMemo(() => {
+    const notices = [];
+    if (FEATURE_FLAGS.showMfaPrompt) {
+      notices.push('Multi-factor authentication is enabled. Have your secondary factor ready before continuing.');
+    }
+    if (FEATURE_FLAGS.showPasswordRotationReminder) {
+      notices.push('Reminder: Rotate the admin password regularly and confirm compliance with the security schedule.');
+    }
+    return notices;
+  }, []);
+
+  const previewProject = useMemo(() => ({
+    id: newProject.id || 'pending-id',
+    title: newProject.title || 'Untitled Project',
+    description: newProject.description || 'Project description will appear here.',
+    route: newProject.path || '#',
+    path: newProject.path || '',
+    component: newProject.component || '',
+    status: newProject.published ? 'Published' : 'Draft',
+    category: 'Preview',
+    technology: [],
+    dateCreated: new Date().toISOString(),
+    published: newProject.published,
+  }), [newProject]);
 
   const refreshTimeoutRef = useRef(null);
   const refreshPromiseRef = useRef(null);
@@ -130,6 +884,8 @@ function Admin() {
     const savedRefreshToken = localStorage.getItem('adminRefreshToken');
     const savedTokenExpiry = localStorage.getItem('adminTokenExpiry');
     const savedRefreshExpiry = localStorage.getItem('adminRefreshExpiry');
+    const savedAuthTimestamp = localStorage.getItem('adminAuthenticatedAt');
+    const savedUsername = localStorage.getItem('adminLastUsername');
 
     if (authStatus === 'true' && savedToken) {
       console.log('🔄 Restoring authentication from localStorage');
@@ -173,19 +929,44 @@ function Admin() {
       }
 
       scheduleTokenRefresh(tokenExpiryTime, savedRefreshToken);
+      setAuthTimestamp(savedAuthTimestamp ? Number(savedAuthTimestamp) : Date.now());
+      if (savedUsername) {
+        setLastAuthUsername(savedUsername);
+      }
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    const savedToken = sessionStorage.getItem('adminToken');
+
+    if (savedToken) {
+      console.log('🔄 Restoring authentication from sessionStorage');
+      setIsAuthenticated(true);
+      setToken(savedToken);
+      setSessionStatus('');
       loadProjects(savedToken);
     } else {
       console.log('🔓 No saved authentication found');
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+  }, [loadProjects]);
+
+  useEffect(() => {
+    setReauthCredentials((prev) => ({
+      ...prev,
+      username: lastAuthUsername || prev.username || '',
+    }));
+  }, [lastAuthUsername]);
 
   useEffect(() => () => clearScheduledRefresh(), []);
 
   const handleLogin = async (e) => {
     e.preventDefault();
     setIsLoading(true);
-    
+    setSessionStatus('');
+
     console.log('\n' + '='.repeat(60));
     console.log('🛡️ FRONTEND LOGIN ATTEMPT STARTED');
     console.log('Time:', new Date().toISOString());
@@ -302,10 +1083,26 @@ function Admin() {
         sessionExpiredRef.current = false;
         clearScheduledRefresh();
         scheduleTokenRefresh(data.tokenExpiresAt, data.refreshToken);
+        const authUsername = data.user?.username || username;
+        const authTimestampValue = Date.now();
+        setAuthTimestamp(authTimestampValue);
+        setLastAuthUsername(authUsername);
+
+        localStorage.setItem('adminAuthenticated', 'true');
+        localStorage.setItem('adminToken', data.token);
+        localStorage.setItem('adminAuthenticatedAt', authTimestampValue.toString());
+        localStorage.setItem('adminLastUsername', authUsername);
+        console.log('localStorage updated');
+        
+        persistToken(data.token);
+        console.log('sessionStorage token persisted');
+
+        setSessionStatus('');
+        console.log('Session status cleared');
 
         console.log('📁 Loading projects...');
-        loadProjects(data.token);
-        
+        await loadProjects(data.token);
+
         setIsLoading(false);
         console.log('✅ LOGIN PROCESS COMPLETED SUCCESSFULLY');
         return;
@@ -325,11 +1122,16 @@ function Admin() {
         
         console.log('Error data:', errorData);
         
-        // If API fails and we're in development, try fallback
-        if (isLocalDevelopment && username === 'shadowpatriot9' && password === '16196823') {
+        // If API fails and we're in development, try feature-flagged fallback
+        if (
+          FEATURE_FLAGS.devAuthBypass &&
+          isLocalDevelopment &&
+          username === DEV_CREDENTIALS.username &&
+          password === DEV_CREDENTIALS.password
+        ) {
           console.log('\n🔧 API FAILED - ATTEMPTING DEVELOPMENT FALLBACK:');
           console.log('Fallback conditions met - switching to dev mode');
-          
+
           setIsAuthenticated(true);
           setToken('dev-token');
           setRefreshToken('');
@@ -342,12 +1144,25 @@ function Admin() {
           localStorage.removeItem('adminRefreshToken');
           localStorage.removeItem('adminTokenExpiry');
           localStorage.removeItem('adminRefreshExpiry');
+          const fallbackAuthTime = Date.now();
+          setAuthTimestamp(fallbackAuthTime);
+          setLastAuthUsername(username);
+          localStorage.setItem('adminAuthenticated', 'true');
+          localStorage.setItem('adminToken', 'dev-token');
+          localStorage.setItem('adminAuthenticatedAt', fallbackAuthTime.toString());
+          localStorage.setItem('adminLastUsername', username);
           loadProjects('dev-token');
+          persistToken('dev-token');
+          setSessionStatus('');
+          await loadProjects('dev-token');
           setIsLoading(false);
           console.log('✅ DEVELOPMENT FALLBACK SUCCESSFUL');
           return;
         }
-        
+
+        if (!FEATURE_FLAGS.devAuthBypass && isLocalDevelopment) {
+          console.log('🚫 Development auth bypass is disabled via feature flag.');
+        }
         console.log('❌ NO FALLBACK AVAILABLE - Showing error to user');
         const errorMessage = `Login failed: ${errorData.error || 'Invalid credentials'}`;
         console.log('Error message:', errorMessage);
@@ -360,10 +1175,15 @@ function Admin() {
       console.error('Error stack:', error.stack);
       
       // Network error fallback for development
-      if (isLocalDevelopment && username === 'shadowpatriot9' && password === '16196823') {
+      if (
+        FEATURE_FLAGS.devAuthBypass &&
+        isLocalDevelopment &&
+        username === DEV_CREDENTIALS.username &&
+        password === DEV_CREDENTIALS.password
+      ) {
         console.log('\n🔧 NETWORK ERROR - ATTEMPTING DEVELOPMENT FALLBACK:');
         console.log('Fallback conditions met - switching to dev mode');
-        
+
         setIsAuthenticated(true);
         setToken('dev-token');
         setRefreshToken('');
@@ -376,12 +1196,25 @@ function Admin() {
         localStorage.removeItem('adminRefreshToken');
         localStorage.removeItem('adminTokenExpiry');
         localStorage.removeItem('adminRefreshExpiry');
+        const fallbackAuthTime = Date.now();
+        setAuthTimestamp(fallbackAuthTime);
+        setLastAuthUsername(username);
+        localStorage.setItem('adminAuthenticated', 'true');
+        localStorage.setItem('adminToken', 'dev-token');
+        localStorage.setItem('adminAuthenticatedAt', fallbackAuthTime.toString());
+        localStorage.setItem('adminLastUsername', username);
         loadProjects('dev-token');
+        persistToken('dev-token');
+        setSessionStatus('');
+        await loadProjects('dev-token');
         setIsLoading(false);
         console.log('✅ DEVELOPMENT FALLBACK AFTER NETWORK ERROR SUCCESSFUL');
         return;
       }
-      
+
+      if (!FEATURE_FLAGS.devAuthBypass && isLocalDevelopment) {
+        console.log('🚫 Development auth bypass is disabled via feature flag.');
+      }
       console.log('❌ NO FALLBACK AVAILABLE - Showing network error to user');
       const errorMessage = '❌ Login failed: Unable to connect to server. Please check your connection and try again.';
       console.log('Error message:', errorMessage);
@@ -394,13 +1227,14 @@ function Admin() {
     }
   };
 
-  const handleLogout = () => {
+  const handleLogout = useCallback(() => {
     console.log('🚪 Logging out...');
     setIsAuthenticated(false);
     setToken('');
     setRefreshToken('');
     setTokenExpiry(null);
     setRefreshExpiry(null);
+    clearAuthState();
     setUsername('');
     setPassword('');
     setProjects([]);
@@ -413,7 +1247,124 @@ function Admin() {
     localStorage.removeItem('adminRefreshToken');
     localStorage.removeItem('adminTokenExpiry');
     localStorage.removeItem('adminRefreshExpiry');
+    setAuthTimestamp(null);
+    setLastAuthUsername('');
+    setConfirmationModal(null);
+    setReauthCredentials({ username: '', password: '' });
+    setIsProcessingAction(false);
+    setReauthError('');
+    localStorage.removeItem('adminAuthenticated');
+    localStorage.removeItem('adminToken');
+    localStorage.removeItem('adminAuthenticatedAt');
+    localStorage.removeItem('adminLastUsername');
+    setNewProject(createDefaultProject());
+    setNewProjectErrors([]);
+    setEditProjectErrors([]);
+    localStorage.removeItem('adminAuthenticated');
+    localStorage.removeItem('adminToken');
+    setSessionStatus('');
     console.log('✅ Logout successful');
+  }, [clearAuthState]);
+  };
+
+  const getSessionAge = () =>
+    authTimestamp ? Date.now() - authTimestamp : Number.POSITIVE_INFINITY;
+
+  const openConfirmationModal = ({ title, message, confirmLabel, onConfirm, project, type }) => {
+    const requiresReauth = getSessionAge() > REAUTH_THRESHOLD_MS;
+    setConfirmationModal({
+      title,
+      message,
+      confirmLabel,
+      onConfirm,
+      project,
+      type,
+      requiresReauth,
+    });
+    setReauthError('');
+    setReauthCredentials((prev) => ({
+      username: lastAuthUsername || prev.username || username,
+      password: '',
+    }));
+  };
+
+  const closeConfirmationModal = () => {
+    setConfirmationModal(null);
+    setIsProcessingAction(false);
+    setReauthError('');
+    setReauthCredentials((prev) => ({ ...prev, password: '' }));
+  };
+
+  const performReauthentication = async () => {
+    const reauthUsername = (reauthCredentials.username || lastAuthUsername || '').trim();
+    const reauthPassword = reauthCredentials.password;
+
+    if (!reauthUsername || !reauthPassword) {
+      throw new Error('Username and password are required for re-authentication.');
+    }
+
+    if (
+      FEATURE_FLAGS.devAuthBypass &&
+      clientIsDevelopment &&
+      reauthUsername === DEV_CREDENTIALS.username &&
+      reauthPassword === DEV_CREDENTIALS.password
+    ) {
+      const fallbackAuthTime = Date.now();
+      setToken('dev-token');
+      setAuthTimestamp(fallbackAuthTime);
+      setLastAuthUsername(reauthUsername);
+      localStorage.setItem('adminAuthenticated', 'true');
+      localStorage.setItem('adminToken', 'dev-token');
+      localStorage.setItem('adminAuthenticatedAt', fallbackAuthTime.toString());
+      localStorage.setItem('adminLastUsername', reauthUsername);
+      return 'dev-token';
+    }
+
+    const API_BASE = process.env.REACT_APP_API_BASE || window.location.origin;
+    const response = await fetch(`${API_BASE}/api/admin/login`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ username: reauthUsername, password: reauthPassword }),
+    });
+
+    if (!response.ok) {
+      const errorPayload = await response.json().catch(() => ({}));
+      throw new Error(errorPayload.error || 'Re-authentication failed');
+    }
+
+    const data = await response.json();
+    const newAuthTime = Date.now();
+    const normalizedUsername = data.user?.username || reauthUsername;
+
+    setToken(data.token);
+    setAuthTimestamp(newAuthTime);
+    setLastAuthUsername(normalizedUsername);
+    localStorage.setItem('adminAuthenticated', 'true');
+    localStorage.setItem('adminToken', data.token);
+    localStorage.setItem('adminAuthenticatedAt', newAuthTime.toString());
+    localStorage.setItem('adminLastUsername', normalizedUsername);
+
+    return data.token;
+  };
+
+  const executeConfirmation = async () => {
+    if (!confirmationModal) return;
+    setIsProcessingAction(true);
+    try {
+      let freshToken = null;
+      if (confirmationModal.requiresReauth) {
+        freshToken = await performReauthentication();
+      }
+      await confirmationModal.onConfirm(freshToken || token);
+      closeConfirmationModal();
+    } catch (error) {
+      console.error('Confirmation modal error:', error);
+      setReauthError(error.message || 'Unable to complete this action.');
+    } finally {
+      setIsProcessingAction(false);
+    }
   };
 
   const loadProjects = async (authToken, shouldRetry = true) => {
@@ -421,11 +1372,27 @@ function Admin() {
     const isLocalDevelopment = window.location.hostname === 'localhost' ||
                               window.location.hostname === '127.0.0.1' ||
                               process.env.NODE_ENV === 'development' ||
+    const isLocalDevelopment = clientIsDevelopment ||
                               authToken === 'dev-token' ||
                               token === 'dev-token';
     
     // Development mode - load mock projects
     if (isLocalDevelopment) {
+  const getApiBase = () => process.env.REACT_APP_API_BASE || window.location.origin;
+
+  const isLocalEnvironment = useCallback((authToken) => (
+    window.location.hostname === 'localhost' ||
+    window.location.hostname === '127.0.0.1' ||
+    process.env.NODE_ENV === 'development' ||
+    token === 'dev-token' ||
+    authToken === 'dev-token'
+  ), [token]);
+
+  const loadProjects = useCallback(async (authToken) => {
+    setProjectsLoading(true);
+    const localMode = isLocalEnvironment(authToken);
+  const loadProjects = async (authToken) => {
+    if (isLocalEnvironment(authToken)) {
       const mockProjects = [
         {
           _id: '1',
@@ -433,7 +1400,37 @@ function Admin() {
           title: 'S9',
           description: 'Shadow Home Server',
           path: '/projects/s9',
-          component: 'S9'
+          component: 'S9',
+          published: true,
+          displayOrder: 1,
+          published: true
+        },
+        {
+          _id: '2',
+          id: 'sim',
+          title: 'S_im',
+          description: 'Shadow Simulator',
+          path: '/projects/sim',
+          component: 'Sim',
+          displayOrder: 2,
+          published: true
+        },
+        {
+          _id: '3',
+          id: 'sos',
+          title: 'sOS',
+          description: 'Shadow Operating System',
+          path: '/projects/sos',
+          component: 'Sos',
+          displayOrder: 3,
+          published: true
+          category: 'Hardware',
+          status: 'Active',
+          technology: ['Server', 'Networking', 'Linux'],
+          tags: ['server', 'networking', 'nas', 'ubuntu', 'homelab'],
+          dateCreated: '2024-10-01T00:00:00.000Z',
+          route: '/projects/s9',
+          thumbnail: ''
         },
         {
           _id: '2',
@@ -441,7 +1438,17 @@ function Admin() {
           title: 'Muse',
           description: 'Automated Audio Equalizer',
           path: '/projects/muse',
-          component: 'Muse'
+          component: 'Muse',
+          published: true,
+          path: '/projects/Muse',
+          component: 'Muse',
+          category: 'Hardware',
+          status: 'Discontinued',
+          technology: ['Audio', 'Electronics'],
+          tags: ['audio', 'music', 'equalizer', 'electronics'],
+          dateCreated: '2018-03-01T00:00:00.000Z',
+          route: '/projects/Muse',
+          thumbnail: ''
         },
         {
           _id: '3',
@@ -449,7 +1456,15 @@ function Admin() {
           title: 'EyeLearn',
           description: 'Academia AR/VR Headset',
           path: '/projects/EL',
-          component: 'EL'
+          component: 'EL',
+          published: false,
+          category: 'Hardware',
+          status: 'Paused',
+          technology: ['AR/VR', 'Education'],
+          tags: ['ar', 'vr', 'education', 'headset', 'learning'],
+          dateCreated: '2021-09-01T00:00:00.000Z',
+          route: '/projects/EL',
+          thumbnail: ''
         },
         {
           _id: '4',
@@ -457,15 +1472,55 @@ function Admin() {
           title: 'NFI',
           description: 'Rocket Propulsion System',
           path: '/projects/NFI',
-          component: 'NFI'
+          component: 'NFI',
+          published: true,
+          displayOrder: 4,
+          published: true
+          category: 'Hardware',
+          status: 'Completed',
+          technology: ['Aerospace', 'Engineering'],
+          tags: ['rocket', 'propulsion', 'aerospace', 'engineering'],
+          dateCreated: '2022-03-01T00:00:00.000Z',
+          route: '/projects/NFI',
+          thumbnail: ''
         },
         {
           _id: '5',
+          id: 'el',
+          title: 'EyeLearn',
+          description: 'Academia AR/VR Headset',
+          path: '/projects/EL',
+          component: 'EL',
+          displayOrder: 5,
+          published: true
+        },
+        {
+          _id: '6',
           id: 'naton',
           title: 'Naton',
           description: 'Element Converter',
           path: '/projects/Naton',
-          component: 'Naton'
+          component: 'Naton',
+          published: false,
+          displayOrder: 6,
+          published: true
+        },
+        {
+          _id: '7',
+          id: 'muse',
+          title: 'Muse',
+          description: 'Automated Audio Equalizer',
+          path: '/projects/muse',
+          component: 'Muse',
+          displayOrder: 7,
+          published: false
+          category: 'Hardware',
+          status: 'Completed',
+          technology: ['Chemistry', 'Physics'],
+          tags: ['chemistry', 'physics', 'converter', 'elements'],
+          dateCreated: '2020-01-15T00:00:00.000Z',
+          route: '/projects/Naton',
+          thumbnail: ''
         },
         {
           _id: '6',
@@ -473,7 +1528,15 @@ function Admin() {
           title: 'sOS',
           description: 'Shadow Operating System',
           path: '/projects/sos',
-          component: 'Sos'
+          component: 'Sos',
+          published: true,
+          category: 'Software',
+          status: 'In Progress',
+          technology: ['Operating System', 'Low-level'],
+          tags: ['os', 'system', 'low-level', 'kernel'],
+          dateCreated: '2023-06-15T00:00:00.000Z',
+          route: '/projects/sos',
+          thumbnail: ''
         },
         {
           _id: '7',
@@ -481,62 +1544,489 @@ function Admin() {
           title: 'S_im',
           description: 'Shadow Simulator',
           path: '/projects/sim',
-          component: 'Sim'
+          component: 'Sim',
+          published: true,
+          category: 'Software',
+          status: 'In Progress',
+          technology: ['Simulation', 'Software'],
+          tags: ['simulation', 'software', 'development'],
+          dateCreated: '2024-01-01T00:00:00.000Z',
+          route: '/projects/sim',
+          thumbnail: ''
         }
       ];
+      setProjects(mockProjects.map(transformProjectFromApi));
       setProjects(mockProjects);
+      refreshProjectCatalog();
       return;
     }
 
-    // Production mode
     try {
       const API_BASE = getApiBase();
       const apiEndpoint = `${API_BASE}/api/admin/projects`;
+      if (localMode) {
+        const now = new Date().toISOString();
+        const mockProjects = prepareProjectsForState([
+          {
+            _id: '1',
+            id: 's9',
+            title: 'S9',
+            description: 'Shadow Home Server',
+            path: '/projects/s9',
+            component: 'S9',
+            published: true,
+            order: 0,
+            createdAt: now,
+            updatedAt: now,
+          },
+          {
+            _id: '2',
+            id: 'muse',
+            title: 'Muse',
+            description: 'Automated Audio Equalizer',
+            path: '/projects/muse',
+            component: 'Muse',
+            published: false,
+            order: 1,
+            createdAt: now,
+            updatedAt: now,
+          },
+          {
+            _id: '3',
+            id: 'el',
+            title: 'EyeLearn',
+            description: 'Academia AR/VR Headset',
+            path: '/projects/EL',
+            component: 'EL',
+            published: true,
+            order: 2,
+            createdAt: now,
+            updatedAt: now,
+          },
+          {
+            _id: '4',
+            id: 'nfi',
+            title: 'NFI',
+            description: 'Rocket Propulsion System',
+            path: '/projects/NFI',
+            component: 'NFI',
+            published: true,
+            order: 3,
+            createdAt: now,
+            updatedAt: now,
+          },
+          {
+            _id: '5',
+            id: 'naton',
+            title: 'Naton',
+            description: 'Element Converter',
+            path: '/projects/Naton',
+            component: 'Naton',
+            published: false,
+            order: 4,
+            createdAt: now,
+            updatedAt: now,
+          },
+          {
+            _id: '6',
+            id: 'sos',
+            title: 'sOS',
+            description: 'Shadow Operating System',
+            path: '/projects/sos',
+            component: 'Sos',
+            published: true,
+            order: 5,
+            createdAt: now,
+            updatedAt: now,
+          },
+          {
+            _id: '7',
+            id: 'sim',
+            title: 'S_im',
+            description: 'Shadow Simulator',
+            path: '/projects/sim',
+            component: 'Sim',
+            published: true,
+            order: 6,
+            createdAt: now,
+            updatedAt: now,
+          },
+        ]);
+        setProjects(mockProjects);
+        return;
+      }
+
+      const apiEndpoint = `${getApiBase()}/api/admin/projects`;
       console.log('Loading projects from:', apiEndpoint);
 
       const response = await fetch(apiEndpoint, {
         headers: {
-          'Authorization': `Bearer ${authToken || token}`
-        }
+          'Authorization': `Bearer ${authToken || token}`,
+        },
       });
+
       if (response.ok) {
         const data = await response.json();
+        setProjects(prepareProjectsForState(data.projects || []));
+        const safeProjects = Array.isArray(data.projects)
+          ? data.projects.map(transformProjectFromApi)
+          : [];
+        setProjects(safeProjects);
         setProjects(data.projects);
       } else if (response.status === 401 && shouldRetry && refreshToken) {
         const newToken = await refreshAccessToken(refreshToken);
         if (newToken) {
           return loadProjects(newToken, false);
         }
+        syncProjects(data.projects);
       } else if (response.status === 401) {
         handleLogout();
+      } else {
+        console.error('Failed to load projects:', response.statusText);
       }
     } catch (error) {
       console.error('Error loading projects:', error);
+    } finally {
+      setProjectsLoading(false);
     }
+  }, [isLocalEnvironment, token]);
+
+  const handleCreateProject = async (projectData) => {
+    const order = Number.isFinite(projectData.order) ? Number(projectData.order) : projects.length;
+    const payload = {
+      id: projectData.id,
+      title: projectData.title,
+      description: projectData.description,
+      path: projectData.path,
+      component: projectData.component,
+      published: !!projectData.published,
+      order,
+    };
+
+    const timestamp = new Date().toISOString();
+    const localMode = isLocalEnvironment();
+
+    if (localMode) {
+      const newProject = normalizeProject({
+        ...payload,
+        _id: Date.now().toString(),
+        createdAt: timestamp,
+        updatedAt: timestamp,
+      }, order);
+
+      setProjects((prev) => prepareProjectsForState([...prev, newProject]));
+  };
+
+  useEffect(() => {
+    setNewProject((prev) => {
+      const hasFormData = prev.id || prev.title || prev.description || prev.path || prev.component;
+      if (hasFormData) {
+        return prev;
+      }
+      return getDefaultProjectValues({ displayOrder: computeNextDisplayOrder() });
+    });
+  }, [projects]);
+  const updateNewProject = (partial) => {
+    setNewProject((prev) => ({ ...prev, ...partial }));
+  };
+
+  const updateEditingProject = (partial) => {
+    setEditingProject((prev) => (prev ? { ...prev, ...partial } : prev));
   };
 
   const handleAddProject = async (e) => {
     e.preventDefault();
 
+    const preparedProject = buildProjectPayload(newProject, {
+      defaultPublished: false,
+      fallbackDisplayOrder: computeNextDisplayOrder()
+    });
+
+    if (isLocalEnvironment()) {
+      const now = new Date().toISOString();
+    const validationMessages = validateProjectForm(newProject);
+    if (validationMessages.length > 0) {
+      setNewProjectErrors(validationMessages);
+      return;
+    }
+
+    let submission;
+    try {
+      submission = prepareProjectForSubmission(newProject);
+    } catch (error) {
+      setNewProjectErrors([error.message]);
+      return;
+    }
+
+    setNewProjectErrors([]);
+
+    // Development mode - add to local state
+    if (isDevelopmentSession()) {
     // Check if we're in development
-    const isLocalDevelopment = window.location.hostname === 'localhost' || 
+    const isLocalDevelopment = window.location.hostname === 'localhost' ||
                               window.location.hostname === '127.0.0.1' ||
                               process.env.NODE_ENV === 'development' ||
                               token === 'dev-token';
 
     // Development mode - add to local state
     if (isLocalDevelopment) {
+      const newProjectWithId = transformProjectFromApi({ ...submission, _id: Date.now().toString() });
+      setProjects([newProjectWithId, ...projects]);
+      setNewProject(createDefaultProject());
       const newProjectWithId = {
-        ...newProject,
-        _id: Date.now().toString()
+        ...preparedProject,
+        _id: Date.now().toString(),
+        createdAt: now,
+        updatedAt: now
       };
       setProjects([newProjectWithId, ...projects]);
+      setNewProject({ id: '', title: '', description: '', path: '', component: '', published: false });
+
+      setProjects((prev) => [...prev, newProjectWithId]);
+      setNewProject(createEmptyProject());
+      const updatedProjects = [newProjectWithId, ...projects];
+      setProjects(updatedProjects);
+      syncProjects(updatedProjects);
       setNewProject({ id: '', title: '', description: '', path: '', component: '' });
       alert('Project added successfully! (Development mode)');
       return;
     }
 
-    // Production mode
+    try {
+      const response = await fetch(`${getApiBase()}/api/admin/projects`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.project) {
+          setProjects((prev) => prepareProjectsForState([...prev, data.project]));
+        } else {
+          await loadProjects();
+        }
+        alert('Project added successfully!');
+      } else {
+        const errorMessage = await response.text();
+        throw new Error(errorMessage || 'Failed to add project');
+      const API_BASE = process.env.REACT_APP_API_BASE || window.location.origin;
+      const apiEndpoint = `${API_BASE}/api/admin/projects`;
+      console.log('Adding project to:', apiEndpoint);
+
+      const response = await fetch(apiEndpoint, {
+      const response = await fetchWithAuth(apiEndpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(preparedProject),
+      });
+
+      if (response.ok) {
+        setNewProject({ id: '', title: '', description: '', path: '', component: '', published: false });
+        setNewProject(createEmptyProject());
+        await loadProjects();
+        body: JSON.stringify(submission),
+      });
+
+      if (response.ok) {
+        setNewProject(createDefaultProject());
+        setNewProjectErrors([]);
+        loadProjects();
+        alert('Project added successfully!');
+      } else {
+        const errorData = await response.json().catch(() => ({ error: 'Failed to add project' }));
+        const errorMessage = errorData.error || 'Failed to add project';
+        setNewProjectErrors([errorMessage]);
+        alert(`Failed to add project: ${errorMessage}`);
+        setNewProject({ id: '', title: '', description: '', path: '', component: '' });
+        await loadProjects();
+        alert('Project added successfully!');
+      } else {
+        const errorDetails = await response.text().catch(() => 'Failed to add project');
+        console.error('Failed to add project:', response.status, errorDetails);
+        alert('Failed to add project');
+      }
+    } catch (error) {
+      if (error instanceof SessionExpiredError) {
+        return;
+      }
+      console.error('Error adding project:', error);
+      setNewProjectErrors([error.message || 'Unexpected error while adding project']);
+      alert('Failed to add project');
+    }
+  };
+
+  const handleUpdateProject = async (projectId, updates) => {
+    const localMode = isLocalEnvironment();
+    const previousProjects = prepareProjectsForState(projects.map((project) => ({ ...project })));
+    const sanitizedUpdates = { ...updates };
+    delete sanitizedUpdates._id;
+
+    if (Object.prototype.hasOwnProperty.call(sanitizedUpdates, 'order')) {
+      sanitizedUpdates.order = Number.isFinite(sanitizedUpdates.order)
+        ? Number(sanitizedUpdates.order)
+        : undefined;
+    }
+
+    const optimisticProjects = sortProjectsByOrder(projects.map((project) => {
+      if (project._id !== projectId) {
+        return project;
+      }
+
+      const nextOrder = sanitizedUpdates.order ?? project.order ?? 0;
+      return normalizeProject({
+        ...project,
+        ...sanitizedUpdates,
+        updatedAt: new Date().toISOString(),
+        order: nextOrder,
+      }, nextOrder);
+    }));
+
+    setProjects(optimisticProjects);
+
+    if (localMode) {
+    if (!editingProject) {
+      return;
+    }
+
+    const fallbackOrder = parseDisplayOrder(editingProject.displayOrder, computeNextDisplayOrder());
+    const payload = buildProjectPayload(editingProject, {
+      defaultPublished: true,
+      fallbackDisplayOrder: fallbackOrder
+    });
+
+    if (isLocalEnvironment()) {
+      const now = new Date().toISOString();
+      setProjects((prev) => prev.map((project) => (
+        project._id === editingProject._id
+          ? { ...project, ...payload, updatedAt: now }
+          : project
+      )));
+    const validationMessages = validateProjectForm(editingProject);
+    if (validationMessages.length > 0) {
+      setEditProjectErrors(validationMessages);
+      return;
+    }
+
+    let submission;
+    try {
+      submission = prepareProjectForSubmission(editingProject);
+    } catch (error) {
+      setEditProjectErrors([error.message]);
+      return;
+    }
+
+    setEditProjectErrors([]);
+
+    // Development mode - update local state
+    if (isDevelopmentSession()) {
+      setProjects(projects.map(p =>
+        p._id === editingProject._id ? editingProject : p
+    // Check if we're in development
+    const isLocalDevelopment = window.location.hostname === 'localhost' ||
+                              window.location.hostname === '127.0.0.1' ||
+                              process.env.NODE_ENV === 'development' ||
+                              token === 'dev-token';
+
+    // Development mode - update local state
+    if (isLocalDevelopment) {
+      const updatedProjectForState = transformProjectFromApi({ ...submission, _id: editingProject._id });
+      setProjects(projects.map((project) =>
+        project._id === editingProject._id ? updatedProjectForState : project
+      ));
+      const updatedProjects = projects.map(p =>
+        p._id === editingProject._id ? editingProject : p
+      );
+      setProjects(updatedProjects);
+      syncProjects(updatedProjects);
+      setEditingProject(null);
+      setEditProjectErrors([]);
+      alert('Project updated successfully! (Development mode)');
+      return;
+    }
+
+    try {
+      await persistProjectUpdate(editingProject._id, payload);
+      setEditingProject(null);
+      await loadProjects();
+      alert('Project updated successfully!');
+      const response = await fetch(`${getApiBase()}/api/admin/projects/${projectId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify(sanitizedUpdates),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.project) {
+          setProjects((prev) => sortProjectsByOrder(prev.map((project) => (
+            project._id === projectId
+              ? normalizeProject(data.project, data.project.order ?? 0)
+              : project
+          ))));
+        } else {
+          await loadProjects();
+        }
+        alert('Project updated successfully!');
+      } else {
+        const errorMessage = await response.text();
+        throw new Error(errorMessage || 'Failed to update project');
+      const API_BASE = process.env.REACT_APP_API_BASE || window.location.origin;
+      const apiEndpoint = `${API_BASE}/api/admin/projects/${editingProject._id}`;
+      console.log('Updating project at:', apiEndpoint);
+
+      const response = await fetchWithAuth(apiEndpoint, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(submission),
+      });
+
+      if (response.ok) {
+        setEditingProject(null);
+        setEditProjectErrors([]);
+        loadProjects();
+        alert('Project updated successfully!');
+      } else {
+        const errorData = await response.json().catch(() => ({ error: 'Failed to update project' }));
+        const errorMessage = errorData.error || 'Failed to update project';
+        setEditProjectErrors([errorMessage]);
+        alert(`Failed to update project: ${errorMessage}`);
+        await loadProjects();
+        alert('Project updated successfully!');
+      } else {
+        const errorDetails = await response.text().catch(() => 'Failed to update project');
+        console.error('Failed to update project:', response.status, errorDetails);
+        alert('Failed to update project');
+      }
+    } catch (error) {
+      if (error instanceof SessionExpiredError) {
+        return;
+      }
+      console.error('Error updating project:', error);
+      setProjects(previousProjects);
+      setEditProjectErrors([error.message || 'Unexpected error while updating project']);
+      alert('Failed to update project');
+    }
+  };
+
+  const executeDeleteProject = async (project, authTokenOverride) => {
+    if (isDevelopmentSession()) {
+      setProjects((prev) => prev.filter((p) => p._id !== project._id));
+      setEditingProject((prev) => (prev && prev._id === project._id ? null : prev));
+      alert('Project deleted successfully! (Development mode)');
+      return;
+    }
+
     try {
       const API_BASE = getApiBase();
       const apiEndpoint = `${API_BASE}/api/admin/projects`;
@@ -547,8 +2037,15 @@ function Admin() {
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${authToken}`
+      const API_BASE = process.env.REACT_APP_API_BASE || window.location.origin;
+      const apiEndpoint = `${API_BASE}/api/admin/projects/${project._id}`;
+      console.log('Deleting project at:', apiEndpoint);
+
+      const response = await fetch(apiEndpoint, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${authTokenOverride || token}`,
         },
-        body: JSON.stringify(newProject),
       });
 
       let response = await submitRequest(token);
@@ -563,38 +2060,32 @@ function Admin() {
       }
 
       if (response.ok) {
-        setNewProject({ id: '', title: '', description: '', path: '', component: '' });
-        loadProjects();
-        alert('Project added successfully!');
+        setEditingProject((prev) => (prev && prev._id === project._id ? null : prev));
+        await loadProjects(authTokenOverride || token);
+        alert('Project deleted successfully!');
       } else {
-        alert('Failed to add project');
+        const errorText = await response.text().catch(() => '');
+        console.error('Failed to delete project:', errorText);
+        alert('Failed to delete project');
       }
     } catch (error) {
-      console.error('Error adding project:', error);
-      alert('Failed to add project');
+      console.error('Error deleting project:', error);
+      alert('Failed to delete project');
     }
   };
 
-  const handleUpdateProject = async (e) => {
-    e.preventDefault();
-
-    // Check if we're in development
-    const isLocalDevelopment = window.location.hostname === 'localhost' || 
-                              window.location.hostname === '127.0.0.1' ||
-                              process.env.NODE_ENV === 'development' ||
-                              token === 'dev-token';
-
-    // Development mode - update local state
-    if (isLocalDevelopment) {
-      setProjects(projects.map(p =>
-        p._id === editingProject._id ? editingProject : p
+  const executePublishStatusChange = async (project, shouldPublish, authTokenOverride) => {
+    if (isDevelopmentSession()) {
+      setProjects((prev) => prev.map((p) => (
+        p._id === project._id ? { ...p, published: shouldPublish } : p
+      )));
+      setEditingProject((prev) => (
+        prev && prev._id === project._id ? { ...prev, published: shouldPublish } : prev
       ));
-      setEditingProject(null);
-      alert('Project updated successfully! (Development mode)');
+      alert(`Project ${shouldPublish ? 'published' : 'unpublished'} successfully! (Development mode)`);
       return;
     }
 
-    // Production mode
     try {
       const API_BASE = getApiBase();
       const apiEndpoint = `${API_BASE}/api/admin/projects/${editingProject._id}`;
@@ -605,8 +2096,17 @@ function Admin() {
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${authToken}`
+      const API_BASE = process.env.REACT_APP_API_BASE || window.location.origin;
+      const apiEndpoint = `${API_BASE}/api/admin/projects/${project._id}`;
+      console.log('Updating publish status at:', apiEndpoint);
+
+      const response = await fetch(apiEndpoint, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authTokenOverride || token}`,
         },
-        body: JSON.stringify(editingProject),
+        body: JSON.stringify({ published: shouldPublish }),
       });
 
       let response = await submitRequest(token);
@@ -621,23 +2121,59 @@ function Admin() {
       }
 
       if (response.ok) {
-        setEditingProject(null);
-        loadProjects();
-        alert('Project updated successfully!');
+        setEditingProject((prev) => (
+          prev && prev._id === project._id ? { ...prev, published: shouldPublish } : prev
+        ));
+        await loadProjects(authTokenOverride || token);
+        alert(`Project ${shouldPublish ? 'published' : 'unpublished'} successfully!`);
       } else {
-        alert('Failed to update project');
+        const errorText = await response.text().catch(() => '');
+        console.error('Failed to update publish status:', errorText);
+        alert('Failed to update publish status');
       }
     } catch (error) {
-      console.error('Error updating project:', error);
-      alert('Failed to update project');
+      console.error('Error updating publish status:', error);
+      alert('Failed to update publish status');
     }
   };
 
+  const handlePublishToggle = (project, shouldPublish) => {
+    if (shouldPublish) {
+      executePublishStatusChange(project, true);
+      return;
   const handleDeleteProject = async (projectId) => {
+    if (!window.confirm('Are you sure you want to delete this project?')) {
+      return;
+    }
+
+    const localMode = isLocalEnvironment();
+    const previousProjects = prepareProjectsForState(projects.map((project) => ({ ...project })));
+    setProjects((prev) => prev.filter((project) => project._id !== projectId));
+
+    if (localMode) {
+      alert('Project deleted successfully! (Development mode)');
+      return;
+    }
+
+    try {
+      const response = await fetch(`${getApiBase()}/api/admin/projects/${projectId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok) {
+        alert('Project deleted successfully!');
+      } else {
+        const errorMessage = await response.text();
+        throw new Error(errorMessage || 'Failed to delete project');
     if (window.confirm('Are you sure you want to delete this project?')) {
 
+      if (isLocalEnvironment()) {
+        setProjects((prev) => prev.filter(p => p._id !== projectId));
       // Check if we're in development
-      const isLocalDevelopment = window.location.hostname === 'localhost' || 
+      const isLocalDevelopment = window.location.hostname === 'localhost' ||
                                 window.location.hostname === '127.0.0.1' ||
                                 process.env.NODE_ENV === 'development' ||
                                 token === 'dev-token';
@@ -645,10 +2181,57 @@ function Admin() {
       // Development mode - remove from local state
       if (isLocalDevelopment) {
         setProjects(projects.filter(p => p._id !== projectId));
+        if (editingProject && editingProject._id === projectId) {
+          setEditingProject(null);
+        }
+        setEditProjectErrors([]);
+        const updatedProjects = projects.filter(p => p._id !== projectId);
+        setProjects(updatedProjects);
+        syncProjects(updatedProjects);
         alert('Project deleted successfully! (Development mode)');
         return;
       }
+    } catch (error) {
+      console.error('Error deleting project:', error);
+      setProjects(previousProjects);
+      alert('Failed to delete project');
+    }
+  };
 
+  const handleTogglePublish = async (projectId, nextPublished) => {
+    await handleUpdateProject(projectId, { published: nextPublished });
+  };
+
+  const handleReorderProjects = async (nextProjects) => {
+    const localMode = isLocalEnvironment();
+    const normalized = sortProjectsByOrder(nextProjects.map((project, index) =>
+      normalizeProject(project, typeof project.order === 'number' ? project.order : index)
+    ).map((project, index) => ({ ...project, order: index })));
+    const previousProjects = prepareProjectsForState(projects.map((project) => ({ ...project })));
+
+    setProjects(normalized);
+
+    if (localMode) {
+      alert('Project order updated (Development mode)');
+      return;
+    }
+
+    try {
+      const responses = await Promise.all(normalized.map((project) =>
+        fetch(`${getApiBase()}/api/admin/projects/${project._id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+          body: JSON.stringify({ order: project.order }),
+        })
+      ));
+
+      const failedResponse = responses.find((response) => !response.ok);
+      if (failedResponse) {
+        const errorMessage = await failedResponse.text();
+        throw new Error(errorMessage || 'Failed to update project order');
       // Production mode
       try {
         const API_BASE = getApiBase();
@@ -656,6 +2239,7 @@ function Admin() {
         console.log('Deleting project at:', apiEndpoint);
 
         const submitRequest = (authToken) => fetch(apiEndpoint, {
+        const response = await fetch(apiEndpoint, {
           method: 'DELETE',
           headers: {
             'Authorization': `Bearer ${authToken}`
@@ -674,17 +2258,106 @@ function Admin() {
         }
 
         if (response.ok) {
+        const response = await fetchWithAuth(apiEndpoint, {
+          method: 'DELETE'
+        });
+
+        if (response.ok) {
           loadProjects();
+          if (editingProject && editingProject._id === projectId) {
+            setEditingProject(null);
+          }
+          setEditProjectErrors([]);
+          await loadProjects();
           alert('Project deleted successfully!');
         } else {
+          const errorDetails = await response.text().catch(() => 'Failed to delete project');
+          console.error('Failed to delete project:', response.status, errorDetails);
           alert('Failed to delete project');
         }
       } catch (error) {
+        if (error instanceof SessionExpiredError) {
+          return;
+        }
         console.error('Error deleting project:', error);
         alert('Failed to delete project');
       }
+    } catch (error) {
+      console.error('Error updating project order:', error);
+      setProjects(previousProjects);
+      alert('Failed to update project order');
     }
   };
+
+  const handleMoveProject = async (projectId, direction, currentList = []) => {
+    const currentIndex = currentList.findIndex(project => project._id === projectId);
+    if (currentIndex === -1) {
+      return;
+    }
+
+    const swapIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
+    if (swapIndex < 0 || swapIndex >= currentList.length) {
+      return;
+    }
+
+    const currentProject = currentList[currentIndex];
+    const swapProject = currentList[swapIndex];
+
+    const currentOrder = parseDisplayOrder(currentProject.displayOrder, currentIndex);
+    const swapOrder = parseDisplayOrder(swapProject.displayOrder, swapIndex);
+
+    setProjects((prev) => prev.map((project) => {
+      if (project._id === currentProject._id) {
+        return { ...project, displayOrder: swapOrder };
+      }
+      if (project._id === swapProject._id) {
+        return { ...project, displayOrder: currentOrder };
+      }
+      return project;
+    }));
+
+    if (isLocalEnvironment()) {
+      return;
+    }
+
+    try {
+      await Promise.all([
+        persistProjectUpdate(currentProject._id, { displayOrder: swapOrder }),
+        persistProjectUpdate(swapProject._id, { displayOrder: currentOrder })
+      ]);
+      await loadProjects();
+    } catch (error) {
+      console.error('Error updating project order:', error);
+      alert('Failed to update project order. Please try again.');
+      await loadProjects();
+    }
+
+    openConfirmationModal({
+      type: 'unpublish',
+      project,
+      title: `Unpublish "${project.title}"?`,
+      message: 'Unpublishing removes this card from the public projects feed until it is published again.',
+      confirmLabel: 'Unpublish',
+      onConfirm: (freshToken) => executePublishStatusChange(project, false, freshToken),
+    });
+  };
+
+  const handleDeleteProject = (project) => {
+    openConfirmationModal({
+      type: 'delete',
+      project,
+      title: `Delete "${project.title}"?`,
+      message: 'This action permanently removes the project and its history. Consider unpublishing if you only need to hide it.',
+      confirmLabel: 'Delete',
+      onConfirm: (freshToken) => executeDeleteProject(project, freshToken),
+    });
+  };
+  const catalogValue = useMemo(() => ({
+    projects,
+    setProjects,
+    refresh: loadProjects,
+    loading: projectsLoading,
+  }), [projects, projectsLoading, loadProjects]);
 
   const handleChatGPT = async (e) => {
     e.preventDefault();
@@ -707,6 +2380,10 @@ function Admin() {
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${authToken}`
+      const response = await fetchWithAuth(apiEndpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({ prompt: chatPrompt })
       });
@@ -732,6 +2409,10 @@ function Admin() {
         setChatResponse(`Error: ${errorData.error || 'Failed to get response'}`);
       }
     } catch (error) {
+      if (error instanceof SessionExpiredError) {
+        setChatResponse('Session expired. Please log in again.');
+        return;
+      }
       console.error('❌ ChatGPT network error:', error);
       setChatResponse(`Network Error: ${error.message}`);
     } finally {
@@ -739,6 +2420,17 @@ function Admin() {
       console.log('🏁 ChatGPT request completed');
     }
   };
+
+  const sortedProjects = useMemo(() => [...projects].sort(sortProjectsByDisplayOrder), [projects]);
+  const publishedProjects = useMemo(
+    () => sortedProjects.filter((project) => project.published !== false),
+    [sortedProjects]
+  );
+  const draftProjects = useMemo(
+    () => sortedProjects.filter((project) => project.published === false),
+    [sortedProjects]
+  );
+  const visibleProjects = activeTab === 'published' ? publishedProjects : draftProjects;
 
   if (!isAuthenticated) {
     return (
@@ -748,25 +2440,67 @@ function Admin() {
             <button className="gs-btn" title="Return to homepage">GS</button>
           </Link>
           <h1>Admin Login</h1>
+          {clientIsDevelopment && (
+            <div id="dev-credentials" style={{
+              color: theme.warning,
+              fontSize: '0.9rem',
+              textAlign: 'center',
+              padding: '10px',
+              border: `1px solid ${theme.warning}`,
+              borderRadius: '5px',
+          {sessionStatus && (
+            <div
+              className="session-status"
+              role="alert"
+              aria-live="assertive"
+              style={{
+                color: theme.danger,
+                border: `1px solid ${theme.danger}`,
+                backgroundColor: `${theme.danger}20`,
+                padding: '12px',
+                borderRadius: '6px',
+                marginTop: '12px',
+                marginBottom: '12px'
+              }}
+            >
+              {sessionStatus}
+            </div>
+          )}
           {(window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || process.env.NODE_ENV === 'development') && (
-            <div id="dev-credentials" style={{ 
-              color: theme.warning, 
-              fontSize: '0.9rem', 
+            <div id="dev-credentials" style={{
+              color: theme.warning,
+              fontSize: '0.9rem',
               textAlign: 'center', 
               padding: '10px', 
               border: `1px solid ${theme.warning}`, 
               borderRadius: '5px', 
               marginBottom: '20px',
-              backgroundColor: `${theme.warning}20` 
+              backgroundColor: `${theme.warning}20`
             }} role="note" aria-label="Development mode credentials">
               <strong>Development Mode</strong><br />
-              Username: shadowpatriot9<br />
-              Password: 16196823
+              {FEATURE_FLAGS.devAuthBypass ? (
+                <>
+                  Username: {DEV_CREDENTIALS.username}<br />
+                  Password: {DEV_CREDENTIALS.password}
+                </>
+              ) : (
+                <span>Dev bypass is disabled. Use your admin credentials to sign in.</span>
+              )}
             </div>
           )}
         </header>
 
         <main className="login-form" role="main">
+          {securityNotices.length > 0 && (
+            <aside className="security-notices" role="alert">
+              <h2>Security reminders</h2>
+              <ul>
+                {securityNotices.map((notice, index) => (
+                  <li key={index}>{notice}</li>
+                ))}
+              </ul>
+            </aside>
+          )}
           <form onSubmit={handleLogin} aria-label="Admin login form">
             <div className="form-group">
               <label htmlFor="username-input">Username:</label>
@@ -776,7 +2510,7 @@ function Admin() {
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 required
-                aria-describedby={process.env.NODE_ENV === 'development' ? 'dev-credentials' : undefined}
+                aria-describedby={clientIsDevelopment && FEATURE_FLAGS.devAuthBypass ? 'dev-credentials' : undefined}
                 autoComplete="username"
               />
             </div>
@@ -788,7 +2522,7 @@ function Admin() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                aria-describedby={process.env.NODE_ENV === 'development' ? 'dev-credentials' : undefined}
+                aria-describedby={clientIsDevelopment && FEATURE_FLAGS.devAuthBypass ? 'dev-credentials' : undefined}
                 autoComplete="current-password"
               />
             </div>
@@ -822,6 +2556,16 @@ function Admin() {
       </header>
 
       <main className={styles.admin_main} id="admin_main">
+        {securityNotices.length > 0 && (
+          <section className="security-notices" role="alert">
+            <h2>Security reminders</h2>
+            <ul>
+              {securityNotices.map((notice, index) => (
+                <li key={index}>{notice}</li>
+              ))}
+            </ul>
+          </section>
+        )}
         {/* Analytics Dashboard */}
         <AnalyticsDashboard />
         
@@ -887,9 +2631,38 @@ function Admin() {
           )}
         </section>
 
+        <ProjectCatalogProvider value={catalogValue}>
+          <ProjectsPanel
+            onCreateProject={handleCreateProject}
+            onUpdateProject={handleUpdateProject}
+            onDeleteProject={handleDeleteProject}
+            onTogglePublish={handleTogglePublish}
+            onReorder={handleReorderProjects}
+          />
+        </ProjectCatalogProvider>
         {/* Add New Project */}
         <section className="add-project-section">
           <h2>Add New Project</h2>
+          {newProjectErrors.length > 0 && (
+            <div
+              role="alert"
+              style={{
+                border: `1px solid ${theme.danger}`,
+                backgroundColor: `${theme.danger}15`,
+                color: theme.danger,
+                padding: '12px',
+                borderRadius: '6px',
+                marginBottom: '16px'
+              }}
+            >
+              <strong style={{ display: 'block', marginBottom: '6px' }}>Please resolve the following:</strong>
+              <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                {newProjectErrors.map((error) => (
+                  <li key={error}>{error}</li>
+                ))}
+              </ul>
+            </div>
+          )}
           <form onSubmit={handleAddProject} className="project-form">
             <div className="form-row">
               <div className="form-group">
@@ -897,27 +2670,98 @@ function Admin() {
                 <input
                   type="text"
                   value={newProject.id}
-                  onChange={(e) => setNewProject({ ...newProject, id: e.target.value })}
+                  onChange={(e) => updateNewProject({ id: e.target.value })}
                   required
                 />
               </div>
+              <div className="form-group">
+                <label>Route:</label>
+                <input
+                  type="text"
+                  value={newProject.route}
+                  placeholder="/projects/my-project"
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    setNewProject((prev) => {
+                      const next = { ...prev, route: value };
+                      if (!prev.path || prev.path === prev.route) {
+                        next.path = value;
+                      }
+                      return next;
+                    });
+                  }}
+                  required
+                />
+                <small style={{ display: 'block', color: theme.textSecondary, marginTop: '4px' }}>
+                  Must start with “/” and use letters, numbers, slashes, underscores, or hyphens.
+                </small>
+              </div>
+            </div>
+            <div className="form-row">
               <div className="form-group">
                 <label>Title:</label>
                 <input
                   type="text"
                   value={newProject.title}
-                  onChange={(e) => setNewProject({ ...newProject, title: e.target.value })}
+                  onChange={(e) => updateNewProject({ title: e.target.value })}
+                  required
+                />
+              </div>
+              <div className="form-group">
+                <label>Category:</label>
+                <select
+                  value={newProject.category}
+                  onChange={(e) => updateNewProject({ category: e.target.value })}
+                  required
+                >
+                  {PROJECT_CATEGORY_OPTIONS.map((option) => (
+                    <option key={option} value={option}>{option}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            <div className="form-row">
+              <div className="form-group">
+                <label>Status:</label>
+                <select
+                  value={newProject.status}
+                  onChange={(e) => updateNewProject({ status: e.target.value })}
+                  required
+                >
+                  {PROJECT_STATUS_OPTIONS.map((status) => (
+                    <option key={status} value={status}>{status}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="form-group">
+                <label>Date Created:</label>
+                <input
+                  type="date"
+                  value={formatDateForInput(newProject.dateCreated)}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    updateNewProject({ dateCreated: value ? new Date(value).toISOString() : '' });
+                  }}
                   required
                 />
               </div>
             </div>
             <div className="form-group">
               <label>Description:</label>
-              <input
-                type="text"
+              <textarea
                 value={newProject.description}
-                onChange={(e) => setNewProject({ ...newProject, description: e.target.value })}
+                onChange={(e) => updateNewProject({ description: e.target.value })}
+                rows={2}
                 required
+                style={{
+                  width: '100%',
+                  padding: '10px',
+                  border: `1px solid ${theme.border}`,
+                  borderRadius: '4px',
+                  backgroundColor: theme.cardBg,
+                  color: theme.text,
+                  resize: 'vertical'
+                }}
               />
             </div>
             <div className="form-row">
@@ -926,8 +2770,8 @@ function Admin() {
                 <input
                   type="text"
                   value={newProject.path}
-                  onChange={(e) => setNewProject({ ...newProject, path: e.target.value })}
-                  required
+                  onChange={(e) => updateNewProject({ path: e.target.value })}
+                  placeholder="Defaults to route if left empty"
                 />
               </div>
               <div className="form-group">
@@ -935,50 +2779,269 @@ function Admin() {
                 <input
                   type="text"
                   value={newProject.component}
-                  onChange={(e) => setNewProject({ ...newProject, component: e.target.value })}
+                  onChange={(e) => updateNewProject({ component: e.target.value })}
                   required
                 />
               </div>
             </div>
+            <div className="form-group checkbox-group">
+              <label className="checkbox-label">
+                <input
+                  type="checkbox"
+                  checked={newProject.published}
+                  onChange={(e) => setNewProject({ ...newProject, published: e.target.checked })}
+                />
+                <span>Published</span>
+              </label>
+              <p className="field-hint">Draft projects remain hidden from the public projects feed.</p>
+            </div>
+            <div className="form-row">
+              <div className="form-group">
+                <label>Display Order:</label>
+                <input
+                  type="number"
+                  min="0"
+                  value={newProject.displayOrder === '' ? '' : newProject.displayOrder}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    setNewProject({
+                      ...newProject,
+                      displayOrder: value === '' ? '' : Number(value)
+                    });
+                  }}
+                />
+              </div>
+              <div className="form-group" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <label style={{ marginBottom: 0 }}>Published:</label>
+                <input
+                  type="checkbox"
+                  checked={normalizePublished(newProject.published, false)}
+                  onChange={(e) => setNewProject({ ...newProject, published: e.target.checked })}
+                />
+                <span style={{ fontSize: '12px', color: theme.textSecondary }}>Uncheck to keep as draft</span>
+              </div>
+            </div>
+            <div className="form-group">
+              <label>Thumbnail URL (optional):</label>
+              <input
+                type="url"
+                value={newProject.thumbnail}
+                onChange={(e) => updateNewProject({ thumbnail: e.target.value })}
+                placeholder="https://example.com/thumbnail.jpg"
+              />
+            </div>
+            <ChipEditor
+              label="Technology"
+              items={newProject.technology}
+              onChange={(items) => updateNewProject({ technology: items })}
+              placeholder="Press Enter to add a technology"
+              theme={theme}
+              helperText="List the key technologies that will display on the project card."
+              inputAriaLabel="Add technology"
+            />
+            <ChipEditor
+              label="Tags"
+              items={newProject.tags}
+              onChange={(items) => updateNewProject({ tags: items })}
+              placeholder="Press Enter to add a tag"
+              theme={theme}
+              normaliseValue={(value) => value.trim().toLowerCase()}
+              dedupeKey={(value) => value.toLowerCase()}
+              helperText="Tags are saved in lowercase and power search and filtering."
+              inputAriaLabel="Add tag"
+            />
             <button type="submit" className="add-btn">Add Project</button>
           </form>
+          <div className="preview-section" aria-live="polite">
+            <h3>Live Preview</h3>
+            <p className="field-hint">Validate formatting before saving. The preview updates as you edit.</p>
+            <div className="preview-card-wrapper">
+              <ProjectCard project={previewProject} previewMode />
+            </div>
+          </div>
         </section>
 
         {/* Existing Projects */}
         <section className="projects-section">
           <h2>Existing Projects</h2>
+          <div className="projects-tabs" style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
+            <button
+              type="button"
+              className={activeTab === 'published' ? 'tab-btn active' : 'tab-btn'}
+              onClick={() => setActiveTab('published')}
+              style={{
+                padding: '8px 16px',
+                borderRadius: '6px',
+                border: `1px solid ${theme.border}`,
+                backgroundColor: activeTab === 'published' ? theme.primary : theme.surface,
+                color: activeTab === 'published' ? theme.cardBg : theme.text,
+                cursor: 'pointer',
+                transition: 'background-color 0.2s ease'
+              }}
+            >
+              Published ({publishedProjects.length})
+            </button>
+            <button
+              type="button"
+              className={activeTab === 'drafts' ? 'tab-btn active' : 'tab-btn'}
+              onClick={() => setActiveTab('drafts')}
+              style={{
+                padding: '8px 16px',
+                borderRadius: '6px',
+                border: `1px solid ${theme.border}`,
+                backgroundColor: activeTab === 'drafts' ? theme.primary : theme.surface,
+                color: activeTab === 'drafts' ? theme.cardBg : theme.text,
+                cursor: 'pointer',
+                transition: 'background-color 0.2s ease'
+              }}
+            >
+              Drafts ({draftProjects.length})
+            </button>
+          </div>
           <div className="projects-list">
+            {visibleProjects.length === 0 ? (
+              <div
+                style={{
+                  padding: '20px',
+                  border: `1px dashed ${theme.border}`,
+                  borderRadius: '8px',
+                  color: theme.textSecondary,
+                  textAlign: 'center'
+                }}
+              >
+                {activeTab === 'published'
+                  ? 'No published projects yet. Publish a project to show it on the site.'
+                  : 'No drafts at the moment. Save a project as a draft to stage content.'}
+              </div>
+            ) : (
+              visibleProjects.map((project, index) => (
+                <div key={project._id} className="project-item">
+                  {editingProject && editingProject._id === project._id ? (
+                    <form onSubmit={handleUpdateProject} className="edit-form">
             {projects.map((project) => (
               <div key={project._id} className="project-item">
                 {editingProject && editingProject._id === project._id ? (
                   <form onSubmit={handleUpdateProject} className="edit-form">
+                    {editProjectErrors.length > 0 && (
+                      <div
+                        role="alert"
+                        style={{
+                          border: `1px solid ${theme.danger}`,
+                          backgroundColor: `${theme.danger}15`,
+                          color: theme.danger,
+                          padding: '12px',
+                          borderRadius: '6px',
+                          marginBottom: '16px'
+                        }}
+                      >
+                        <strong style={{ display: 'block', marginBottom: '6px' }}>Please resolve the following:</strong>
+                        <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                          {editProjectErrors.map((error) => (
+                            <li key={error}>{error}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
                     <div className="form-row">
                       <div className="form-group">
                         <label>ID:</label>
                         <input
                           type="text"
                           value={editingProject.id}
-                          onChange={(e) => setEditingProject({ ...editingProject, id: e.target.value })}
+                          onChange={(e) => updateEditingProject({ id: e.target.value })}
                           required
                         />
                       </div>
+                      <div className="form-group">
+                        <label>Route:</label>
+                        <input
+                          type="text"
+                          value={editingProject.route}
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            setEditingProject((prev) => {
+                              if (!prev) {
+                                return prev;
+                              }
+                              const next = { ...prev, route: value };
+                              if (!prev.path || prev.path === prev.route) {
+                                next.path = value;
+                              }
+                              return next;
+                            });
+                          }}
+                          required
+                        />
+                        <small style={{ display: 'block', color: theme.textSecondary, marginTop: '4px' }}>
+                          Must start with “/” and use letters, numbers, slashes, underscores, or hyphens.
+                        </small>
+                      </div>
+                    </div>
+                    <div className="form-row">
                       <div className="form-group">
                         <label>Title:</label>
                         <input
                           type="text"
                           value={editingProject.title}
-                          onChange={(e) => setEditingProject({ ...editingProject, title: e.target.value })}
+                          onChange={(e) => updateEditingProject({ title: e.target.value })}
+                          required
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label>Category:</label>
+                        <select
+                          value={editingProject.category}
+                          onChange={(e) => updateEditingProject({ category: e.target.value })}
+                          required
+                        >
+                          {PROJECT_CATEGORY_OPTIONS.map((option) => (
+                            <option key={option} value={option}>{option}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                    <div className="form-row">
+                      <div className="form-group">
+                        <label>Status:</label>
+                        <select
+                          value={editingProject.status}
+                          onChange={(e) => updateEditingProject({ status: e.target.value })}
+                          required
+                        >
+                          {PROJECT_STATUS_OPTIONS.map((status) => (
+                            <option key={status} value={status}>{status}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="form-group">
+                        <label>Date Created:</label>
+                        <input
+                          type="date"
+                          value={formatDateForInput(editingProject.dateCreated)}
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            updateEditingProject({ dateCreated: value ? new Date(value).toISOString() : '' });
+                          }}
                           required
                         />
                       </div>
                     </div>
                     <div className="form-group">
                       <label>Description:</label>
-                      <input
-                        type="text"
+                      <textarea
                         value={editingProject.description}
-                        onChange={(e) => setEditingProject({ ...editingProject, description: e.target.value })}
+                        onChange={(e) => updateEditingProject({ description: e.target.value })}
+                        rows={2}
                         required
+                        style={{
+                          width: '100%',
+                          padding: '10px',
+                          border: `1px solid ${theme.border}`,
+                          borderRadius: '4px',
+                          backgroundColor: theme.cardBg,
+                          color: theme.text,
+                          resize: 'vertical'
+                        }}
                       />
                     </div>
                     <div className="form-row">
@@ -987,8 +3050,8 @@ function Admin() {
                         <input
                           type="text"
                           value={editingProject.path}
-                          onChange={(e) => setEditingProject({ ...editingProject, path: e.target.value })}
-                          required
+                          onChange={(e) => updateEditingProject({ path: e.target.value })}
+                          placeholder="Defaults to route if left empty"
                         />
                       </div>
                       <div className="form-group">
@@ -996,36 +3059,350 @@ function Admin() {
                         <input
                           type="text"
                           value={editingProject.component}
-                          onChange={(e) => setEditingProject({ ...editingProject, component: e.target.value })}
+                          onChange={(e) => updateEditingProject({ component: e.target.value })}
                           required
                         />
                       </div>
                     </div>
+                    <div className="form-group checkbox-group">
+                      <label className="checkbox-label">
+                        <input
+                          type="checkbox"
+                          checked={Boolean(editingProject.published)}
+                          onChange={(e) => setEditingProject({ ...editingProject, published: e.target.checked })}
+                        />
+                        <span>Published</span>
+                      </label>
+                      <p className="field-hint">Unpublishing will hide this project from public listings.</p>
+                    </div>
+                    <div className="form-row">
+                      <div className="form-group">
+                        <label>Display Order:</label>
+                        <input
+                          type="number"
+                          min="0"
+                          value={editingProject.displayOrder === '' || editingProject.displayOrder === undefined ? '' : editingProject.displayOrder}
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            setEditingProject({
+                              ...editingProject,
+                              displayOrder: value === '' ? '' : Number(value)
+                            });
+                          }}
+                        />
+                      </div>
+                      <div className="form-group" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <label style={{ marginBottom: 0 }}>Published:</label>
+                        <input
+                          type="checkbox"
+                          checked={normalizePublished(editingProject.published, true)}
+                          onChange={(e) => setEditingProject({ ...editingProject, published: e.target.checked })}
+                        />
+                        <span style={{ fontSize: '12px', color: theme.textSecondary }}>Drafts stay hidden from the site</span>
+                      </div>
+                    </div>
+                    <div className="form-group">
+                      <label>Thumbnail URL (optional):</label>
+                      <input
+                        type="url"
+                        value={editingProject.thumbnail}
+                        onChange={(e) => updateEditingProject({ thumbnail: e.target.value })}
+                        placeholder="https://example.com/thumbnail.jpg"
+                      />
+                    </div>
+                    <ChipEditor
+                      label="Technology"
+                      items={editingProject.technology}
+                      onChange={(items) => updateEditingProject({ technology: items })}
+                      placeholder="Press Enter to update technology"
+                      theme={theme}
+                      helperText="These appear on the public project grid."
+                      inputAriaLabel="Edit technology"
+                    />
+                    <ChipEditor
+                      label="Tags"
+                      items={editingProject.tags}
+                      onChange={(items) => updateEditingProject({ tags: items })}
+                      placeholder="Press Enter to update tag"
+                      theme={theme}
+                      normaliseValue={(value) => value.trim().toLowerCase()}
+                      dedupeKey={(value) => value.toLowerCase()}
+                      helperText="Tags remain lowercase for consistent filtering."
+                      inputAriaLabel="Edit tag"
+                    />
                     <div className="edit-actions">
                       <button type="submit" className="save-btn">Save</button>
-                      <button type="button" onClick={() => setEditingProject(null)} className="cancel-btn">Cancel</button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditingProject(null);
+                          setEditProjectErrors([]);
+                        }}
+                        className="cancel-btn"
+                      >
+                        Cancel
+                      </button>
                     </div>
                   </form>
                 ) : (
                   <div className="project-info">
+                    <div className="project-header-row">
+                      <h3>{project.title}</h3>
+                      <span
+                        className={`status-badge ${project.published ? 'status-badge--published' : 'status-badge--draft'}`}
+                      >
+                        {project.published ? 'Published' : 'Draft'}
+                      </span>
+                    </div>
+                    <p className="project-meta"><strong>ID:</strong> {project.id}</p>
+                    <p className="project-meta"><strong>Description:</strong> {project.description}</p>
+                    <p className="project-meta"><strong>Path:</strong> {project.path}</p>
+                    <p className="project-meta"><strong>Component:</strong> {project.component}</p>
+                    <p className="project-meta project-meta--timestamp">
+                      <strong>Updated:</strong>{' '}
+                      {project.updatedAt ? new Date(project.updatedAt).toLocaleString() : '—'}
+                    </p>
+                    <div className="project-actions">
+                      <button onClick={() => setEditingProject(project)} className="edit-btn">Edit</button>
+                      <button
+                        onClick={() => handlePublishToggle(project, !project.published)}
+                        className={project.published ? 'unpublish-btn' : 'publish-btn'}
+                      >
+                        {project.published ? 'Unpublish' : 'Publish'}
+                      </button>
+                      <button onClick={() => handleDeleteProject(project)} className="delete-btn">Delete</button>
                     <h3>{project.title}</h3>
                     <p><strong>ID:</strong> {project.id}</p>
                     <p><strong>Description:</strong> {project.description}</p>
                     <p><strong>Path:</strong> {project.path}</p>
                     <p><strong>Component:</strong> {project.component}</p>
+                    <p><strong>Display Order:</strong> {Number.isFinite(Number(project.displayOrder)) ? Number(project.displayOrder) : 'Not set'}</p>
+                    <p><strong>Status:</strong> {project.published === false ? 'Draft' : 'Published'}</p>
                     <div className="project-actions">
-                      <button onClick={() => setEditingProject(project)} className="edit-btn">Edit</button>
+                      <div className="order-controls" style={{ display: 'flex', gap: '4px', marginRight: '12px' }}>
+                        <button
+                          type="button"
+                          onClick={() => handleMoveProject(project._id, 'up', visibleProjects)}
+                          disabled={index === 0}
+                          className="order-btn"
+                          style={{
+                            padding: '6px 10px',
+                            borderRadius: '4px',
+                            border: `1px solid ${theme.border}`,
+                            backgroundColor: theme.surface,
+                            color: theme.text,
+                            cursor: index === 0 ? 'not-allowed' : 'pointer'
+                          }}
+                        >
+                          ↑
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleMoveProject(project._id, 'down', visibleProjects)}
+                          disabled={index === visibleProjects.length - 1}
+                          className="order-btn"
+                          style={{
+                            padding: '6px 10px',
+                            borderRadius: '4px',
+                            border: `1px solid ${theme.border}`,
+                            backgroundColor: theme.surface,
+                            color: theme.text,
+                            cursor: index === visibleProjects.length - 1 ? 'not-allowed' : 'pointer'
+                          }}
+                        >
+                          ↓
+                        </button>
+                      </div>
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        <button onClick={() => setEditingProject({ ...project })} className="edit-btn">Edit</button>
+                        <button onClick={() => handleDeleteProject(project._id)} className="delete-btn">Delete</button>
+                      </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '16px' }}>
+                      <div>
+                        <div style={{
+                          display: 'inline-block',
+                          background: theme.secondary,
+                          color: theme.textSecondary,
+                          padding: '4px 8px',
+                          borderRadius: '6px',
+                          fontSize: '11px',
+                          fontWeight: 500,
+                          marginBottom: '8px'
+                        }}>
+                          {project.category}
+                        </div>
+                        <h3 style={{ margin: '0 0 8px 0', color: theme.text }}>{project.title}</h3>
+                        <p style={{ margin: 0, color: theme.textSecondary }}>{project.description}</p>
+                      </div>
+                      <div style={{
+                        background: getStatusColor(project.status, theme),
+                        color: '#fff',
+                        padding: '6px 10px',
+                        borderRadius: '12px',
+                        fontSize: '12px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        fontWeight: 600
+                      }}>
+                        <span>{getStatusIcon(project.status)}</span>
+                        {project.status}
+                      </div>
+                    </div>
+                    <div style={{
+                      display: 'grid',
+                      gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+                      gap: '8px',
+                      marginTop: '16px',
+                      color: theme.text
+                    }}>
+                      <div><strong>ID:</strong> {project.id}</div>
+                      <div><strong>Route:</strong> {project.route || '—'}</div>
+                      <div><strong>Path:</strong> {project.path || '—'}</div>
+                      <div><strong>Component:</strong> {project.component || '—'}</div>
+                      <div><strong>Date Created:</strong> {formatDateForDisplay(project.dateCreated)}</div>
+                      <div><strong>Thumbnail:</strong> {project.thumbnail ? 'Provided' : 'Not set'}</div>
+                    </div>
+                    <div style={{ marginTop: '12px' }}>
+                      <strong>Technology:</strong>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '6px' }}>
+                        {project.technology && project.technology.length > 0 ? (
+                          project.technology.map((tech, index) => (
+                            <span
+                              key={`${project._id}-tech-${index}`}
+                              style={{
+                                background: theme.primary + '20',
+                                color: theme.primary,
+                                padding: '4px 8px',
+                                borderRadius: '999px',
+                                fontSize: '12px',
+                                fontWeight: 500
+                              }}
+                            >
+                              {tech}
+                            </span>
+                          ))
+                        ) : (
+                          <span style={{ color: theme.textSecondary }}>No technology listed</span>
+                        )}
+                      </div>
+                    </div>
+                    <div style={{ marginTop: '12px' }}>
+                      <strong>Tags:</strong>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '6px' }}>
+                        {project.tags && project.tags.length > 0 ? (
+                          project.tags.map((tag, index) => (
+                            <span
+                              key={`${project._id}-tag-${index}`}
+                              style={{
+                                background: theme.surface,
+                                border: `1px solid ${theme.border}`,
+                                color: theme.textSecondary,
+                                padding: '3px 8px',
+                                borderRadius: '999px',
+                                fontSize: '12px'
+                              }}
+                            >
+                              #{tag}
+                            </span>
+                          ))
+                        ) : (
+                          <span style={{ color: theme.textSecondary }}>No tags added</span>
+                        )}
+                      </div>
+                    </div>
+                    {project.thumbnail && (
+                      <div style={{ marginTop: '12px' }}>
+                        <strong>Thumbnail preview:</strong>
+                        <div style={{ marginTop: '8px' }}>
+                          <img
+                            src={project.thumbnail}
+                            alt={`${project.title} thumbnail`}
+                            style={{
+                              maxWidth: '200px',
+                              borderRadius: '8px',
+                              border: `1px solid ${theme.border}`,
+                              boxShadow: `0 2px 6px ${theme.shadow}`
+                            }}
+                          />
+                        </div>
+                      </div>
+                    )}
+                    <div className="project-actions">
+                      <button
+                        onClick={() => {
+                          setEditProjectErrors([]);
+                          setEditingProject(cloneProjectForEditing(project));
+                        }}
+                        className="edit-btn"
+                      >
+                        Edit
+                      </button>
                       <button onClick={() => handleDeleteProject(project._id)} className="delete-btn">Delete</button>
                     </div>
                   </div>
                 )}
               </div>
-            ))}
+              ))
+            )}
           </div>
         </section>
       </main>
+      {confirmationModal && (
+        <div
+          className="confirmation-modal-backdrop"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="confirmation-modal-title"
+          aria-describedby="confirmation-modal-message"
+        >
+          <div className="confirmation-modal">
+            <h3 id="confirmation-modal-title">{confirmationModal.title}</h3>
+            <p id="confirmation-modal-message">{confirmationModal.message}</p>
+            {confirmationModal.requiresReauth && (
+              <div className="reauth-container">
+                <p className="field-hint">
+                  Session age exceeds {REAUTH_THRESHOLD_MINUTES} minutes. Re-authenticate to continue.
+                </p>
+                <label className="form-group">
+                  <span>Username</span>
+                  <input
+                    type="text"
+                    value={reauthCredentials.username}
+                    onChange={(e) => setReauthCredentials((prev) => ({ ...prev, username: e.target.value }))}
+                    autoComplete="username"
+                  />
+                </label>
+                <label className="form-group">
+                  <span>Password</span>
+                  <input
+                    type="password"
+                    value={reauthCredentials.password}
+                    onChange={(e) => setReauthCredentials((prev) => ({ ...prev, password: e.target.value }))}
+                    autoComplete="current-password"
+                  />
+                </label>
+                {reauthError && <p className="error-text">{reauthError}</p>}
+              </div>
+            )}
+            <div className="modal-actions">
+              <button type="button" className="cancel-btn" onClick={closeConfirmationModal} disabled={isProcessingAction}>
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="danger-btn"
+                onClick={executeConfirmation}
+                disabled={isProcessingAction}
+              >
+                {isProcessingAction ? 'Processing...' : confirmationModal.confirmLabel || 'Confirm'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
-export default Admin; 
+export default Admin;
