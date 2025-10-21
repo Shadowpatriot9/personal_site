@@ -36,6 +36,9 @@ const ProjectSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now }
 });
+  published: { type: Boolean, default: true },
+  order: { type: Number, default: 0 },
+}, { timestamps: true });
 
 const ProjectModel = mongoose.models.Project || mongoose.model('Project', ProjectSchema);
 
@@ -95,6 +98,29 @@ export default async function handler(req, res) {
           const updatedProject = await ProjectModel.findByIdAndUpdate(
             id,
             updateData,
+          const allowedUpdates = ['title', 'description', 'path', 'component', 'published', 'order'];
+          const updates = {};
+
+          allowedUpdates.forEach((field) => {
+            if (Object.prototype.hasOwnProperty.call(req.body, field)) {
+              if (field === 'order') {
+                const orderValue = Number(req.body[field]);
+                updates[field] = Number.isFinite(orderValue) ? orderValue : 0;
+              } else {
+                updates[field] = req.body[field];
+              }
+            }
+          });
+
+          if (Object.keys(updates).length === 0) {
+            return res.status(400).json({ error: 'No valid fields provided for update' });
+          }
+
+          updates.updatedAt = Date.now();
+
+          const updatedProject = await ProjectModel.findByIdAndUpdate(
+            id,
+            updates,
           let sanitizedUpdate;
           try {
             sanitizedUpdate = sanitizeProjectPayload(req.body, { applyDefaults: false });
