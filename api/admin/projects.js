@@ -1,35 +1,7 @@
-import mongoose from 'mongoose';
 import jwt from 'jsonwebtoken';
+import { connectToDatabase, ProjectModel } from '../_lib/projects';
 
-const MONGO_URI = process.env.MONGO_URI;
 const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-key-change-in-production';
-
-let cachedDb = null;
-
-async function connectToDatabase() {
-  if (cachedDb) {
-    return cachedDb;
-  }
-  const client = await mongoose.connect(MONGO_URI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-  });
-  cachedDb = client;
-  return client;
-}
-
-// Project Schema
-const ProjectSchema = new mongoose.Schema({
-  id: { type: String, required: true, unique: true },
-  title: { type: String, required: true },
-  description: { type: String, required: true },
-  path: { type: String, required: true },
-  component: { type: String, required: true },
-  createdAt: { type: Date, default: Date.now },
-  updatedAt: { type: Date, default: Date.now }
-});
-
-const ProjectModel = mongoose.models.Project || mongoose.model('Project', ProjectSchema);
 
 // Middleware to verify JWT token
 function verifyToken(req, res, next) {

@@ -41,19 +41,25 @@ const getStatusIcon = (status) => {
 
 const ProjectCard = ({ project }) => {
   const { theme } = useTheme();
+  const technologies = Array.isArray(project.technology) ? project.technology : [];
+  const categoryLabel = project.category || 'General';
+  const statusLabel = project.status || 'Active';
+  const route = project.route || '#';
+  const description = project.description || '';
+  const dateCreated = project.dateCreated || project.createdAt || project.updatedAt;
 
   const handleClick = () => {
-    logger.interaction('click', 'project-card', { 
-      project: project.title, 
-      destination: project.route,
-      status: project.status,
-      category: project.category
+    logger.interaction('click', 'project-card', {
+      project: project.title,
+      destination: route,
+      status: statusLabel,
+      category: categoryLabel
     });
   };
 
   return (
-    <Link to={project.route} style={{ textDecoration: 'none' }}>
-      <div 
+    <Link to={route} style={{ textDecoration: 'none' }}>
+      <div
         onClick={handleClick}
         style={{
           background: theme.cardBg,
@@ -82,7 +88,7 @@ const ProjectCard = ({ project }) => {
           position: 'absolute',
           top: '12px',
           right: '12px',
-          background: getStatusColor(project.status, theme),
+          background: getStatusColor(statusLabel, theme),
           color: 'white',
           padding: '4px 8px',
           borderRadius: '12px',
@@ -92,8 +98,8 @@ const ProjectCard = ({ project }) => {
           alignItems: 'center',
           gap: '4px',
         }}>
-          <span>{getStatusIcon(project.status)}</span>
-          {project.status}
+          <span>{getStatusIcon(statusLabel)}</span>
+          {statusLabel}
         </div>
 
         {/* Category Tag */}
@@ -107,7 +113,7 @@ const ProjectCard = ({ project }) => {
           fontWeight: '500',
           marginBottom: '12px',
         }}>
-          {project.category}
+          {categoryLabel}
         </div>
 
         {/* Project Title */}
@@ -127,7 +133,7 @@ const ProjectCard = ({ project }) => {
           fontSize: '14px',
           lineHeight: '1.5',
         }}>
-          {project.description}
+          {description}
         </p>
 
         {/* Technology Tags */}
@@ -137,7 +143,7 @@ const ProjectCard = ({ project }) => {
           gap: '6px',
           marginBottom: '12px',
         }}>
-          {project.technology.slice(0, 3).map((tech, index) => (
+          {technologies.slice(0, 3).map((tech, index) => (
             <span
               key={index}
               style={{
@@ -152,12 +158,12 @@ const ProjectCard = ({ project }) => {
               {tech}
             </span>
           ))}
-          {project.technology.length > 3 && (
+          {technologies.length > 3 && (
             <span style={{
               color: theme.textSecondary,
               fontSize: '11px',
             }}>
-              +{project.technology.length - 3} more
+              +{technologies.length - 3} more
             </span>
           )}
         </div>
@@ -171,7 +177,7 @@ const ProjectCard = ({ project }) => {
           gap: '4px',
         }}>
           <span>📅</span>
-          {new Date(project.dateCreated).toLocaleDateString()}
+          {dateCreated ? new Date(dateCreated).toLocaleDateString() : 'Date unavailable'}
         </div>
 
         {/* Hover Effect Gradient */}
