@@ -3,6 +3,84 @@ import { useTheme } from '../contexts/ThemeContext';
 import { useProjects } from '../contexts/ProjectsContext';
 import logger from '../utils/logger';
 
+// Fallback fixtures for offline development
+const fallbackProjects = [
+  {
+    id: 'sim',
+    title: 'S_im',
+    description: 'Shadow Simulator',
+    category: 'Software',
+    technology: ['Simulation', 'Software'],
+    status: 'In Progress',
+    dateCreated: '2024-01-01',
+    tags: ['simulation', 'software', 'development'],
+    route: '/projects/sim'
+  },
+  {
+    id: 'sos',
+    title: 'sOS',
+    description: 'Shadow Operating System',
+    category: 'Software',
+    technology: ['Operating System', 'Low-level'],
+    status: 'In Progress',
+    dateCreated: '2023-06-15',
+    tags: ['os', 'system', 'low-level', 'kernel'],
+    route: '/projects/sos'
+  },
+  {
+    id: 's9',
+    title: 'S9',
+    description: 'Shadow Home Server',
+    category: 'Hardware',
+    technology: ['Server', 'Networking', 'Linux'],
+    status: 'Active',
+    dateCreated: '2024-10-01',
+    tags: ['server', 'networking', 'nas', 'ubuntu', 'homelab'],
+    route: '/projects/s9'
+  },
+  {
+    id: 'nfi',
+    title: 'NFI',
+    description: 'Rocket Propulsion System',
+    category: 'Hardware',
+    technology: ['Aerospace', 'Engineering'],
+    status: 'Completed',
+    dateCreated: '2022-03-01',
+    tags: ['rocket', 'propulsion', 'aerospace', 'engineering'],
+    route: '/projects/NFI'
+  },
+  {
+    id: 'muse',
+    title: 'Muse',
+    description: 'Automated Audio Equalizer',
+    category: 'Hardware',
+    technology: ['Audio', 'Electronics'],
+    status: 'Discontinued',
+    dateCreated: '2018-03-01',
+    tags: ['audio', 'music', 'equalizer', 'electronics'],
+    route: '/projects/Muse'
+  },
+  {
+    id: 'el',
+    title: 'EyeLearn',
+    description: 'Academia AR/VR Headset',
+    category: 'Hardware',
+    technology: ['AR/VR', 'Education'],
+    status: 'Paused',
+    dateCreated: '2021-09-01',
+    tags: ['ar', 'vr', 'education', 'headset', 'learning'],
+    route: '/projects/EL'
+  },
+  {
+    id: 'naton',
+    title: 'Naton',
+    description: 'Element Converter',
+    category: 'Hardware',
+    technology: ['Chemistry', 'Physics'],
+    status: 'Completed',
+    dateCreated: '2020-01-15',
+    tags: ['chemistry', 'physics', 'converter', 'elements'],
+    route: '/projects/Naton'
 const getProjectTags = (project) => {
   if (!project) {
     return [];
@@ -30,7 +108,18 @@ const getProjectDate = (project) => {
 const getCategory = (project) => project?.category || 'Uncategorized';
 const getStatus = (project) => project?.status || 'Unknown';
 
-const ProjectSearch = ({ onFilteredResults, className = '' }) => {
+const ensureProjectShape = (project) => ({
+  ...project,
+  category: project.category || 'General',
+  status: project.status || 'Active',
+  technology: Array.isArray(project.technology) ? project.technology : [],
+  tags: Array.isArray(project.tags) ? project.tags : [],
+  description: project.description || '',
+  route: project.route || project.path || `/projects/${project.id}`,
+  dateCreated: project.dateCreated || project.createdAt || project.updatedAt || new Date().toISOString(),
+});
+
+const ProjectSearch = ({ onFilteredResults, onLoadingChange, className = '' }) => {
   const { theme } = useTheme();
   const { projects, loading, refresh } = useProjects();
   const hasRequestedRef = useRef(false);
@@ -40,7 +129,118 @@ const ProjectSearch = ({ onFilteredResults, className = '' }) => {
   const [selectedStatus, setSelectedStatus] = useState('All');
   const [sortBy, setSortBy] = useState('newest');
   const [isExpanded, setIsExpanded] = useState(false);
+  const [projects, setProjects] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState(null);
+  const [isUsingFallback, setIsUsingFallback] = useState(false);
 
+  useEffect(() => {
+    let isMounted = true;
+
+    const fetchProjects = async () => {
+      setIsLoading(true);
+      try {
+        const response = await fetch('/api/projects');
+        if (!response.ok) {
+          throw new Error(`Failed to load projects: ${response.status}`);
+        }
+
+        const data = await response.json();
+        if (!isMounted) {
+          return;
+        }
+
+        const normalizedProjects = Array.isArray(data.projects) ? data.projects : [];
+        const preparedProjects = normalizedProjects.map(ensureProjectShape);
+        setProjects(preparedProjects);
+        setLoadError(null);
+        setIsUsingFallback(false);
+      } catch (error) {
+        if (!isMounted) {
+          return;
+        }
+
+        setProjects(fallbackProjects.map(ensureProjectShape));
+        setLoadError(error);
+        setIsUsingFallback(true);
+        logger.error('project-fetch-failed', error, { scope: 'ProjectSearch' });
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    fetchProjects();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (typeof onLoadingChange === 'function') {
+      onLoadingChange(isLoading);
+    }
+  }, [isLoading, onLoadingChange]);
+
+  const categories = React.useMemo(() => {
+    const uniqueCategories = new Set();
+    projects.forEach((project) => {
+      uniqueCategories.add(project.category || 'General');
+    });
+    return ['All', ...uniqueCategories];
+  }, [projects]);
+
+  const statuses = React.useMemo(() => {
+    const uniqueStatuses = new Set();
+    projects.forEach((project) => {
+      uniqueStatuses.add(project.status || 'Active');
+    });
+    return ['All', ...uniqueStatuses];
+  }, [projects]);
+
+  const filteredProjects = React.useMemo(() => {
+    const normalizedProjects = projects.map(ensureProjectShape);
+    const searchValue = searchTerm.trim().toLowerCase();
+
+    let filtered = normalizedProjects.filter(project => {
+      if (searchValue) {
+        const matchesSearch =
+          project.title.toLowerCase().includes(searchValue) ||
+          project.description.toLowerCase().includes(searchValue) ||
+          project.tags.some(tag => tag.toLowerCase().includes(searchValue));
+
+        if (!matchesSearch) {
+          return false;
+        }
+      }
+
+      const matchesCategory = selectedCategory === 'All' || project.category === selectedCategory;
+      if (!matchesCategory) {
+        return false;
+      }
+
+      const matchesStatus = selectedStatus === 'All' || project.status === selectedStatus;
+      if (!matchesStatus) {
+        return false;
+      }
+
+      return true;
+    });
+
+    const getTimeValue = (project) => {
+      const candidate = project.dateCreated || project.createdAt || project.updatedAt;
+      const timestamp = candidate ? new Date(candidate).getTime() : 0;
+      return Number.isNaN(timestamp) ? 0 : timestamp;
+    };
+
+    filtered.sort((a, b) => {
+      switch (sortBy) {
+        case 'newest':
+          return getTimeValue(b) - getTimeValue(a);
+        case 'oldest':
+          return getTimeValue(a) - getTimeValue(b);
   useEffect(() => {
     if (!hasRequestedRef.current) {
       hasRequestedRef.current = true;
@@ -120,12 +320,14 @@ const ProjectSearch = ({ onFilteredResults, className = '' }) => {
       }
     });
 
+    return filtered;
     return sorted;
   }, [projects, searchTerm, selectedCategory, selectedStatus, sortBy]);
 
   useEffect(() => {
     onFilteredResults(filteredProjects);
 
+    if (!isLoading && (searchTerm || selectedCategory !== 'All' || selectedStatus !== 'All')) {
     if (filteredProjects.length > 0 || searchTerm || selectedCategory !== 'All' || selectedStatus !== 'All') {
       logger.interaction('search-filter', 'project-search', {
         searchTerm,
@@ -133,9 +335,10 @@ const ProjectSearch = ({ onFilteredResults, className = '' }) => {
         status: selectedStatus,
         sortBy,
         resultCount: filteredProjects.length,
+        usingFallback: isUsingFallback,
       });
     }
-  }, [filteredProjects, searchTerm, selectedCategory, selectedStatus, sortBy, onFilteredResults]);
+  }, [filteredProjects, onFilteredResults, searchTerm, selectedCategory, selectedStatus, sortBy, isLoading, isUsingFallback]);
 
   const handleSearchChange = (e) => {
     setSearchTerm(e.target.value);
@@ -188,6 +391,9 @@ const ProjectSearch = ({ onFilteredResults, className = '' }) => {
               outline: 'none',
               transition: 'border-color 0.3s ease',
             }}
+            onFocus={(e) => e.target.style.borderColor = theme.primary}
+            onBlur={(e) => e.target.style.borderColor = theme.border}
+            disabled={isLoading && !isUsingFallback}
             onFocus={(e) => (e.target.style.borderColor = theme.primary)}
             onBlur={(e) => (e.target.style.borderColor = theme.border)}
           />
@@ -206,6 +412,26 @@ const ProjectSearch = ({ onFilteredResults, className = '' }) => {
         </div>
       </div>
 
+      {/* Filter Toggle */}
+      <div style={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: isExpanded ? '16px' : '0',
+        flexWrap: 'wrap',
+        gap: '12px'
+      }}>
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '16px',
+          color: theme.textSecondary,
+          fontSize: '14px',
+          flexWrap: 'wrap'
+        }}>
+          <span>
+            {isLoading ? 'Loading projects…' : `Found ${filteredProjects.length} project${filteredProjects.length !== 1 ? 's' : ''}`}
+          </span>
       <div
         style={{
           display: 'flex',
@@ -240,6 +466,18 @@ const ProjectSearch = ({ onFilteredResults, className = '' }) => {
               Clear filters
             </button>
           )}
+
+          {isUsingFallback && !isLoading && (
+            <span style={{
+              background: theme.warning + '33',
+              color: theme.warning,
+              padding: '4px 8px',
+              borderRadius: '12px',
+              fontSize: '12px'
+            }}>
+              Offline data
+            </span>
+          )}
         </div>
 
         <button
@@ -257,8 +495,13 @@ const ProjectSearch = ({ onFilteredResults, className = '' }) => {
             gap: '8px',
             transition: 'all 0.3s ease',
           }}
+          disabled={isLoading && !isUsingFallback}
         >
           <span>{isExpanded ? 'Hide' : 'Show'} Filters</span>
+          <span style={{
+            transition: 'transform 0.3s ease',
+            transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)'
+          }}>
           <span
             style={{
               transition: 'transform 0.3s ease',
@@ -270,6 +513,20 @@ const ProjectSearch = ({ onFilteredResults, className = '' }) => {
         </button>
       </div>
 
+      {loadError && !isLoading && (
+        <div style={{
+          marginTop: '12px',
+          padding: '12px 16px',
+          borderRadius: '8px',
+          backgroundColor: theme.warning + '20',
+          color: theme.warning,
+          fontSize: '13px'
+        }}>
+          Unable to reach the projects API. Showing local fixtures instead.
+        </div>
+      )}
+
+      {/* Advanced Filters */}
       {isExpanded && (
         <div
           style={{
@@ -283,6 +540,13 @@ const ProjectSearch = ({ onFilteredResults, className = '' }) => {
           }}
         >
           <div>
+            <label style={{
+              display: 'block',
+              marginBottom: '8px',
+              color: theme.text,
+              fontSize: '14px',
+              fontWeight: '500',
+            }}>
             <label
               style={{
                 display: 'block',
@@ -307,6 +571,7 @@ const ProjectSearch = ({ onFilteredResults, className = '' }) => {
                 color: theme.text,
                 fontSize: '14px',
               }}
+              disabled={isLoading && !isUsingFallback}
             >
               {categories.map((category) => (
                 <option key={category} value={category}>
@@ -317,6 +582,13 @@ const ProjectSearch = ({ onFilteredResults, className = '' }) => {
           </div>
 
           <div>
+            <label style={{
+              display: 'block',
+              marginBottom: '8px',
+              color: theme.text,
+              fontSize: '14px',
+              fontWeight: '500',
+            }}>
             <label
               style={{
                 display: 'block',
@@ -341,6 +613,7 @@ const ProjectSearch = ({ onFilteredResults, className = '' }) => {
                 color: theme.text,
                 fontSize: '14px',
               }}
+              disabled={isLoading && !isUsingFallback}
             >
               {statuses.map((status) => (
                 <option key={status} value={status}>
@@ -351,6 +624,13 @@ const ProjectSearch = ({ onFilteredResults, className = '' }) => {
           </div>
 
           <div>
+            <label style={{
+              display: 'block',
+              marginBottom: '8px',
+              color: theme.text,
+              fontSize: '14px',
+              fontWeight: '500',
+            }}>
             <label
               style={{
                 display: 'block',
@@ -375,6 +655,7 @@ const ProjectSearch = ({ onFilteredResults, className = '' }) => {
                 color: theme.text,
                 fontSize: '14px',
               }}
+              disabled={isLoading && !isUsingFallback}
             >
               <option value="newest">Newest First</option>
               <option value="oldest">Oldest First</option>

@@ -40,6 +40,8 @@ export function initializeAnimations() {
 
 function Main() {
   const { theme } = useTheme();
+  const [filteredProjects, setFilteredProjects] = useState([]);
+  const [isProjectLoading, setIsProjectLoading] = useState(true);
   const { projects, loading: projectsLoading, error: projectsError, refresh: refreshProjects } = useProjects();
   const [filteredProjects, setFilteredProjects] = useState([]);
 
@@ -159,12 +161,39 @@ function Main() {
             <h2 className="section-header" id="projects-heading"> Projects </h2>
             
             {/* Search & Filter Component */}
-            <ProjectSearch 
+            <ProjectSearch
               onFilteredResults={setFilteredProjects}
+              onLoadingChange={setIsProjectLoading}
               className="projects-search"
             />
-            
+
             {/* Dynamic Project Grid */}
+            {isProjectLoading ? (
+              <div style={{
+                textAlign: 'center',
+                padding: '60px 20px',
+                color: theme.textSecondary,
+              }}>
+                <div style={{
+                  fontSize: '48px',
+                  marginBottom: '16px',
+                }}>
+                  ⏳
+                </div>
+                <h3 style={{
+                  color: theme.text,
+                  marginBottom: '8px',
+                }}>
+                  Loading Projects
+                </h3>
+                <p>Fetching the latest list. Hang tight!</p>
+              </div>
+            ) : (
+              <ProjectGrid
+                projects={filteredProjects}
+                emptyMessage="Try adjusting your search or filters to find more projects."
+              />
+            )}
             <ProjectGrid
               projects={filteredProjects}
               loading={projectsLoading}

@@ -81,6 +81,12 @@ const getProjectDateLabel = (project) => {
 
 const ProjectCard = ({ project }) => {
   const { theme } = useTheme();
+  const technologies = Array.isArray(project.technology) ? project.technology : [];
+  const categoryLabel = project.category || 'General';
+  const statusLabel = project.status || 'Active';
+  const route = project.route || '#';
+  const description = project.description || '';
+  const dateCreated = project.dateCreated || project.createdAt || project.updatedAt;
 
   const title = project?.title || 'Untitled Project';
   const description = project?.description || 'Project description coming soon.';
@@ -92,6 +98,10 @@ const ProjectCard = ({ project }) => {
 
   const handleClick = () => {
     logger.interaction('click', 'project-card', {
+      project: project.title,
+      destination: route,
+      status: statusLabel,
+      category: categoryLabel
       project: title,
       destination: projectRoute,
       status,
@@ -100,6 +110,7 @@ const ProjectCard = ({ project }) => {
   };
 
   return (
+    <Link to={route} style={{ textDecoration: 'none' }}>
     <Link to={projectRoute} style={{ textDecoration: 'none' }}>
       <div
         onClick={handleClick}
@@ -130,6 +141,7 @@ const ProjectCard = ({ project }) => {
           position: 'absolute',
           top: '12px',
           right: '12px',
+          background: getStatusColor(statusLabel, theme),
           background: getStatusColor(status, theme),
           color: 'white',
           padding: '4px 8px',
@@ -140,6 +152,8 @@ const ProjectCard = ({ project }) => {
           alignItems: 'center',
           gap: '4px',
         }}>
+          <span>{getStatusIcon(statusLabel)}</span>
+          {statusLabel}
           <span>{getStatusIcon(status)}</span>
           {status}
         </div>
@@ -155,6 +169,7 @@ const ProjectCard = ({ project }) => {
           fontWeight: '500',
           marginBottom: '12px',
         }}>
+          {categoryLabel}
           {category}
         </div>
 
@@ -185,6 +200,7 @@ const ProjectCard = ({ project }) => {
           gap: '6px',
           marginBottom: '12px',
         }}>
+          {technologies.slice(0, 3).map((tech, index) => (
           {technology.slice(0, 3).map((tech, index) => (
             <span
               key={index}
@@ -200,11 +216,13 @@ const ProjectCard = ({ project }) => {
               {tech}
             </span>
           ))}
+          {technologies.length > 3 && (
           {technology.length > 3 && (
             <span style={{
               color: theme.textSecondary,
               fontSize: '11px',
             }}>
+              +{technologies.length - 3} more
               +{technology.length - 3} more
             </span>
           )}
@@ -219,6 +237,7 @@ const ProjectCard = ({ project }) => {
           gap: '4px',
         }}>
           <span>📅</span>
+          {dateCreated ? new Date(dateCreated).toLocaleDateString() : 'Date unavailable'}
           {formattedDate || 'Date unavailable'}
         </div>
 

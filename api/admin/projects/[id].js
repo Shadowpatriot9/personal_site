@@ -1,3 +1,13 @@
+import jwt from 'jsonwebtoken';
+import { connectToDatabase, ProjectModel } from '../../_lib/projects';
+
+const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-key-change-in-production';
+
+// Middleware to verify JWT token
+function verifyToken(req, res, next) {
+  const authHeader = req.headers.authorization;
+  if (!authHeader) {
+    return res.status(401).json({ error: 'No token provided' });
 import {
   connectToDatabase,
   ProjectModel,

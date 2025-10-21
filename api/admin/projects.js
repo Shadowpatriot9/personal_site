@@ -1,3 +1,20 @@
+import jwt from 'jsonwebtoken';
+import { connectToDatabase, ProjectModel } from '../_lib/projects';
+
+const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-key-change-in-production';
+
+// Middleware to verify JWT token
+function verifyToken(req, res, next) {
+  console.log('\n' + '='.repeat(50));
+  console.log('🛡️ TOKEN VERIFICATION STARTED');
+  console.log('Time:', new Date().toISOString());
+  
+  const authHeader = req.headers.authorization;
+  console.log('Authorization header:', authHeader ? `[${authHeader.length} chars]` : 'MISSING');
+  
+  if (!authHeader) {
+    console.log('❌ TOKEN VERIFICATION FAILED: No authorization header');
+    return res.status(401).json({ error: 'No token provided' });
 import {
   connectToDatabase,
   ProjectModel,
