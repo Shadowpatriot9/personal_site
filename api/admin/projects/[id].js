@@ -1,107 +1,105 @@
-import mongoose from 'mongoose';
-import jwt from 'jsonwebtoken';
+import {
+  connectToDatabase,
+  ProjectModel,
+  ensureAuthenticated,
+  normalizeProjectInput,
+  buildProjectLookup,
+} from '../../../lib/adminProjects';
 
-const MONGO_URI = process.env.MONGO_URI;
-const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-key-change-in-production';
-
-let cachedDb = null;
-
-async function connectToDatabase() {
-  if (cachedDb) {
-    return cachedDb;
+function getIdentifier(param) {
+  if (Array.isArray(param)) {
+    return param[0];
   }
-  const client = await mongoose.connect(MONGO_URI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-  });
-  cachedDb = client;
-  return client;
-}
-
-// Project Schema
-const ProjectSchema = new mongoose.Schema({
-  id: { type: String, required: true, unique: true },
-  title: { type: String, required: true },
-  description: { type: String, required: true },
-  path: { type: String, required: true },
-  component: { type: String, required: true },
-  createdAt: { type: Date, default: Date.now },
-  updatedAt: { type: Date, default: Date.now }
-});
-
-const ProjectModel = mongoose.models.Project || mongoose.model('Project', ProjectSchema);
-
-// Middleware to verify JWT token
-function verifyToken(req, res, next) {
-  const authHeader = req.headers.authorization;
-  if (!authHeader) {
-    return res.status(401).json({ error: 'No token provided' });
-  }
-
-  const token = authHeader.split(' ')[1];
-  try {
-    const decoded = jwt.verify(token, JWT_SECRET);
-    req.user = decoded;
-    next();
-  } catch (error) {
-    return res.status(401).json({ error: 'Invalid token' });
-  }
+  return param;
 }
 
 export default async function handler(req, res) {
-  // Verify authentication for all operations
-  verifyToken(req, res, async () => {
-    try {
-      await connectToDatabase();
-      const { id } = req.query;
+  if (!ensureAuthenticated(req, res)) {
+    return;
+  }
 
-      switch (req.method) {
-        case 'PUT':
-          // Update project
-          const { title, description, path, component } = req.body;
-          
-          const updatedProject = await ProjectModel.findByIdAndUpdate(
-            id,
-            {
-              title,
-              description,
-              path,
-              component,
-              updatedAt: Date.now()
-            },
-            { new: true, runValidators: true }
-          );
+  const identifier = getIdentifier(req.query?.id);
+  const lookup = buildProjectLookup(identifier);
 
-          if (!updatedProject) {
-            return res.status(404).json({ error: 'Project not found' });
-          }
+  if (!lookup) {
+    return res.status(400).json({ error: 'Project identifier is required' });
+  }
 
-          res.status(200).json({ 
-            message: 'Project updated successfully', 
-            project: updatedProject 
-          });
-          break;
+  try {
+    await connectToDatabase();
+  } catch (error) {
+    console.error('Project API connection error:', error);
+    return res.status(500).json({ error: 'Failed to connect to database' });
+  }
 
-        case 'DELETE':
-          // Delete project
-          const deletedProject = await ProjectModel.findByIdAndDelete(id);
-          
-          if (!deletedProject) {
-            return res.status(404).json({ error: 'Project not found' });
-          }
-
-          res.status(200).json({ 
-            message: 'Project deleted successfully', 
-            project: deletedProject 
-          });
-          break;
-
-        default:
-          res.status(405).json({ error: 'Method not allowed' });
+  try {
+    switch (req.method) {
+      case 'GET': {
+        const project = await ProjectModel.findOne(lookup);
+        if (!project) {
+          return res.status(404).json({ error: 'Project not found' });
+        }
+        return res.status(200).json({ project });
       }
-    } catch (error) {
-      console.error('Project API error:', error);
-      res.status(500).json({ error: 'Internal server error' });
+
+      case 'PUT': {
+        let payload;
+        try {
+          payload = normalizeProjectInput(req.body);
+        } catch (error) {
+          return res.status(400).json({ error: error.message });
+        }
+
+        if (!payload || Object.keys(payload).length === 0) {
+          return res.status(400).json({ error: 'No update fields provided' });
+        }
+
+        payload.route = payload.route || payload.path;
+        if (payload.id) {
+          payload.route = payload.route || `/projects/${payload.id}`;
+          payload.path = payload.path || payload.route;
+        } else if (payload.route && !payload.path) {
+          payload.path = payload.route;
+        }
+
+        const updatedProject = await ProjectModel.findOneAndUpdate(
+          lookup,
+          { $set: payload },
+          { new: true, runValidators: true },
+        );
+
+        if (!updatedProject) {
+          return res.status(404).json({ error: 'Project not found' });
+        }
+
+        return res.status(200).json({
+          message: 'Project updated successfully',
+          project: updatedProject,
+        });
+      }
+
+      case 'DELETE': {
+        const deletedProject = await ProjectModel.findOneAndDelete(lookup);
+
+        if (!deletedProject) {
+          return res.status(404).json({ error: 'Project not found' });
+        }
+
+        return res.status(200).json({
+          message: 'Project deleted successfully',
+          project: deletedProject,
+        });
+      }
+
+      default:
+        res.setHeader('Allow', ['GET', 'PUT', 'DELETE']);
+        return res.status(405).json({ error: 'Method not allowed' });
     }
-  });
-} 
+  } catch (error) {
+    console.error('Project API error:', error);
+    if (error && error.code === 11000) {
+      return res.status(409).json({ error: 'Project with this ID already exists' });
+    }
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+}
