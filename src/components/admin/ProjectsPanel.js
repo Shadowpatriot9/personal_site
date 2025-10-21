@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import PropTypes from 'prop-types';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useProjectCatalog } from '../../contexts/ProjectCatalogContext';
 import ProjectForm from './ProjectForm';
@@ -271,3 +272,11 @@ const ProjectsPanel = ({
 };
 
 export default ProjectsPanel;
+
+ProjectsPanel.propTypes = {
+  onCreateProject: PropTypes.func.isRequired,
+  onUpdateProject: PropTypes.func.isRequired,
+  onDeleteProject: PropTypes.func.isRequired,
+  onTogglePublish: PropTypes.func.isRequired,
+  onReorder: PropTypes.func.isRequired,
+};

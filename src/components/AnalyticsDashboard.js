@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import PropTypes from 'prop-types';
 import { useTheme } from '../contexts/ThemeContext';
 import logger from '../utils/logger';
 
@@ -142,6 +143,14 @@ const AnalyticsDashboard = () => {
       )}
     </div>
   );
+
+  StatCard.propTypes = {
+    icon: PropTypes.node.isRequired,
+    title: PropTypes.string.isRequired,
+    value: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+    subtitle: PropTypes.string,
+    color: PropTypes.string,
+  };
 
   return (
     <div style={{
