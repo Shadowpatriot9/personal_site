@@ -39,6 +39,46 @@ const getStatusIcon = (status) => {
   }
 };
 
+const getTechnologyList = (project) => {
+  if (!project) {
+    return [];
+  }
+
+  if (Array.isArray(project.technology) && project.technology.length > 0) {
+    return project.technology;
+  }
+
+  if (Array.isArray(project.tags) && project.tags.length > 0) {
+    return project.tags;
+  }
+
+  return [];
+};
+
+const getProjectRoute = (project) => {
+  if (!project) {
+    return '#';
+  }
+
+  return project.route || project.path || (project.id ? `/projects/${project.id}` : '#');
+};
+
+const getProjectDateLabel = (project) => {
+  const dateValue = project?.dateCreated || project?.createdAt || project?.raw?.createdAt || project?.raw?.dateCreated;
+
+  if (!dateValue) {
+    return null;
+  }
+
+  const date = new Date(dateValue);
+
+  if (Number.isNaN(date.getTime())) {
+    return null;
+  }
+
+  return date.toLocaleDateString();
+};
+
 const ProjectCard = ({ project }) => {
   const { theme } = useTheme();
   const technologies = Array.isArray(project.technology) ? project.technology : [];
@@ -48,17 +88,30 @@ const ProjectCard = ({ project }) => {
   const description = project.description || '';
   const dateCreated = project.dateCreated || project.createdAt || project.updatedAt;
 
+  const title = project?.title || 'Untitled Project';
+  const description = project?.description || 'Project description coming soon.';
+  const category = project?.category || 'Uncategorized';
+  const status = project?.status || 'Unknown';
+  const technology = getTechnologyList(project);
+  const projectRoute = getProjectRoute(project);
+  const formattedDate = getProjectDateLabel(project);
+
   const handleClick = () => {
     logger.interaction('click', 'project-card', {
       project: project.title,
       destination: route,
       status: statusLabel,
       category: categoryLabel
+      project: title,
+      destination: projectRoute,
+      status,
+      category
     });
   };
 
   return (
     <Link to={route} style={{ textDecoration: 'none' }}>
+    <Link to={projectRoute} style={{ textDecoration: 'none' }}>
       <div
         onClick={handleClick}
         style={{
@@ -89,6 +142,7 @@ const ProjectCard = ({ project }) => {
           top: '12px',
           right: '12px',
           background: getStatusColor(statusLabel, theme),
+          background: getStatusColor(status, theme),
           color: 'white',
           padding: '4px 8px',
           borderRadius: '12px',
@@ -100,6 +154,8 @@ const ProjectCard = ({ project }) => {
         }}>
           <span>{getStatusIcon(statusLabel)}</span>
           {statusLabel}
+          <span>{getStatusIcon(status)}</span>
+          {status}
         </div>
 
         {/* Category Tag */}
@@ -114,6 +170,7 @@ const ProjectCard = ({ project }) => {
           marginBottom: '12px',
         }}>
           {categoryLabel}
+          {category}
         </div>
 
         {/* Project Title */}
@@ -123,7 +180,7 @@ const ProjectCard = ({ project }) => {
           fontSize: '20px',
           fontWeight: '600',
         }}>
-          {project.title}
+          {title}
         </h3>
 
         {/* Project Description */}
@@ -144,6 +201,7 @@ const ProjectCard = ({ project }) => {
           marginBottom: '12px',
         }}>
           {technologies.slice(0, 3).map((tech, index) => (
+          {technology.slice(0, 3).map((tech, index) => (
             <span
               key={index}
               style={{
@@ -159,11 +217,13 @@ const ProjectCard = ({ project }) => {
             </span>
           ))}
           {technologies.length > 3 && (
+          {technology.length > 3 && (
             <span style={{
               color: theme.textSecondary,
               fontSize: '11px',
             }}>
               +{technologies.length - 3} more
+              +{technology.length - 3} more
             </span>
           )}
         </div>
@@ -178,6 +238,7 @@ const ProjectCard = ({ project }) => {
         }}>
           <span>📅</span>
           {dateCreated ? new Date(dateCreated).toLocaleDateString() : 'Date unavailable'}
+          {formattedDate || 'Date unavailable'}
         </div>
 
         {/* Hover Effect Gradient */}
@@ -198,8 +259,116 @@ const ProjectCard = ({ project }) => {
   );
 };
 
-const ProjectGrid = ({ projects, emptyMessage = "No projects found matching your criteria." }) => {
+const LoadingGrid = () => {
   const { theme } = useTheme();
+  const placeholders = Array.from({ length: 3 });
+
+  return (
+    <div
+      style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+        gap: '24px',
+        marginTop: '24px',
+      }}
+    >
+      {placeholders.map((_, index) => (
+        <div
+          key={index}
+          style={{
+            background: theme.cardBg,
+            border: `1px solid ${theme.border}`,
+            borderRadius: '12px',
+            padding: '20px',
+            boxShadow: `0 2px 8px ${theme.shadow}`,
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '12px',
+            opacity: 0.8,
+            animation: 'pulse 1.5s ease-in-out infinite',
+          }}
+        >
+          <div style={{ alignSelf: 'flex-end', width: '80px', height: '20px', background: theme.secondary, borderRadius: '12px' }} />
+          <div style={{ width: '120px', height: '18px', background: theme.secondary, borderRadius: '6px' }} />
+          <div style={{ width: '60%', height: '24px', background: theme.secondary, borderRadius: '6px' }} />
+          <div style={{ width: '100%', height: '48px', background: theme.secondary, borderRadius: '6px' }} />
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <span style={{ flex: 1, height: '18px', background: theme.secondary, borderRadius: '6px' }} />
+            <span style={{ flex: 1, height: '18px', background: theme.secondary, borderRadius: '6px' }} />
+            <span style={{ flex: 1, height: '18px', background: theme.secondary, borderRadius: '6px' }} />
+          </div>
+          <div style={{ width: '120px', height: '16px', background: theme.secondary, borderRadius: '6px' }} />
+        </div>
+      ))}
+
+      <style jsx>{`
+        @keyframes pulse {
+          0% { opacity: 0.7; }
+          50% { opacity: 1; }
+          100% { opacity: 0.7; }
+        }
+      `}</style>
+    </div>
+  );
+};
+
+const ErrorState = ({ message, onRetry }) => {
+  const { theme } = useTheme();
+
+  return (
+    <div
+      style={{
+        textAlign: 'center',
+        padding: '60px 20px',
+        color: theme.textSecondary,
+        border: `1px solid ${theme.border}`,
+        borderRadius: '12px',
+        marginTop: '24px',
+      }}
+    >
+      <div style={{ fontSize: '48px', marginBottom: '16px' }}>⚠️</div>
+      <h3 style={{ color: theme.text, marginBottom: '8px' }}>Unable to load projects</h3>
+      <p style={{ marginBottom: '16px' }}>{message}</p>
+      {onRetry && (
+        <button
+          onClick={onRetry}
+          style={{
+            background: theme.primary,
+            color: theme.background,
+            border: 'none',
+            borderRadius: '6px',
+            padding: '10px 20px',
+            cursor: 'pointer',
+            fontSize: '14px',
+          }}
+        >
+          Try again
+        </button>
+      )}
+    </div>
+  );
+};
+
+const ProjectGrid = ({
+  projects,
+  emptyMessage = "No projects found matching your criteria.",
+  loading = false,
+  error = null,
+  onRetry,
+}) => {
+  const { theme } = useTheme();
+
+  if (loading) {
+    return <LoadingGrid />;
+  }
+
+  if (error) {
+    const errorMessage = error.code === 'NO_TOKEN'
+      ? 'Admin authentication is required to view the project catalog.'
+      : error.message || 'Something went wrong while fetching projects.';
+
+    return <ErrorState message={errorMessage} onRetry={onRetry} />;
+  }
 
   if (projects.length === 0) {
     return (

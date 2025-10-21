@@ -2,16 +2,21 @@ import React, { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import logger from '../utils/logger';
 import { useTheme } from '../contexts/ThemeContext';
+import { useProjectMetadata } from '../contexts/ProjectsContext';
 
 import styles from './../styles/styles_sub.module.css';
 
 function S9() {
   const { theme } = useTheme();
-  
+  const { project } = useProjectMetadata('s9');
+
+  const projectTitle = project?.title || 'S9';
+  const projectDescription = project?.description || 'Shadow Home Server';
+
   useEffect(() => {
-    logger.pageView('S9 Project Page', {
-      project: 'S9',
-      projectType: 'Shadow Home Server',
+    logger.pageView(`${projectTitle} Project Page`, {
+      project: project?.id || 's9',
+      projectType: projectDescription,
       dateOfOrigin: '10/2024',
       features: ['NAS File System', 'VM Hosting', 'Remote Access', 'Monitoring', 'Auto Config'],
       specs: {
@@ -21,7 +26,7 @@ function S9() {
         storage: '1TB NVMe'
       }
     });
-  }, []);
+  }, [projectTitle, projectDescription, project?.id]);
 
   return (
 <div className={styles.body2} id='body2'>
@@ -45,7 +50,10 @@ function S9() {
             {/* Top Grid */}
             <div className="grid-1">
               <section id="title">
-                <h1>S9</h1>
+                <h1>{projectTitle}</h1>
+                {projectDescription && (
+                  <p style={{ color: theme.textSecondary, marginTop: '8px' }}>{projectDescription}</p>
+                )}
               </section>
               <section className="section" id="brief" aria-labelledby="description-heading">
                 <h2 id="description-heading">Description: <span style={{fontSize: '0.8em', fontWeight: 'normal'}}>(Date of origin: 10/2024)</span> </h2>

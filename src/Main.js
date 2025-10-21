@@ -7,6 +7,7 @@ import ProjectGrid from './components/ProjectGrid';
 import ContactForm from './components/ContactForm';
 import MobileEnhancements from './components/MobileEnhancements';
 import { useTheme } from './contexts/ThemeContext';
+import { useProjects } from './contexts/ProjectsContext';
 
 import styles from './styles/styles_page.css';
 import './styles/styles_mobile.css';
@@ -41,13 +42,19 @@ function Main() {
   const { theme } = useTheme();
   const [filteredProjects, setFilteredProjects] = useState([]);
   const [isProjectLoading, setIsProjectLoading] = useState(true);
+  const { projects, loading: projectsLoading, error: projectsError, refresh: refreshProjects } = useProjects();
+  const [filteredProjects, setFilteredProjects] = useState([]);
+
+  useEffect(() => {
+    setFilteredProjects(projects);
+  }, [projects]);
   
   useEffect(() => {
     // Log page view
     logger.pageView('Homepage', {
       hasProjects: true,
       sections: ['about', 'contact', 'projects'],
-      projectCount: 7
+      projectCount: projects.length
     });
     
     // Log performance timing
@@ -187,6 +194,13 @@ function Main() {
                 emptyMessage="Try adjusting your search or filters to find more projects."
               />
             )}
+            <ProjectGrid
+              projects={filteredProjects}
+              loading={projectsLoading}
+              error={projectsError}
+              onRetry={refreshProjects}
+              emptyMessage="Try adjusting your search or filters to find more projects."
+            />
           </section>
         </div>
       </main>

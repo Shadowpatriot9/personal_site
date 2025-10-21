@@ -3,10 +3,12 @@ import { Link } from 'react-router-dom';
 import AnalyticsDashboard from './components/AnalyticsDashboard';
 import PerformanceMonitor from './components/PerformanceMonitor';
 import { useTheme } from './contexts/ThemeContext';
+import { useProjects } from './contexts/ProjectsContext';
 import styles from './styles/styles_admin.css';
 
 function Admin() {
   const { theme } = useTheme();
+  const { refresh: refreshProjectCatalog, syncProjects } = useProjects();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -294,6 +296,7 @@ function Admin() {
         }
       ];
       setProjects(mockProjects);
+      refreshProjectCatalog();
       return;
     }
 
@@ -311,6 +314,7 @@ function Admin() {
       if (response.ok) {
         const data = await response.json();
         setProjects(data.projects);
+        syncProjects(data.projects);
       } else if (response.status === 401) {
         handleLogout();
       }
@@ -334,7 +338,9 @@ function Admin() {
         ...newProject,
         _id: Date.now().toString()
       };
-      setProjects([newProjectWithId, ...projects]);
+      const updatedProjects = [newProjectWithId, ...projects];
+      setProjects(updatedProjects);
+      syncProjects(updatedProjects);
       setNewProject({ id: '', title: '', description: '', path: '', component: '' });
       alert('Project added successfully! (Development mode)');
       return;
@@ -379,9 +385,11 @@ function Admin() {
 
     // Development mode - update local state
     if (isLocalDevelopment) {
-      setProjects(projects.map(p =>
+      const updatedProjects = projects.map(p =>
         p._id === editingProject._id ? editingProject : p
-      ));
+      );
+      setProjects(updatedProjects);
+      syncProjects(updatedProjects);
       setEditingProject(null);
       alert('Project updated successfully! (Development mode)');
       return;
@@ -426,7 +434,9 @@ function Admin() {
 
       // Development mode - remove from local state
       if (isLocalDevelopment) {
-        setProjects(projects.filter(p => p._id !== projectId));
+        const updatedProjects = projects.filter(p => p._id !== projectId);
+        setProjects(updatedProjects);
+        syncProjects(updatedProjects);
         alert('Project deleted successfully! (Development mode)');
         return;
       }
