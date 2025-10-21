@@ -4,6 +4,7 @@ import { Analytics } from "@vercel/analytics/react"
 import { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { ThemeProvider } from './contexts/ThemeContext';
+import { ProjectsProvider } from './contexts/ProjectsContext';
 
 import Main from './Main';
 import Admin from './Admin';
@@ -58,7 +59,8 @@ const ScrollToTop = () => {
 function App() {
   return (
     <ThemeProvider>
-      <div>
+      <ProjectsProvider>
+        <div>
       {/* Global Font Family */}
       {/* <link rel="preconnect" href="https://fonts.googleapis.com" />
       <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin />
@@ -114,6 +116,7 @@ function App() {
 
         </Routes>
         </div>
+    </ProjectsProvider>
     </ThemeProvider>
   );
 }
