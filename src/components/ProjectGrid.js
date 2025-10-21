@@ -39,6 +39,7 @@ const getStatusIcon = (status) => {
   }
 };
 
+export const ProjectCard = ({ project, previewMode = false }) => {
 const getTechnologyList = (project) => {
   if (!project) {
     return [];
@@ -96,7 +97,159 @@ const ProjectCard = ({ project }) => {
   const projectRoute = getProjectRoute(project);
   const formattedDate = getProjectDateLabel(project);
 
+  const status = project?.status || (project?.published ? 'Published' : 'Draft');
+  const category = project?.category || (project?.published ? 'Published' : 'Preview');
+  const technology = Array.isArray(project?.technology) ? project.technology : [];
+  const route = project?.route || project?.path || '#';
+
+  const dateValue = project?.dateCreated ? new Date(project.dateCreated) : new Date();
+  const formattedDate = Number.isNaN(dateValue.getTime())
+    ? new Date().toLocaleDateString()
+    : dateValue.toLocaleDateString();
+
   const handleClick = () => {
+    if (previewMode) {
+      return;
+    }
+
+    logger.interaction('click', 'project-card', {
+      project: project?.title,
+      destination: route,
+      status,
+      category,
+    });
+  };
+
+  const cardStyle = {
+    background: theme.cardBg,
+    border: `1px solid ${theme.border}`,
+    borderRadius: '12px',
+    padding: '20px',
+    cursor: previewMode ? 'default' : 'pointer',
+    transition: 'all 0.3s ease',
+    boxShadow: `0 2px 8px ${theme.shadow}`,
+    position: 'relative',
+    overflow: 'hidden',
+  };
+
+  const handleMouseOver = (event) => {
+    if (previewMode) {
+      return;
+    }
+    event.currentTarget.style.transform = 'translateY(-4px)';
+    event.currentTarget.style.boxShadow = `0 8px 24px ${theme.shadow}`;
+    event.currentTarget.style.borderColor = theme.primary;
+  };
+
+  const handleMouseOut = (event) => {
+    if (previewMode) {
+      return;
+    }
+    event.currentTarget.style.transform = 'translateY(0)';
+    event.currentTarget.style.boxShadow = `0 2px 8px ${theme.shadow}`;
+    event.currentTarget.style.borderColor = theme.border;
+  };
+
+  const statusColor = getStatusColor(status, theme);
+
+  const cardContent = (
+    <div
+      onClick={previewMode ? undefined : handleClick}
+      style={cardStyle}
+      onMouseOver={previewMode ? undefined : handleMouseOver}
+      onMouseOut={previewMode ? undefined : handleMouseOut}
+      aria-live={previewMode ? 'polite' : undefined}
+    >
+      <div style={{
+        position: 'absolute',
+        top: '12px',
+        right: '12px',
+        background: statusColor,
+        color: 'white',
+        padding: '4px 8px',
+        borderRadius: '12px',
+        fontSize: '11px',
+        fontWeight: '600',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '4px',
+      }}>
+        <span>{getStatusIcon(status)}</span>
+        {status}
+      </div>
+
+      <div style={{
+        display: 'inline-block',
+        background: theme.secondary,
+        color: theme.textSecondary,
+        padding: '4px 8px',
+        borderRadius: '6px',
+        fontSize: '11px',
+        fontWeight: '500',
+        marginBottom: '12px',
+      }}>
+        {category}
+      </div>
+
+      <h3 style={{
+        color: theme.text,
+        margin: '0 0 8px 0',
+        fontSize: '20px',
+        fontWeight: '600',
+      }}>
+        {project?.title || 'Untitled Project'}
+      </h3>
+
+      <p style={{
+        color: theme.textSecondary,
+        margin: '0 0 16px 0',
+        fontSize: '14px',
+        lineHeight: '1.5',
+      }}>
+        {project?.description || 'Description pending.'}
+      </p>
+
+      <div style={{
+        display: 'flex',
+        flexWrap: 'wrap',
+        gap: '6px',
+        marginBottom: '12px',
+      }}>
+        {technology.slice(0, 3).map((tech, index) => (
+          <span
+            key={`${tech}-${index}`}
+            style={{
+              background: theme.primary + '20',
+              color: theme.primary,
+              padding: '2px 6px',
+              borderRadius: '4px',
+              fontSize: '11px',
+              fontWeight: '500',
+            }}
+          >
+            {tech}
+          </span>
+        ))}
+        {technology.length > 3 && (
+          <span style={{
+            color: theme.textSecondary,
+            fontSize: '11px',
+          }}>
+            +{technology.length - 3} more
+          </span>
+        )}
+      </div>
+
+      <div style={{
+        color: theme.textSecondary,
+        fontSize: '12px',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '4px',
+      }}>
+        <span role="img" aria-label="Date created">📅</span>
+        {formattedDate}
+      </div>
     logger.interaction('click', 'project-card', {
       project: project.title,
       destination: route,
@@ -241,20 +394,32 @@ const ProjectCard = ({ project }) => {
           {formattedDate || 'Date unavailable'}
         </div>
 
-        {/* Hover Effect Gradient */}
-        <div style={{
-          position: 'absolute',
-          bottom: 0,
-          left: 0,
-          right: 0,
-          height: '3px',
-          background: `linear-gradient(90deg, ${theme.primary}, ${theme.accent})`,
-          opacity: 0,
-          transition: 'opacity 0.3s ease',
-        }} 
-        className="hover-gradient"
-        />
+      <div style={{
+        position: 'absolute',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        height: '3px',
+        background: `linear-gradient(90deg, ${theme.primary}, ${theme.accent})`,
+        opacity: 0,
+        transition: 'opacity 0.3s ease',
+      }}
+      className="hover-gradient"
+      />
+    </div>
+  );
+
+  if (previewMode) {
+    return (
+      <div style={{ textDecoration: 'none' }}>
+        {cardContent}
       </div>
+    );
+  }
+
+  return (
+    <Link to={route} style={{ textDecoration: 'none' }}>
+      {cardContent}
     </Link>
   );
 };

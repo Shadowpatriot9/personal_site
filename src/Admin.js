@@ -8,6 +8,25 @@ import { useTheme } from './contexts/ThemeContext';
 import { ProjectCatalogProvider } from './contexts/ProjectCatalogContext';
 import ProjectsPanel from './components/admin/ProjectsPanel';
 import styles from './styles/styles_admin.css';
+import { ProjectCard } from './components/ProjectGrid';
+
+const FEATURE_FLAGS = {
+  devAuthBypass: process.env.REACT_APP_ENABLE_DEV_AUTH_BYPASS === 'true',
+  showMfaPrompt: process.env.REACT_APP_SHOW_ADMIN_MFA_PROMPT === 'true',
+  showPasswordRotationReminder: process.env.REACT_APP_SHOW_PASSWORD_ROTATION_REMINDER === 'true',
+};
+
+const DEFAULT_REAUTH_THRESHOLD_MS = 4 * 60 * 60 * 1000;
+const REAUTH_THRESHOLD_MS = (() => {
+  const parsed = parseInt(process.env.REACT_APP_ADMIN_REAUTH_THRESHOLD_MS || '', 10);
+  return Number.isNaN(parsed) ? DEFAULT_REAUTH_THRESHOLD_MS : parsed;
+})();
+const REAUTH_THRESHOLD_MINUTES = Math.round(REAUTH_THRESHOLD_MS / 60000);
+
+const DEV_CREDENTIALS = {
+  username: 'shadowpatriot9',
+  password: '16196823',
+};
 
 const sortProjectsByOrder = (items) =>
   [...items].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
@@ -452,7 +471,21 @@ function Admin() {
   const [projects, setProjects] = useState([]);
   const [projectsLoading, setProjectsLoading] = useState(false);
   const [token, setToken] = useState('');
+  const [authTimestamp, setAuthTimestamp] = useState(null);
+  const [lastAuthUsername, setLastAuthUsername] = useState('');
+  const [confirmationModal, setConfirmationModal] = useState(null);
+  const [reauthCredentials, setReauthCredentials] = useState({ username: '', password: '' });
+  const [isProcessingAction, setIsProcessingAction] = useState(false);
+  const [reauthError, setReauthError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [newProject, setNewProject] = useState({
+    id: '',
+    title: '',
+    description: '',
+    path: '',
+    component: '',
+    published: false,
+  });
   const [newProject, setNewProject] = useState(() => getDefaultProjectValues());
   const [chatPrompt, setChatPrompt] = useState('');
   const [chatResponse, setChatResponse] = useState('');
@@ -712,6 +745,54 @@ function Admin() {
     }
   }, [fetchWithAuth, token]);
 
+  const clientIsDevelopment =
+    window.location.hostname === 'localhost' ||
+    window.location.hostname === '127.0.0.1' ||
+    process.env.NODE_ENV === 'development';
+
+  const isDevelopmentSession = () =>
+    clientIsDevelopment || token === 'dev-token';
+
+  const securityNotices = useMemo(() => {
+    const notices = [];
+    if (FEATURE_FLAGS.showMfaPrompt) {
+      notices.push('Multi-factor authentication is enabled. Have your secondary factor ready before continuing.');
+    }
+    if (FEATURE_FLAGS.showPasswordRotationReminder) {
+      notices.push('Reminder: Rotate the admin password regularly and confirm compliance with the security schedule.');
+    }
+    return notices;
+  }, []);
+
+  const previewProject = useMemo(() => ({
+    id: newProject.id || 'pending-id',
+    title: newProject.title || 'Untitled Project',
+    description: newProject.description || 'Project description will appear here.',
+    route: newProject.path || '#',
+    path: newProject.path || '',
+    component: newProject.component || '',
+    status: newProject.published ? 'Published' : 'Draft',
+    category: 'Preview',
+    technology: [],
+    dateCreated: new Date().toISOString(),
+    published: newProject.published,
+  }), [newProject]);
+
+  // Check if user is already authenticated
+  useEffect(() => {
+    const authStatus = localStorage.getItem('adminAuthenticated');
+    const savedToken = localStorage.getItem('adminToken');
+    const savedAuthTimestamp = localStorage.getItem('adminAuthenticatedAt');
+    const savedUsername = localStorage.getItem('adminLastUsername');
+
+    if (authStatus === 'true' && savedToken) {
+      console.log('🔄 Restoring authentication from localStorage');
+      setIsAuthenticated(true);
+      setToken(savedToken);
+      setAuthTimestamp(savedAuthTimestamp ? Number(savedAuthTimestamp) : Date.now());
+      if (savedUsername) {
+        setLastAuthUsername(savedUsername);
+      }
   useEffect(() => {
     if (typeof window === 'undefined') {
       return;
@@ -729,6 +810,13 @@ function Admin() {
       console.log('🔓 No saved authentication found');
     }
   }, [loadProjects]);
+
+  useEffect(() => {
+    setReauthCredentials((prev) => ({
+      ...prev,
+      username: lastAuthUsername || prev.username || '',
+    }));
+  }, [lastAuthUsername]);
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -825,6 +913,17 @@ function Admin() {
         setToken(data.token);
         console.log('setToken called with token');
 
+        const authUsername = data.user?.username || username;
+        const authTimestampValue = Date.now();
+        setAuthTimestamp(authTimestampValue);
+        setLastAuthUsername(authUsername);
+
+        localStorage.setItem('adminAuthenticated', 'true');
+        localStorage.setItem('adminToken', data.token);
+        localStorage.setItem('adminAuthenticatedAt', authTimestampValue.toString());
+        localStorage.setItem('adminLastUsername', authUsername);
+        console.log('localStorage updated');
+        
         persistToken(data.token);
         console.log('sessionStorage token persisted');
 
@@ -853,13 +952,26 @@ function Admin() {
         
         console.log('Error data:', errorData);
         
-        // If API fails and we're in development, try fallback
-        if (isLocalDevelopment && username === 'shadowpatriot9' && password === '16196823') {
+        // If API fails and we're in development, try feature-flagged fallback
+        if (
+          FEATURE_FLAGS.devAuthBypass &&
+          isLocalDevelopment &&
+          username === DEV_CREDENTIALS.username &&
+          password === DEV_CREDENTIALS.password
+        ) {
           console.log('\n🔧 API FAILED - ATTEMPTING DEVELOPMENT FALLBACK:');
           console.log('Fallback conditions met - switching to dev mode');
 
           setIsAuthenticated(true);
           setToken('dev-token');
+          const fallbackAuthTime = Date.now();
+          setAuthTimestamp(fallbackAuthTime);
+          setLastAuthUsername(username);
+          localStorage.setItem('adminAuthenticated', 'true');
+          localStorage.setItem('adminToken', 'dev-token');
+          localStorage.setItem('adminAuthenticatedAt', fallbackAuthTime.toString());
+          localStorage.setItem('adminLastUsername', username);
+          loadProjects('dev-token');
           persistToken('dev-token');
           setSessionStatus('');
           await loadProjects('dev-token');
@@ -867,7 +979,10 @@ function Admin() {
           console.log('✅ DEVELOPMENT FALLBACK SUCCESSFUL');
           return;
         }
-        
+
+        if (!FEATURE_FLAGS.devAuthBypass && isLocalDevelopment) {
+          console.log('🚫 Development auth bypass is disabled via feature flag.');
+        }
         console.log('❌ NO FALLBACK AVAILABLE - Showing error to user');
         const errorMessage = `Login failed: ${errorData.error || 'Invalid credentials'}`;
         console.log('Error message:', errorMessage);
@@ -880,12 +995,25 @@ function Admin() {
       console.error('Error stack:', error.stack);
       
       // Network error fallback for development
-      if (isLocalDevelopment && username === 'shadowpatriot9' && password === '16196823') {
+      if (
+        FEATURE_FLAGS.devAuthBypass &&
+        isLocalDevelopment &&
+        username === DEV_CREDENTIALS.username &&
+        password === DEV_CREDENTIALS.password
+      ) {
         console.log('\n🔧 NETWORK ERROR - ATTEMPTING DEVELOPMENT FALLBACK:');
         console.log('Fallback conditions met - switching to dev mode');
 
         setIsAuthenticated(true);
         setToken('dev-token');
+        const fallbackAuthTime = Date.now();
+        setAuthTimestamp(fallbackAuthTime);
+        setLastAuthUsername(username);
+        localStorage.setItem('adminAuthenticated', 'true');
+        localStorage.setItem('adminToken', 'dev-token');
+        localStorage.setItem('adminAuthenticatedAt', fallbackAuthTime.toString());
+        localStorage.setItem('adminLastUsername', username);
+        loadProjects('dev-token');
         persistToken('dev-token');
         setSessionStatus('');
         await loadProjects('dev-token');
@@ -893,7 +1021,10 @@ function Admin() {
         console.log('✅ DEVELOPMENT FALLBACK AFTER NETWORK ERROR SUCCESSFUL');
         return;
       }
-      
+
+      if (!FEATURE_FLAGS.devAuthBypass && isLocalDevelopment) {
+        console.log('🚫 Development auth bypass is disabled via feature flag.');
+      }
       console.log('❌ NO FALLBACK AVAILABLE - Showing network error to user');
       const errorMessage = '❌ Login failed: Unable to connect to server. Please check your connection and try again.';
       console.log('Error message:', errorMessage);
@@ -913,6 +1044,16 @@ function Admin() {
     setPassword('');
     setProjects([]);
     setEditingProject(null);
+    setAuthTimestamp(null);
+    setLastAuthUsername('');
+    setConfirmationModal(null);
+    setReauthCredentials({ username: '', password: '' });
+    setIsProcessingAction(false);
+    setReauthError('');
+    localStorage.removeItem('adminAuthenticated');
+    localStorage.removeItem('adminToken');
+    localStorage.removeItem('adminAuthenticatedAt');
+    localStorage.removeItem('adminLastUsername');
     setNewProject(createDefaultProject());
     setNewProjectErrors([]);
     setEditProjectErrors([]);
@@ -923,6 +1064,114 @@ function Admin() {
   }, [clearAuthState]);
   };
 
+  const getSessionAge = () =>
+    authTimestamp ? Date.now() - authTimestamp : Number.POSITIVE_INFINITY;
+
+  const openConfirmationModal = ({ title, message, confirmLabel, onConfirm, project, type }) => {
+    const requiresReauth = getSessionAge() > REAUTH_THRESHOLD_MS;
+    setConfirmationModal({
+      title,
+      message,
+      confirmLabel,
+      onConfirm,
+      project,
+      type,
+      requiresReauth,
+    });
+    setReauthError('');
+    setReauthCredentials((prev) => ({
+      username: lastAuthUsername || prev.username || username,
+      password: '',
+    }));
+  };
+
+  const closeConfirmationModal = () => {
+    setConfirmationModal(null);
+    setIsProcessingAction(false);
+    setReauthError('');
+    setReauthCredentials((prev) => ({ ...prev, password: '' }));
+  };
+
+  const performReauthentication = async () => {
+    const reauthUsername = (reauthCredentials.username || lastAuthUsername || '').trim();
+    const reauthPassword = reauthCredentials.password;
+
+    if (!reauthUsername || !reauthPassword) {
+      throw new Error('Username and password are required for re-authentication.');
+    }
+
+    if (
+      FEATURE_FLAGS.devAuthBypass &&
+      clientIsDevelopment &&
+      reauthUsername === DEV_CREDENTIALS.username &&
+      reauthPassword === DEV_CREDENTIALS.password
+    ) {
+      const fallbackAuthTime = Date.now();
+      setToken('dev-token');
+      setAuthTimestamp(fallbackAuthTime);
+      setLastAuthUsername(reauthUsername);
+      localStorage.setItem('adminAuthenticated', 'true');
+      localStorage.setItem('adminToken', 'dev-token');
+      localStorage.setItem('adminAuthenticatedAt', fallbackAuthTime.toString());
+      localStorage.setItem('adminLastUsername', reauthUsername);
+      return 'dev-token';
+    }
+
+    const API_BASE = process.env.REACT_APP_API_BASE || window.location.origin;
+    const response = await fetch(`${API_BASE}/api/admin/login`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ username: reauthUsername, password: reauthPassword }),
+    });
+
+    if (!response.ok) {
+      const errorPayload = await response.json().catch(() => ({}));
+      throw new Error(errorPayload.error || 'Re-authentication failed');
+    }
+
+    const data = await response.json();
+    const newAuthTime = Date.now();
+    const normalizedUsername = data.user?.username || reauthUsername;
+
+    setToken(data.token);
+    setAuthTimestamp(newAuthTime);
+    setLastAuthUsername(normalizedUsername);
+    localStorage.setItem('adminAuthenticated', 'true');
+    localStorage.setItem('adminToken', data.token);
+    localStorage.setItem('adminAuthenticatedAt', newAuthTime.toString());
+    localStorage.setItem('adminLastUsername', normalizedUsername);
+
+    return data.token;
+  };
+
+  const executeConfirmation = async () => {
+    if (!confirmationModal) return;
+    setIsProcessingAction(true);
+    try {
+      let freshToken = null;
+      if (confirmationModal.requiresReauth) {
+        freshToken = await performReauthentication();
+      }
+      await confirmationModal.onConfirm(freshToken || token);
+      closeConfirmationModal();
+    } catch (error) {
+      console.error('Confirmation modal error:', error);
+      setReauthError(error.message || 'Unable to complete this action.');
+    } finally {
+      setIsProcessingAction(false);
+    }
+  };
+
+  const loadProjects = async (authToken) => {
+    // Check if we're in development or if token is dev-token
+    const isLocalDevelopment = clientIsDevelopment ||
+                              authToken === 'dev-token' ||
+                              token === 'dev-token';
+    
+    // Development mode - load mock projects
+    if (isLocalDevelopment) {
   const getApiBase = () => process.env.REACT_APP_API_BASE || window.location.origin;
 
   const isLocalEnvironment = useCallback((authToken) => (
@@ -946,6 +1195,7 @@ function Admin() {
           description: 'Shadow Home Server',
           path: '/projects/s9',
           component: 'S9',
+          published: true,
           displayOrder: 1,
           published: true
         },
@@ -981,6 +1231,9 @@ function Admin() {
           id: 'muse',
           title: 'Muse',
           description: 'Automated Audio Equalizer',
+          path: '/projects/muse',
+          component: 'Muse',
+          published: true,
           path: '/projects/Muse',
           component: 'Muse',
           category: 'Hardware',
@@ -998,6 +1251,7 @@ function Admin() {
           description: 'Academia AR/VR Headset',
           path: '/projects/EL',
           component: 'EL',
+          published: false,
           category: 'Hardware',
           status: 'Paused',
           technology: ['AR/VR', 'Education'],
@@ -1013,6 +1267,7 @@ function Admin() {
           description: 'Rocket Propulsion System',
           path: '/projects/NFI',
           component: 'NFI',
+          published: true,
           displayOrder: 4,
           published: true
           category: 'Hardware',
@@ -1040,6 +1295,7 @@ function Admin() {
           description: 'Element Converter',
           path: '/projects/Naton',
           component: 'Naton',
+          published: false,
           displayOrder: 6,
           published: true
         },
@@ -1067,6 +1323,7 @@ function Admin() {
           description: 'Shadow Operating System',
           path: '/projects/sos',
           component: 'Sos',
+          published: true,
           category: 'Software',
           status: 'In Progress',
           technology: ['Operating System', 'Low-level'],
@@ -1082,6 +1339,7 @@ function Admin() {
           description: 'Shadow Simulator',
           path: '/projects/sim',
           component: 'Sim',
+          published: true,
           category: 'Software',
           status: 'In Progress',
           technology: ['Simulation', 'Software'],
@@ -1289,6 +1547,8 @@ function Admin() {
 
     setNewProjectErrors([]);
 
+    // Development mode - add to local state
+    if (isDevelopmentSession()) {
     // Check if we're in development
     const isLocalDevelopment = window.location.hostname === 'localhost' ||
                               window.location.hostname === '127.0.0.1' ||
@@ -1306,6 +1566,8 @@ function Admin() {
         createdAt: now,
         updatedAt: now
       };
+      setProjects([newProjectWithId, ...projects]);
+      setNewProject({ id: '', title: '', description: '', path: '', component: '', published: false });
 
       setProjects((prev) => [...prev, newProjectWithId]);
       setNewProject(createEmptyProject());
@@ -1352,6 +1614,7 @@ function Admin() {
       });
 
       if (response.ok) {
+        setNewProject({ id: '', title: '', description: '', path: '', component: '', published: false });
         setNewProject(createEmptyProject());
         await loadProjects();
         body: JSON.stringify(submission),
@@ -1447,6 +1710,10 @@ function Admin() {
 
     setEditProjectErrors([]);
 
+    // Development mode - update local state
+    if (isDevelopmentSession()) {
+      setProjects(projects.map(p =>
+        p._id === editingProject._id ? editingProject : p
     // Check if we're in development
     const isLocalDevelopment = window.location.hostname === 'localhost' ||
                               window.location.hostname === '127.0.0.1' ||
@@ -1539,6 +1806,88 @@ function Admin() {
     }
   };
 
+  const executeDeleteProject = async (project, authTokenOverride) => {
+    if (isDevelopmentSession()) {
+      setProjects((prev) => prev.filter((p) => p._id !== project._id));
+      setEditingProject((prev) => (prev && prev._id === project._id ? null : prev));
+      alert('Project deleted successfully! (Development mode)');
+      return;
+    }
+
+    try {
+      const API_BASE = process.env.REACT_APP_API_BASE || window.location.origin;
+      const apiEndpoint = `${API_BASE}/api/admin/projects/${project._id}`;
+      console.log('Deleting project at:', apiEndpoint);
+
+      const response = await fetch(apiEndpoint, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${authTokenOverride || token}`,
+        },
+      });
+
+      if (response.ok) {
+        setEditingProject((prev) => (prev && prev._id === project._id ? null : prev));
+        await loadProjects(authTokenOverride || token);
+        alert('Project deleted successfully!');
+      } else {
+        const errorText = await response.text().catch(() => '');
+        console.error('Failed to delete project:', errorText);
+        alert('Failed to delete project');
+      }
+    } catch (error) {
+      console.error('Error deleting project:', error);
+      alert('Failed to delete project');
+    }
+  };
+
+  const executePublishStatusChange = async (project, shouldPublish, authTokenOverride) => {
+    if (isDevelopmentSession()) {
+      setProjects((prev) => prev.map((p) => (
+        p._id === project._id ? { ...p, published: shouldPublish } : p
+      )));
+      setEditingProject((prev) => (
+        prev && prev._id === project._id ? { ...prev, published: shouldPublish } : prev
+      ));
+      alert(`Project ${shouldPublish ? 'published' : 'unpublished'} successfully! (Development mode)`);
+      return;
+    }
+
+    try {
+      const API_BASE = process.env.REACT_APP_API_BASE || window.location.origin;
+      const apiEndpoint = `${API_BASE}/api/admin/projects/${project._id}`;
+      console.log('Updating publish status at:', apiEndpoint);
+
+      const response = await fetch(apiEndpoint, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authTokenOverride || token}`,
+        },
+        body: JSON.stringify({ published: shouldPublish }),
+      });
+
+      if (response.ok) {
+        setEditingProject((prev) => (
+          prev && prev._id === project._id ? { ...prev, published: shouldPublish } : prev
+        ));
+        await loadProjects(authTokenOverride || token);
+        alert(`Project ${shouldPublish ? 'published' : 'unpublished'} successfully!`);
+      } else {
+        const errorText = await response.text().catch(() => '');
+        console.error('Failed to update publish status:', errorText);
+        alert('Failed to update publish status');
+      }
+    } catch (error) {
+      console.error('Error updating publish status:', error);
+      alert('Failed to update publish status');
+    }
+  };
+
+  const handlePublishToggle = (project, shouldPublish) => {
+    if (shouldPublish) {
+      executePublishStatusChange(project, true);
+      return;
   const handleDeleteProject = async (projectId) => {
     if (!window.confirm('Are you sure you want to delete this project?')) {
       return;
@@ -1717,6 +2066,26 @@ function Admin() {
       alert('Failed to update project order. Please try again.');
       await loadProjects();
     }
+
+    openConfirmationModal({
+      type: 'unpublish',
+      project,
+      title: `Unpublish "${project.title}"?`,
+      message: 'Unpublishing removes this card from the public projects feed until it is published again.',
+      confirmLabel: 'Unpublish',
+      onConfirm: (freshToken) => executePublishStatusChange(project, false, freshToken),
+    });
+  };
+
+  const handleDeleteProject = (project) => {
+    openConfirmationModal({
+      type: 'delete',
+      project,
+      title: `Delete "${project.title}"?`,
+      message: 'This action permanently removes the project and its history. Consider unpublishing if you only need to hide it.',
+      confirmLabel: 'Delete',
+      onConfirm: (freshToken) => executeDeleteProject(project, freshToken),
+    });
   };
   const catalogValue = useMemo(() => ({
     projects,
@@ -1790,6 +2159,14 @@ function Admin() {
             <button className="gs-btn" title="Return to homepage">GS</button>
           </Link>
           <h1>Admin Login</h1>
+          {clientIsDevelopment && (
+            <div id="dev-credentials" style={{
+              color: theme.warning,
+              fontSize: '0.9rem',
+              textAlign: 'center',
+              padding: '10px',
+              border: `1px solid ${theme.warning}`,
+              borderRadius: '5px',
           {sessionStatus && (
             <div
               className="session-status"
@@ -1817,16 +2194,32 @@ function Admin() {
               border: `1px solid ${theme.warning}`, 
               borderRadius: '5px', 
               marginBottom: '20px',
-              backgroundColor: `${theme.warning}20` 
+              backgroundColor: `${theme.warning}20`
             }} role="note" aria-label="Development mode credentials">
               <strong>Development Mode</strong><br />
-              Username: shadowpatriot9<br />
-              Password: 16196823
+              {FEATURE_FLAGS.devAuthBypass ? (
+                <>
+                  Username: {DEV_CREDENTIALS.username}<br />
+                  Password: {DEV_CREDENTIALS.password}
+                </>
+              ) : (
+                <span>Dev bypass is disabled. Use your admin credentials to sign in.</span>
+              )}
             </div>
           )}
         </header>
 
         <main className="login-form" role="main">
+          {securityNotices.length > 0 && (
+            <aside className="security-notices" role="alert">
+              <h2>Security reminders</h2>
+              <ul>
+                {securityNotices.map((notice, index) => (
+                  <li key={index}>{notice}</li>
+                ))}
+              </ul>
+            </aside>
+          )}
           <form onSubmit={handleLogin} aria-label="Admin login form">
             <div className="form-group">
               <label htmlFor="username-input">Username:</label>
@@ -1836,7 +2229,7 @@ function Admin() {
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 required
-                aria-describedby={process.env.NODE_ENV === 'development' ? 'dev-credentials' : undefined}
+                aria-describedby={clientIsDevelopment && FEATURE_FLAGS.devAuthBypass ? 'dev-credentials' : undefined}
                 autoComplete="username"
               />
             </div>
@@ -1848,7 +2241,7 @@ function Admin() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                aria-describedby={process.env.NODE_ENV === 'development' ? 'dev-credentials' : undefined}
+                aria-describedby={clientIsDevelopment && FEATURE_FLAGS.devAuthBypass ? 'dev-credentials' : undefined}
                 autoComplete="current-password"
               />
             </div>
@@ -1882,6 +2275,16 @@ function Admin() {
       </header>
 
       <main className={styles.admin_main} id="admin_main">
+        {securityNotices.length > 0 && (
+          <section className="security-notices" role="alert">
+            <h2>Security reminders</h2>
+            <ul>
+              {securityNotices.map((notice, index) => (
+                <li key={index}>{notice}</li>
+              ))}
+            </ul>
+          </section>
+        )}
         {/* Analytics Dashboard */}
         <AnalyticsDashboard />
         
@@ -2100,6 +2503,17 @@ function Admin() {
                 />
               </div>
             </div>
+            <div className="form-group checkbox-group">
+              <label className="checkbox-label">
+                <input
+                  type="checkbox"
+                  checked={newProject.published}
+                  onChange={(e) => setNewProject({ ...newProject, published: e.target.checked })}
+                />
+                <span>Published</span>
+              </label>
+              <p className="field-hint">Draft projects remain hidden from the public projects feed.</p>
+            </div>
             <div className="form-row">
               <div className="form-group">
                 <label>Display Order:</label>
@@ -2157,6 +2571,13 @@ function Admin() {
             />
             <button type="submit" className="add-btn">Add Project</button>
           </form>
+          <div className="preview-section" aria-live="polite">
+            <h3>Live Preview</h3>
+            <p className="field-hint">Validate formatting before saving. The preview updates as you edit.</p>
+            <div className="preview-card-wrapper">
+              <ProjectCard project={previewProject} previewMode />
+            </div>
+          </div>
         </section>
 
         {/* Existing Projects */}
@@ -2362,6 +2783,17 @@ function Admin() {
                         />
                       </div>
                     </div>
+                    <div className="form-group checkbox-group">
+                      <label className="checkbox-label">
+                        <input
+                          type="checkbox"
+                          checked={Boolean(editingProject.published)}
+                          onChange={(e) => setEditingProject({ ...editingProject, published: e.target.checked })}
+                        />
+                        <span>Published</span>
+                      </label>
+                      <p className="field-hint">Unpublishing will hide this project from public listings.</p>
+                    </div>
                     <div className="form-row">
                       <div className="form-group">
                         <label>Display Order:</label>
@@ -2433,6 +2865,31 @@ function Admin() {
                   </form>
                 ) : (
                   <div className="project-info">
+                    <div className="project-header-row">
+                      <h3>{project.title}</h3>
+                      <span
+                        className={`status-badge ${project.published ? 'status-badge--published' : 'status-badge--draft'}`}
+                      >
+                        {project.published ? 'Published' : 'Draft'}
+                      </span>
+                    </div>
+                    <p className="project-meta"><strong>ID:</strong> {project.id}</p>
+                    <p className="project-meta"><strong>Description:</strong> {project.description}</p>
+                    <p className="project-meta"><strong>Path:</strong> {project.path}</p>
+                    <p className="project-meta"><strong>Component:</strong> {project.component}</p>
+                    <p className="project-meta project-meta--timestamp">
+                      <strong>Updated:</strong>{' '}
+                      {project.updatedAt ? new Date(project.updatedAt).toLocaleString() : '—'}
+                    </p>
+                    <div className="project-actions">
+                      <button onClick={() => setEditingProject(project)} className="edit-btn">Edit</button>
+                      <button
+                        onClick={() => handlePublishToggle(project, !project.published)}
+                        className={project.published ? 'unpublish-btn' : 'publish-btn'}
+                      >
+                        {project.published ? 'Unpublish' : 'Publish'}
+                      </button>
+                      <button onClick={() => handleDeleteProject(project)} className="delete-btn">Delete</button>
                     <h3>{project.title}</h3>
                     <p><strong>ID:</strong> {project.id}</p>
                     <p><strong>Description:</strong> {project.description}</p>
@@ -2610,6 +3067,59 @@ function Admin() {
           </div>
         </section>
       </main>
+      {confirmationModal && (
+        <div
+          className="confirmation-modal-backdrop"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="confirmation-modal-title"
+          aria-describedby="confirmation-modal-message"
+        >
+          <div className="confirmation-modal">
+            <h3 id="confirmation-modal-title">{confirmationModal.title}</h3>
+            <p id="confirmation-modal-message">{confirmationModal.message}</p>
+            {confirmationModal.requiresReauth && (
+              <div className="reauth-container">
+                <p className="field-hint">
+                  Session age exceeds {REAUTH_THRESHOLD_MINUTES} minutes. Re-authenticate to continue.
+                </p>
+                <label className="form-group">
+                  <span>Username</span>
+                  <input
+                    type="text"
+                    value={reauthCredentials.username}
+                    onChange={(e) => setReauthCredentials((prev) => ({ ...prev, username: e.target.value }))}
+                    autoComplete="username"
+                  />
+                </label>
+                <label className="form-group">
+                  <span>Password</span>
+                  <input
+                    type="password"
+                    value={reauthCredentials.password}
+                    onChange={(e) => setReauthCredentials((prev) => ({ ...prev, password: e.target.value }))}
+                    autoComplete="current-password"
+                  />
+                </label>
+                {reauthError && <p className="error-text">{reauthError}</p>}
+              </div>
+            )}
+            <div className="modal-actions">
+              <button type="button" className="cancel-btn" onClick={closeConfirmationModal} disabled={isProcessingAction}>
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="danger-btn"
+                onClick={executeConfirmation}
+                disabled={isProcessingAction}
+              >
+                {isProcessingAction ? 'Processing...' : confirmationModal.confirmLabel || 'Confirm'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

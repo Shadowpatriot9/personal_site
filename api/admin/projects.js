@@ -1,4 +1,10 @@
 import jwt from 'jsonwebtoken';
+import { connectToDatabase } from '../_lib/db.js';
+import { ProjectModel } from '../_lib/models.js';
+import { logProjectMutation } from '../_lib/audit.js';
+
+const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-key-change-in-production';
+
 import ProjectModel, { sanitizeProjectPayload, validateProjectPayload } from './projectModel.js';
 import { connectToDatabase, ProjectModel } from '../_lib/projects';
 
@@ -38,15 +44,9 @@ const ProjectModel = mongoose.models.Project || mongoose.model('Project', Projec
 
 // Middleware to verify JWT token
 function verifyToken(req, res, next) {
-  console.log('\n' + '='.repeat(50));
-  console.log('🛡️ TOKEN VERIFICATION STARTED');
-  console.log('Time:', new Date().toISOString());
-  
   const authHeader = req.headers.authorization;
-  console.log('Authorization header:', authHeader ? `[${authHeader.length} chars]` : 'MISSING');
-  
+
   if (!authHeader) {
-    console.log('❌ TOKEN VERIFICATION FAILED: No authorization header');
     return res.status(401).json({ error: 'No token provided' });
 import {
   connectToDatabase,
@@ -61,6 +61,14 @@ function collectIdentifiers(body) {
     return [];
   }
 
+  const token = authHeader.split(' ')[1];
+
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    req.user = decoded;
+    next();
+  } catch (error) {
+    return res.status(401).json({ error: 'Invalid token' });
   if (Array.isArray(body)) {
     return body;
   }
@@ -87,24 +95,26 @@ function collectIdentifiers(body) {
   return Array.from(identifiers);
 }
 
+function normalizePublishedValue(value) {
+  if (typeof value === 'boolean') {
+    return value;
+  }
+
+  if (typeof value === 'string') {
+    return value.toLowerCase() === 'true';
+  }
+
+  return false;
+}
+
 export default async function handler(req, res) {
-  console.log('\n' + '='.repeat(50));
-  console.log('📁 ADMIN PROJECTS API CALLED');
-  console.log('Time:', new Date().toISOString());
-  console.log('Method:', req.method);
-  console.log('URL:', req.url);
-  console.log('Headers:', JSON.stringify(req.headers, null, 2));
-  console.log('='.repeat(50));
-  
-  // Verify authentication for all operations
   verifyToken(req, res, async () => {
-    console.log('\n💾 DATABASE CONNECTION:');
     try {
-      console.log('Attempting to connect to database...');
       await connectToDatabase();
-      console.log('✅ Database connected successfully');
 
       switch (req.method) {
+        case 'GET': {
+          const projects = await ProjectModel.find().sort({ createdAt: -1 });
         case 'GET':
           // Get all projects ordered by display order first then creation time
           const projects = await ProjectModel.find().sort({ displayOrder: 1, createdAt: -1 });
@@ -114,7 +124,12 @@ export default async function handler(req, res) {
           const projects = await ProjectModel.find().sort({ dateCreated: -1 });
           res.status(200).json({ projects });
           break;
+        }
 
+        case 'POST': {
+          const { id, title, description, path, component, published } = req.body;
+
+          const existingProject = await ProjectModel.findOne({ id });
         case 'POST':
           // Create new project
           const { id, title, description, path, component, displayOrder, published } = req.body;
@@ -137,6 +152,7 @@ export default async function handler(req, res) {
             return res.status(400).json({ error: 'Project with this ID already exists' });
           }
 
+          const newProject = await ProjectModel.create({
           const projectCount = await ProjectModel.countDocuments();
           const parsedOrder = Number(displayOrder);
           const normalizedOrder = Number.isFinite(parsedOrder) ? parsedOrder : projectCount;
@@ -156,6 +172,16 @@ export default async function handler(req, res) {
             description,
             path,
             component,
+            published: normalizePublishedValue(published),
+          });
+
+          await logProjectMutation({
+            projectId: newProject._id,
+            projectIdentifier: newProject.id,
+            action: 'create',
+            actor: req.user?.username,
+            after: newProject.toObject(),
+            summary: `Project "${newProject.title}" was created`,
             displayOrder: normalizedOrder,
             published: normalizedPublished
             published,
@@ -196,6 +222,9 @@ export default async function handler(req, res) {
           });
         }
 
+          res.status(201).json({ message: 'Project created successfully', project: newProject });
+          break;
+        }
         if (!payload.component) {
           return res.status(400).json({ error: 'Missing required field: component' });
         }
@@ -297,6 +326,7 @@ export default async function handler(req, res) {
         res.setHeader('Allow', ['GET', 'POST', 'PUT', 'DELETE']);
         return res.status(405).json({ error: 'Method not allowed' });
     }
+  });
   } catch (error) {
     console.error('Projects API error:', error);
     if (error && error.code === 11000) {
