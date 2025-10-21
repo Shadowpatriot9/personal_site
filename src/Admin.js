@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import AnalyticsDashboard from './components/AnalyticsDashboard';
 import PerformanceMonitor from './components/PerformanceMonitor';
 import { useTheme } from './contexts/ThemeContext';
+import { useProjects } from './contexts/ProjectsContext';
 import styles from './styles/styles_admin.css';
 
 class SessionExpiredError extends Error {
@@ -15,6 +16,7 @@ class SessionExpiredError extends Error {
 
 function Admin() {
   const { theme } = useTheme();
+  const { refresh: refreshProjectCatalog, syncProjects } = useProjects();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -419,6 +421,102 @@ function Admin() {
     setSessionStatus('');
     console.log('✅ Logout successful');
   }, [clearAuthState]);
+  };
+
+  const loadProjects = async (authToken) => {
+    // Check if we're in development or if token is dev-token
+    const isLocalDevelopment = window.location.hostname === 'localhost' || 
+                              window.location.hostname === '127.0.0.1' ||
+                              process.env.NODE_ENV === 'development' ||
+                              authToken === 'dev-token';
+    
+    // Development mode - load mock projects
+    if (isLocalDevelopment) {
+      const mockProjects = [
+        {
+          _id: '1',
+          id: 's9',
+          title: 'S9',
+          description: 'Shadow Home Server',
+          path: '/projects/s9',
+          component: 'S9'
+        },
+        {
+          _id: '2',
+          id: 'muse',
+          title: 'Muse',
+          description: 'Automated Audio Equalizer',
+          path: '/projects/muse',
+          component: 'Muse'
+        },
+        {
+          _id: '3',
+          id: 'el',
+          title: 'EyeLearn',
+          description: 'Academia AR/VR Headset',
+          path: '/projects/EL',
+          component: 'EL'
+        },
+        {
+          _id: '4',
+          id: 'nfi',
+          title: 'NFI',
+          description: 'Rocket Propulsion System',
+          path: '/projects/NFI',
+          component: 'NFI'
+        },
+        {
+          _id: '5',
+          id: 'naton',
+          title: 'Naton',
+          description: 'Element Converter',
+          path: '/projects/Naton',
+          component: 'Naton'
+        },
+        {
+          _id: '6',
+          id: 'sos',
+          title: 'sOS',
+          description: 'Shadow Operating System',
+          path: '/projects/sos',
+          component: 'Sos'
+        },
+        {
+          _id: '7',
+          id: 'sim',
+          title: 'S_im',
+          description: 'Shadow Simulator',
+          path: '/projects/sim',
+          component: 'Sim'
+        }
+      ];
+      setProjects(mockProjects);
+      refreshProjectCatalog();
+      return;
+    }
+
+    // Production mode
+    try {
+      const API_BASE = process.env.REACT_APP_API_BASE || window.location.origin;
+      const apiEndpoint = `${API_BASE}/api/admin/projects`;
+      console.log('Loading projects from:', apiEndpoint);
+      
+      const response = await fetch(apiEndpoint, {
+        headers: {
+          'Authorization': `Bearer ${authToken || token}`
+        }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setProjects(data.projects);
+        syncProjects(data.projects);
+      } else if (response.status === 401) {
+        handleLogout();
+      }
+    } catch (error) {
+      console.error('Error loading projects:', error);
+    }
+  };
 
   const handleAddProject = async (e) => {
     e.preventDefault();
@@ -435,7 +533,9 @@ function Admin() {
         ...newProject,
         _id: Date.now().toString()
       };
-      setProjects([newProjectWithId, ...projects]);
+      const updatedProjects = [newProjectWithId, ...projects];
+      setProjects(updatedProjects);
+      syncProjects(updatedProjects);
       setNewProject({ id: '', title: '', description: '', path: '', component: '' });
       alert('Project added successfully! (Development mode)');
       return;
@@ -484,9 +584,11 @@ function Admin() {
 
     // Development mode - update local state
     if (isLocalDevelopment) {
-      setProjects(projects.map(p =>
+      const updatedProjects = projects.map(p =>
         p._id === editingProject._id ? editingProject : p
-      ));
+      );
+      setProjects(updatedProjects);
+      syncProjects(updatedProjects);
       setEditingProject(null);
       alert('Project updated successfully! (Development mode)');
       return;
@@ -535,7 +637,9 @@ function Admin() {
 
       // Development mode - remove from local state
       if (isLocalDevelopment) {
-        setProjects(projects.filter(p => p._id !== projectId));
+        const updatedProjects = projects.filter(p => p._id !== projectId);
+        setProjects(updatedProjects);
+        syncProjects(updatedProjects);
         alert('Project deleted successfully! (Development mode)');
         return;
       }

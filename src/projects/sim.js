@@ -1,16 +1,31 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import logger from '../utils/logger';
+import { useProjectMetadata } from '../contexts/ProjectsContext';
 
 import styles from './../styles/styles_sub.module.css';
 
 function Sim() {
+  const { project } = useProjectMetadata('sim');
+  const projectTitle = project?.title || 'S_im';
+  const projectDescription = project?.description || 'Shadow Simulator';
+
+  useEffect(() => {
+    logger.pageView(`${projectTitle} Project Page`, {
+      project: project?.id || 'sim',
+      projectType: projectDescription,
+      dateOfOrigin: '12/2024',
+      status: 'In Progress'
+    });
+  }, [projectTitle, projectDescription, project?.id]);
+
   return (
     <div className={styles.body2} id='body2'>
       {/* Page Head */}
       {/* Encoding */}
       <meta charSet="UTF-8" name="viewport" content="width=device-width, initial-scale=1.0" />
       {/* Site Tab Title */}
-      <title> S_Im </title>
+      <title> {projectTitle} </title>
       {/* External Links */}
       <link rel="stylesheet" href="styles.css" />
       {/* Body */}
@@ -30,11 +45,19 @@ function Sim() {
           <div className="grid-1">
             {/* Section | S9 */}
             <section id="title">
-              <h1> S_im </h1>
+              <h1> {projectTitle} </h1>
+              {projectDescription && (
+                <p style={{ marginTop: '8px' }}>
+                  <strong>{projectDescription}</strong>
+                </p>
+              )}
             </section>
             {/* Section | Brief */}
             <section className="section" id="brief">
-              <h3> Description: <p> (Date of origin: 12/2024) </p> </h3>
+              <h3> Description: </h3>
+              <p>
+                <span>(Date of origin: 12/2024)</span>
+              </p>
               WIP, see link below <br />
               <a href="https://github.com/Shadowpatriot9/S_im"> Link </a>
             </section>
