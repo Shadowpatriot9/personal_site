@@ -5,7 +5,7 @@ import {
   getTokenExpiry,
   ACCESS_TOKEN_EXPIRATION,
   REFRESH_TOKEN_EXPIRATION,
-} from '../_lib/auth';
+} from '../../lib/server/auth.js';
 
 const DEFAULT_USERNAME = 'shadowpatriot9';
 const DEFAULT_PASSWORD = '16196823';
