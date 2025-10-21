@@ -1,8 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import logger from './utils/logger';
 import ThemeSwitcher from './components/ThemeSwitcher';
-import ProjectSearch, { publishedProjectsData } from './components/ProjectSearch';
 import ProjectSearch from './components/ProjectSearch';
 import ProjectGrid from './components/ProjectGrid';
 import ContactForm from './components/ContactForm';
@@ -10,133 +9,179 @@ import MobileEnhancements from './components/MobileEnhancements';
 import { useTheme } from './contexts/ThemeContext';
 import { useProjects } from './contexts/ProjectsContext';
 
-import styles from './styles/styles_page.css';
+import './styles/styles_page.css';
 import './styles/styles_mobile.css';
 
-export function initializeAnimations() {
-  /////////////////////////////////////
-  // Animations 
-  /////////////////////////////////////
+export const initializeAnimations = () => {
+  if (typeof document === 'undefined') {
+    return () => {};
+  }
 
-  // Splash Screen Fade-Out
-  const splash = document.getElementById("splash-screen");
-  setTimeout(() => {
-    splash.style.opacity = 0;
-    splash.style.pointerEvents = "none";
-  }, 500);
+  const splash = document.getElementById('splash-screen');
+  let timeoutId;
 
-  // Smooth Scroll for Navigation Link
-  document.querySelectorAll('nav a').forEach(link => {
-    link.addEventListener('click', event => {
-      event.preventDefault();
-      const targetId = link.getAttribute('href').substring(1);
-      const targetSection = document.getElementById(targetId);
+  if (splash) {
+    timeoutId = window.setTimeout(() => {
+      splash.style.opacity = '0';
+      splash.style.pointerEvents = 'none';
+    }, 500);
+  }
 
-      if (targetSection) {
-        targetSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }
-    });
-  });
-}
+  const links = Array.from(document.querySelectorAll('a[href^="#"], [data-scroll-target]'));
+
+  const handleClick = (event) => {
+    const targetId = event.currentTarget.getAttribute('href')?.replace('#', '')
+      || event.currentTarget.getAttribute('data-scroll-target');
+    if (!targetId) {
+      return;
+    }
+
+    const target = document.getElementById(targetId);
+    if (!target) {
+      return;
+    }
+
+    event.preventDefault();
+    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
+  links.forEach((link) => link.addEventListener('click', handleClick));
+
+  return () => {
+    if (timeoutId) {
+      window.clearTimeout(timeoutId);
+    }
+    links.forEach((link) => link.removeEventListener('click', handleClick));
+  };
+};
 
 function Main() {
   const { theme } = useTheme();
-  const [filteredProjects, setFilteredProjects] = useState(publishedProjectsData);
-  const [filteredProjects, setFilteredProjects] = useState([]);
-  const [isProjectLoading, setIsProjectLoading] = useState(true);
   const { projects, loading: projectsLoading, error: projectsError, refresh: refreshProjects } = useProjects();
-  const [filteredProjects, setFilteredProjects] = useState([]);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [filteredProjects, setFilteredProjects] = useState(projects);
 
   useEffect(() => {
     setFilteredProjects(projects);
   }, [projects]);
-  
+
   useEffect(() => {
-    // Log page view
     logger.pageView('Homepage', {
-      hasProjects: true,
+      hasProjects: projects.length > 0,
       sections: ['about', 'contact', 'projects'],
-      projectCount: publishedProjectsData.length
-      projectCount: projects.length
+      projectCount: projects.length,
     });
-    
-    // Log performance timing
-    if (window.performance && window.performance.timing) {
-      const loadTime = window.performance.timing.loadEventEnd - window.performance.timing.navigationStart;
-      if (loadTime > 0) {
+
+    if (typeof window !== 'undefined' && window.performance?.timing) {
+      const { timing } = window.performance;
+      const loadTime = timing.loadEventEnd - timing.navigationStart;
+      if (Number.isFinite(loadTime) && loadTime > 0) {
         logger.performance('Page Load Time', loadTime, 'ms');
       }
     }
-    
-    if (document.readyState === 'complete' || document.readyState === 'interactive') {
-      initializeAnimations();
-    } else {
-      document.addEventListener('DOMContentLoaded', initializeAnimations);
-    }
-    return () => {
-      document.removeEventListener('DOMContentLoaded', initializeAnimations);
+
+    let cleanupAnimations;
+    const handleReady = () => {
+      cleanupAnimations = initializeAnimations();
     };
-  }, []);
+
+    if (typeof document !== 'undefined') {
+      if (document.readyState === 'complete' || document.readyState === 'interactive') {
+        handleReady();
+      } else {
+        document.addEventListener('DOMContentLoaded', handleReady, { once: true });
+      }
+    }
+
+    return () => {
+      if (cleanupAnimations) {
+        cleanupAnimations();
+      }
+      if (typeof document !== 'undefined') {
+        document.removeEventListener('DOMContentLoaded', handleReady);
+      }
+    };
+  }, [projects.length]);
+
+  const isProjectLoading = projectsLoading || searchLoading;
+
+  const projectGridProps = useMemo(
+    () => ({
+      projects: filteredProjects,
+      loading: isProjectLoading,
+      error: projectsError,
+      onRetry: refreshProjects,
+      emptyMessage: 'Try adjusting your search or filters to find more projects.',
+    }),
+    [filteredProjects, isProjectLoading, projectsError, refreshProjects],
+  );
 
   return (
-    <div className={styles.body1} id='body1'>
-      {/* Page Head - These meta tags should be in the HTML head, not here */}
-
-      {/* Page Body */}
-      {/* Home Splash Screen */}
+    <div className="body1" id="body1">
       <div className="splash-screen" id="splash-screen" role="presentation" aria-hidden="true">
         <div className="splash-logo">
           Grayden Scovil
-          <div id="splash-overlay"> </div>
+          <div id="splash-overlay" />
         </div>
       </div>
 
-      {/* Fade Out Overlay */}
       <div className="overlay1" id="overlay" role="presentation" aria-hidden="true" />
 
-      {/* Page Title */}
-      <header className="header1" role="banner" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'relative' }}>
+      <header
+        className="header1"
+        role="banner"
+        style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'relative' }}
+      >
         <Link to="/admin" aria-label="Navigate to admin panel">
-          <button 
-            className="input" 
-            id="input" 
-            onClick={() => logger.interaction('click', 'admin-access', { destination: '/admin', source: 'homepage-header' })}
+          <button
+            className="input"
+            id="input"
+            onClick={() =>
+              logger.interaction('click', 'admin-access', {
+                destination: '/admin',
+                source: 'homepage-header',
+              })
+            }
             aria-label="Grayden Scovil - Click to access admin panel"
             title="Admin Access"
           >
-            <h1 id="main-title" aria-hidden="true"> GS </h1>
-            <h1 id="full-name" aria-hidden="true"> Grayden Scovil </h1>
-            <div className="full-name-cover" id="full-name-cover" aria-hidden="true"> </div>
+            <h1 id="main-title" aria-hidden="true">
+              GS
+            </h1>
+            <h1 id="full-name" aria-hidden="true">
+              Grayden Scovil
+            </h1>
+            <div className="full-name-cover" id="full-name-cover" aria-hidden="true" />
           </button>
         </Link>
-        
-        {/* Theme Switcher */}
-        <div style={{ 
-          position: 'absolute', 
-          top: '20px', 
-          right: '20px', 
-          zIndex: 100 
-        }}>
+
+        <div
+          style={{
+            position: 'absolute',
+            top: '20px',
+            right: '20px',
+            zIndex: 100,
+          }}
+        >
           <ThemeSwitcher />
         </div>
       </header>
 
-      {/* Main */}
       <main className="main1" id="main-content" role="main">
-        {/* Home Grid */}
         <div className="grid-11">
-          {/* About Section */}
           <section className="section1" id="about" aria-labelledby="about-heading">
-            <h2 className="section-header" id="about-heading"> About </h2>
+            <h2 className="section-header" id="about-heading">
+              About
+            </h2>
             <p>
               Welcome welcome.
-              <svg 
-                xmlns="http://www.w3.org/2000/svg" 
-                height="20px" 
-                viewBox="0 -900 900 900" 
-                width="24px" 
-                fill={theme.text} 
-                style={{ verticalAlign: "middle" }}
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                height="20px"
+                viewBox="0 -900 900 900"
+                width="24px"
+                fill={theme.text}
+                style={{ verticalAlign: 'middle' }}
                 role="img"
                 aria-label="Sound wave icon"
               >
@@ -144,135 +189,73 @@ function Main() {
               </svg>
               <br />
               To keep it simple, I'm Grayden and I'm in Colorado.
-
               <br />
               <br />
-              Feel free to check out my stuff below and click on the fancy stuff in the 'Contact' section
-              if want to see more of me.
+              Feel free to check out my stuff below and click on the fancy stuff in the 'Contact' section if you want to see
+              more of me.
             </p>
           </section>
-          {/* Contact Section */}
           <section className="section1" id="contact" aria-labelledby="contact-heading">
-            <h2 className="section-header" id="contact-heading"> Contact </h2>
+            <h2 className="section-header" id="contact-heading">
+              Contact
+            </h2>
             <ContactForm />
           </section>
         </div>
 
         <div className="grid-21" style={{ width: '100%' }}>
-          {/* Projects Section */}
           <section className="section1" id="projects" aria-labelledby="projects-heading" style={{ width: '100%' }}>
-            <h2 className="section-header" id="projects-heading"> Projects </h2>
-            
-            {/* Search & Filter Component */}
+            <h2 className="section-header" id="projects-heading">
+              Projects
+            </h2>
+
             <ProjectSearch
               onFilteredResults={setFilteredProjects}
-              onLoadingChange={setIsProjectLoading}
+              onLoadingChange={setSearchLoading}
               className="projects-search"
             />
 
-            {/* Dynamic Project Grid */}
-            {isProjectLoading ? (
-              <div style={{
-                textAlign: 'center',
-                padding: '60px 20px',
-                color: theme.textSecondary,
-              }}>
-                <div style={{
-                  fontSize: '48px',
-                  marginBottom: '16px',
-                }}>
-                  ⏳
-                </div>
-                <h3 style={{
-                  color: theme.text,
-                  marginBottom: '8px',
-                }}>
-                  Loading Projects
-                </h3>
-                <p>Fetching the latest list. Hang tight!</p>
-              </div>
-            ) : (
-              <ProjectGrid
-                projects={filteredProjects}
-                emptyMessage="Try adjusting your search or filters to find more projects."
-              />
-            )}
-            <ProjectGrid
-              projects={filteredProjects}
-              loading={projectsLoading}
-              error={projectsError}
-              onRetry={refreshProjects}
-              emptyMessage="Try adjusting your search or filters to find more projects."
-            />
+            <ProjectGrid {...projectGridProps} />
           </section>
         </div>
       </main>
 
-      {/* Footer */}
       <footer className="footer1" role="contentinfo">
-        {/* Copyright */}
         <div className="graphic1">
-          <p> © 2025 Grayden Scovil </p>
+          <p>© 2025 Grayden Scovil</p>
         </div>
-        {/* Love Note */}
         <div className="love-note1">
           <p>
             Made with
-            <svg 
-              version="1.0" 
-              id="Layer_1" 
-              xmlns="http://www.w3.org/2000/svg" 
-              xmlnsXlink="http://www.w3.org/1999/xlink" 
-              width="23px" 
-              height="13px" 
-              viewBox="0 0 64 64" 
-              enableBackground="new 0 0 64 64" 
-              xmlSpace="preserve" 
+            <svg
+              version="1.0"
+              id="Layer_1"
+              xmlns="http://www.w3.org/2000/svg"
+              xmlnsXlink="http://www.w3.org/1999/xlink"
+              width="23px"
+              height="13px"
+              viewBox="0 0 64 64"
+              xmlSpace="preserve"
               fill={theme.danger}
               role="img"
               aria-label="Heart icon"
             >
               <g id="SVGRepo_bgCarrier" strokeWidth={0} />
               <g id="SVGRepo_tracerCarrier" strokeLinecap="round" strokeLinejoin="round" />
-              <g id="SVGRepo_iconCarrier"> 
-                <path fill={theme.danger} d="M47.977,5.99c-4.416,0-8.414,1.792-11.308,4.686l-4.685,4.654l-4.686-4.654 C24.406,7.782,20.408,5.99,15.992,5.99C7.161,5.99,0,13.15,0,21.982c0,4.416,2.85,8.539,5.747,11.432l23.41,23.414 c1.562,1.562,4.092,1.562,5.653,0l23.349-23.352c2.896-2.893,5.81-7.078,5.81-11.494C63.969,13.15,56.808,5.99,47.977,5.99z" /> 
+              <g id="SVGRepo_iconCarrier">
+                <path
+                  fill={theme.danger}
+                  d="M47.977,5.99c-4.416,0-8.414,1.792-11.308,4.686l-4.685,4.654l-4.686-4.654 C24.406,7.782,20.408,5.99,15.992,5.99C7.161,5.99,0,13.15,0,21.982c0,4.416,2.85,8.539,5.747,11.432l23.41,23.414 c1.562,1.562,4.092,1.562,5.653,0l23.349-23.352c2.896-2.893,5.81-7.078,5.81-11.494C63.969,13.15,56.808,5.99,47.977,5.99z"
+                />
               </g>
             </svg>
           </p>
         </div>
       </footer>
 
-      {/* Mobile Enhancements */}
       <MobileEnhancements />
     </div>
   );
 }
 
 export default Main;
-
-// For Button fade out actions for each project card
-// // S9
-// script.js
-// document.getElementById('s9-btn').addEventListener('click', function () {
-//   const mainContent = document.getElementById('overlay');
-//   mainContent.classList.add('fade-out');
-//   setTimeout(() => {
-//   }, 500);
-// });
-
-
-
-//** placeholder for new function, its broken */
-// // Splash Screen Check if Visited
-// const splash = document.getElementById("splash-screen");
-// const body = document.body;
-// const lastVisit = localStorage.getItem('lastVisit');
-// const now = new Date().getTime();
-// const threeMinutes = 3 * 60 * 1000;
-
-// if (lastVisit && (now - lastVisit) < threeMinutes) {
-//     // Skip splash screen
-//     splash.style.display = 'flex';
-// }
-
-

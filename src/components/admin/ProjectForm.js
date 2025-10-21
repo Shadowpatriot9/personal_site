@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import PropTypes from 'prop-types';
 import { useTheme } from '../../contexts/ThemeContext';
 import '../../styles/styles_admin.css';
 
@@ -177,3 +178,20 @@ const ProjectForm = ({
 };
 
 export default ProjectForm;
+
+ProjectForm.propTypes = {
+  initialData: PropTypes.shape({
+    id: PropTypes.string,
+    title: PropTypes.string,
+    description: PropTypes.string,
+    path: PropTypes.string,
+    component: PropTypes.string,
+    published: PropTypes.bool,
+    order: PropTypes.number,
+  }),
+  mode: PropTypes.oneOf(['create', 'edit']),
+  submitLabel: PropTypes.string,
+  onSubmit: PropTypes.func.isRequired,
+  onCancel: PropTypes.func,
+  isSubmitting: PropTypes.bool,
+};

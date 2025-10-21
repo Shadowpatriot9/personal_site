@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import PropTypes from 'prop-types';
 import { useTheme } from '../contexts/ThemeContext';
 import logger from '../utils/logger';
 
@@ -196,6 +197,11 @@ const ThemeSwitcher = ({ className = '', style = {} }) => {
       `}</style>
     </div>
   );
+};
+
+ThemeSwitcher.propTypes = {
+  className: PropTypes.string,
+  style: PropTypes.object,
 };
 
 export default ThemeSwitcher;
