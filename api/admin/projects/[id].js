@@ -1,5 +1,6 @@
 import mongoose from 'mongoose';
 import jwt from 'jsonwebtoken';
+import ProjectModel, { sanitizeProjectPayload, validateProjectPayload } from '../projectModel.js';
 
 const MONGO_URI = process.env.MONGO_URI;
 const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-key-change-in-production';
@@ -17,19 +18,6 @@ async function connectToDatabase() {
   cachedDb = client;
   return client;
 }
-
-// Project Schema
-const ProjectSchema = new mongoose.Schema({
-  id: { type: String, required: true, unique: true },
-  title: { type: String, required: true },
-  description: { type: String, required: true },
-  path: { type: String, required: true },
-  component: { type: String, required: true },
-  createdAt: { type: Date, default: Date.now },
-  updatedAt: { type: Date, default: Date.now }
-});
-
-const ProjectModel = mongoose.models.Project || mongoose.model('Project', ProjectSchema);
 
 // Middleware to verify JWT token
 function verifyToken(req, res, next) {
@@ -58,17 +46,28 @@ export default async function handler(req, res) {
       switch (req.method) {
         case 'PUT':
           // Update project
-          const { title, description, path, component } = req.body;
-          
+          let sanitizedUpdate;
+          try {
+            sanitizedUpdate = sanitizeProjectPayload(req.body, { applyDefaults: false });
+          } catch (validationError) {
+            return res.status(400).json({ error: validationError.message });
+          }
+
+          const validationErrors = validateProjectPayload(sanitizedUpdate, { requireAllFields: true });
+          if (validationErrors.length > 0) {
+            return res.status(400).json({ error: validationErrors.join(', ') });
+          }
+
+          if (sanitizedUpdate.id) {
+            const duplicate = await ProjectModel.findOne({ id: sanitizedUpdate.id, _id: { $ne: id } });
+            if (duplicate) {
+              return res.status(400).json({ error: 'Another project with this ID already exists' });
+            }
+          }
+
           const updatedProject = await ProjectModel.findByIdAndUpdate(
             id,
-            {
-              title,
-              description,
-              path,
-              component,
-              updatedAt: Date.now()
-            },
+            sanitizedUpdate,
             { new: true, runValidators: true }
           );
 
