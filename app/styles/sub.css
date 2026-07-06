@@ -1,0 +1,147 @@
+/*********************************/
+/* Project sub-page styles         */
+/*********************************/
+
+.subpage {
+    font-family: var(--font-body);
+    background-color: var(--color-background);
+    color: var(--color-text);
+    min-height: 100dvh;
+    scroll-behavior: smooth;
+    transition: background-color 0.4s ease, color 0.4s ease;
+    line-height: 1.65;
+}
+
+/* Content column */
+.subpage main {
+    max-width: var(--content-width);
+    margin: 0 auto;
+    padding: 56px 24px 64px;
+}
+
+.subpage .container {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+/* Title block */
+.subpage #title {
+    margin-bottom: 8px;
+}
+
+.subpage #title h1 {
+    margin: 0;
+    font-family: var(--font-display);
+    font-size: clamp(2.2rem, 6vw, 3rem);
+    font-weight: 600;
+    letter-spacing: -0.035em;
+    line-height: 1.05;
+    color: var(--color-text);
+}
+
+.subpage #title p {
+    margin: 10px 0 0;
+    font-size: 1.125rem;
+    color: var(--color-textSecondary);
+}
+
+/* Content cards */
+.subpage .section {
+    display: flex;
+    flex-direction: column;
+    padding: 28px;
+    background: var(--color-cardBg);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-1);
+    opacity: 0;
+    animation: reveal 0.6s cubic-bezier(0.2, 0.7, 0.2, 1) 0.1s forwards;
+    font-size: 1.0625rem;
+    line-height: 1.75;
+    color: var(--color-text);
+}
+
+.subpage .section h2,
+.subpage .section h3 {
+    margin: 0 0 14px;
+    font-family: var(--font-display);
+    font-size: 1.25rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    color: var(--color-text);
+}
+
+.discontinued-tag {
+    display: flex;
+    width: fit-content;
+    align-items: center;
+    margin-bottom: 16px;
+    padding: 5px 12px;
+    font-size: 0.78rem;
+    font-weight: 500;
+    color: var(--color-textSecondary);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-pill);
+}
+
+.subpage .section p {
+    margin: 0 0 12px;
+    color: var(--color-text);
+}
+
+.subpage .section ul {
+    margin: 8px 0;
+    padding-left: 22px;
+}
+
+.subpage .section li {
+    margin: 4px 0;
+}
+
+.subpage .section a {
+    color: var(--color-primary);
+}
+
+.subpage #brief h2,
+.subpage #brief h3 {
+    display: inline-block;
+}
+
+/* Vertical layout for all grids */
+.subpage .grid-1,
+.subpage .grid-2,
+.subpage .grid-3 {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+/* Footer */
+.subpage footer {
+    max-width: var(--content-width);
+    margin: 0 auto;
+    padding: 32px 24px 48px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    border-top: 1px solid var(--color-border);
+}
+
+.subpage footer .graphic p {
+    margin: 0;
+    font-size: 0.85rem;
+    color: var(--color-textSecondary);
+}
+
+@media (max-width: 720px) {
+    .subpage main {
+        padding: 44px 20px 56px;
+    }
+
+    .subpage .section {
+        padding: 22px;
+    }
+}
