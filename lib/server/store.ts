@@ -61,11 +61,7 @@ async function blobRead(): Promise<StoredProject[] | null> {
   if (blobs.length === 0) {
     return null;
   }
-  // Private blobs require the token as a Bearer header.
-  const res = await fetch(blobs[0].url, {
-    headers: { authorization: `Bearer ${token}` },
-    cache: 'no-store',
-  });
+  const res = await fetch(blobs[0].url, { cache: 'no-store' });
   if (!res.ok) {
     throw new Error(`Blob read failed: ${res.status}`);
   }
@@ -74,7 +70,7 @@ async function blobRead(): Promise<StoredProject[] | null> {
 
 async function blobWrite(projects: StoredProject[]): Promise<void> {
   await put(BLOB_KEY, JSON.stringify(projects), {
-    access: 'private',
+    access: 'public',
     addRandomSuffix: false,
     allowOverwrite: true,
     contentType: 'application/json',
