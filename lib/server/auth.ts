@@ -122,7 +122,10 @@ function resolveCredential(name: string, devFallback: string): string {
 const deriveCredentialKey = (value: string) =>
   crypto.pbkdf2Sync(value, CREDENTIALS_SALT, PBKDF2_ITERATIONS, DERIVED_KEY_LENGTH, DERIVED_KEY_DIGEST);
 
-function parseHash(hashValue: string | undefined, fallbackValue: string): Buffer {
+// getFallback is a thunk so the credential fallback is only resolved when the
+// hash is missing/invalid — otherwise a set *_HASH with an unset plaintext var
+// would still throw in production.
+function parseHash(hashValue: string | undefined, getFallback: () => string): Buffer {
   if (hashValue) {
     try {
       const buffer = Buffer.from(hashValue, 'hex');
@@ -133,16 +136,17 @@ function parseHash(hashValue: string | undefined, fallbackValue: string): Buffer
       /* fall through */
     }
   }
-  return deriveCredentialKey(fallbackValue);
+  return deriveCredentialKey(getFallback());
 }
 
 const getAdminUsernameHash = () =>
-  parseHash(
-    process.env.ADMIN_USERNAME_HASH,
+  parseHash(process.env.ADMIN_USERNAME_HASH, () =>
     resolveCredential('ADMIN_USERNAME', DEV_USERNAME).trim().toLowerCase(),
   );
 const getAdminPasswordHash = () =>
-  parseHash(process.env.ADMIN_PASSWORD_HASH, resolveCredential('ADMIN_PASSWORD', DEV_PASSWORD));
+  parseHash(process.env.ADMIN_PASSWORD_HASH, () =>
+    resolveCredential('ADMIN_PASSWORD', DEV_PASSWORD),
+  );
 
 const constantTimeEquals = (provided: Buffer, expected: Buffer) =>
   provided.length === expected.length && crypto.timingSafeEqual(provided, expected);
