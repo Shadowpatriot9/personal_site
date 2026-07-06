@@ -1,8 +1,7 @@
 import { promises as fs } from 'fs';
 import path from 'path';
 import crypto from 'crypto';
-import { connectToDatabase, isDatabaseConfigured } from './db';
-import { ProjectModel, normalizeProjectInput, buildProjectLookup } from './model';
+import { put, list } from '@vercel/blob';
 import { fallbackProjects } from '@/lib/projects';
 
 export interface StoredProject {
@@ -24,13 +23,6 @@ export interface StoredProject {
   createdAt: string;
   updatedAt: string;
 }
-
-// ---------------------------------------------------------------------------
-// File-backed store (used when MONGO_URI is not set)
-// ---------------------------------------------------------------------------
-
-const DATA_DIR = path.join(process.cwd(), '.data');
-const DATA_FILE = path.join(DATA_DIR, 'projects.json');
 
 const now = () => new Date().toISOString();
 
@@ -55,24 +47,81 @@ const seedProjects = (): StoredProject[] =>
     updatedAt: now(),
   }));
 
-async function readFileStore(): Promise<StoredProject[]> {
+// ---------------------------------------------------------------------------
+// Persistence backends: Vercel Blob in production, a local JSON file in dev.
+// ---------------------------------------------------------------------------
+
+const BLOB_KEY = 'projects.json';
+const blobToken = () => process.env.BLOB_READ_WRITE_TOKEN;
+const useBlob = () => Boolean(blobToken());
+
+async function blobRead(): Promise<StoredProject[] | null> {
+  const token = blobToken() as string;
+  const { blobs } = await list({ token, prefix: BLOB_KEY });
+  if (blobs.length === 0) {
+    return null;
+  }
+  // Private blobs require the token as a Bearer header.
+  const res = await fetch(blobs[0].url, {
+    headers: { authorization: `Bearer ${token}` },
+    cache: 'no-store',
+  });
+  if (!res.ok) {
+    throw new Error(`Blob read failed: ${res.status}`);
+  }
+  return (await res.json()) as StoredProject[];
+}
+
+async function blobWrite(projects: StoredProject[]): Promise<void> {
+  await put(BLOB_KEY, JSON.stringify(projects), {
+    access: 'private',
+    addRandomSuffix: false,
+    allowOverwrite: true,
+    contentType: 'application/json',
+    token: blobToken() as string,
+  });
+}
+
+const DATA_DIR = path.join(process.cwd(), '.data');
+const DATA_FILE = path.join(DATA_DIR, 'projects.json');
+
+async function fileRead(): Promise<StoredProject[] | null> {
   try {
-    const raw = await fs.readFile(DATA_FILE, 'utf8');
-    return JSON.parse(raw) as StoredProject[];
+    return JSON.parse(await fs.readFile(DATA_FILE, 'utf8')) as StoredProject[];
   } catch {
-    const seeded = seedProjects();
-    await writeFileStore(seeded);
-    return seeded;
+    return null;
   }
 }
 
-async function writeFileStore(projects: StoredProject[]): Promise<void> {
+async function fileWrite(projects: StoredProject[]): Promise<void> {
   await fs.mkdir(DATA_DIR, { recursive: true });
   await fs.writeFile(DATA_FILE, JSON.stringify(projects, null, 2), 'utf8');
 }
 
-const applyInput = (target: Partial<StoredProject>, input: Record<string, any>) => {
-  const fields: (keyof StoredProject)[] = [
+async function loadAll(): Promise<StoredProject[]> {
+  const existing = await (useBlob() ? blobRead() : fileRead());
+  if (existing) {
+    return existing;
+  }
+  const seeded = seedProjects();
+  await saveAll(seeded);
+  return seeded;
+}
+
+async function saveAll(projects: StoredProject[]): Promise<void> {
+  await (useBlob() ? blobWrite(projects) : fileWrite(projects));
+}
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+const byOrder = (a: StoredProject, b: StoredProject) =>
+  (a.order ?? 0) - (b.order ?? 0) ||
+  new Date(b.dateCreated ?? 0).getTime() - new Date(a.dateCreated ?? 0).getTime();
+
+const applyInput = (target: StoredProject, input: Record<string, any>) => {
+  const stringFields: (keyof StoredProject)[] = [
     'id',
     'title',
     'description',
@@ -82,7 +131,7 @@ const applyInput = (target: Partial<StoredProject>, input: Record<string, any>) 
     'path',
     'component',
   ];
-  fields.forEach((field) => {
+  stringFields.forEach((field) => {
     if (input[field] !== undefined && input[field] !== null) {
       (target as any)[field] = String(input[field]).trim();
     }
@@ -101,49 +150,30 @@ const applyInput = (target: Partial<StoredProject>, input: Record<string, any>) 
   }
 };
 
-const byOrder = (a: StoredProject, b: StoredProject) =>
-  (a.order ?? 0) - (b.order ?? 0) ||
-  new Date(b.dateCreated ?? 0).getTime() - new Date(a.dateCreated ?? 0).getTime();
+const find = (projects: StoredProject[], identifier: string) =>
+  projects.find((p) => p._id === identifier || p.id === identifier);
 
 // ---------------------------------------------------------------------------
-// Public API — branches on the configured backend
+// Public API
 // ---------------------------------------------------------------------------
 
 export async function listAll(): Promise<StoredProject[]> {
-  if (isDatabaseConfigured()) {
-    await connectToDatabase();
-    const docs = await ProjectModel.find().sort({ order: 1, dateCreated: -1 }).lean();
-    return docs as unknown as StoredProject[];
-  }
-  const projects = await readFileStore();
+  const projects = await loadAll();
   return [...projects].sort(byOrder);
 }
 
 export async function listPublished(): Promise<StoredProject[]> {
   const all = await listAll();
-  return all.filter((project) => project.published !== false && project.isArchived !== true);
+  return all.filter((p) => p.published !== false && p.isArchived !== true);
 }
 
 export async function getOne(identifier: string): Promise<StoredProject | null> {
-  if (isDatabaseConfigured()) {
-    await connectToDatabase();
-    const lookup = buildProjectLookup(identifier);
-    if (!lookup) return null;
-    const doc = await ProjectModel.findOne(lookup).lean();
-    return (doc as unknown as StoredProject) ?? null;
-  }
-  const projects = await readFileStore();
-  return projects.find((p) => p._id === identifier || p.id === identifier) ?? null;
+  const projects = await loadAll();
+  return find(projects, identifier) ?? null;
 }
 
 export async function createOne(input: Record<string, any>): Promise<StoredProject> {
-  if (isDatabaseConfigured()) {
-    await connectToDatabase();
-    const payload = normalizeProjectInput(input);
-    const doc = await ProjectModel.create(payload);
-    return doc.toObject() as unknown as StoredProject;
-  }
-  const projects = await readFileStore();
+  const projects = await loadAll();
   const record: StoredProject = {
     _id: crypto.randomUUID(),
     id: '',
@@ -165,7 +195,7 @@ export async function createOne(input: Record<string, any>): Promise<StoredProje
   };
   applyInput(record, input);
   projects.push(record);
-  await writeFileStore(projects);
+  await saveAll(projects);
   return record;
 }
 
@@ -173,72 +203,37 @@ export async function updateOne(
   identifier: string,
   input: Record<string, any>,
 ): Promise<StoredProject | null> {
-  if (isDatabaseConfigured()) {
-    await connectToDatabase();
-    const lookup = buildProjectLookup(identifier);
-    if (!lookup) return null;
-    const payload = normalizeProjectInput(input);
-    const doc = await ProjectModel.findOneAndUpdate(
-      lookup,
-      { $set: { ...payload, updatedAt: new Date() } },
-      { new: true, runValidators: true },
-    ).lean();
-    return (doc as unknown as StoredProject) ?? null;
-  }
-  const projects = await readFileStore();
-  const record = projects.find((p) => p._id === identifier || p.id === identifier);
+  const projects = await loadAll();
+  const record = find(projects, identifier);
   if (!record) return null;
   applyInput(record, input);
   record.updatedAt = now();
-  await writeFileStore(projects);
+  await saveAll(projects);
   return record;
 }
 
 export async function deleteOne(identifier: string): Promise<boolean> {
-  if (isDatabaseConfigured()) {
-    await connectToDatabase();
-    const lookup = buildProjectLookup(identifier);
-    if (!lookup) return false;
-    const result = await ProjectModel.findOneAndDelete(lookup);
-    return Boolean(result);
-  }
-  const projects = await readFileStore();
+  const projects = await loadAll();
   const next = projects.filter((p) => p._id !== identifier && p.id !== identifier);
   if (next.length === projects.length) return false;
-  await writeFileStore(next);
+  await saveAll(next);
   return true;
 }
 
 export async function reorder(updates: { _id: string; order: number }[]): Promise<StoredProject[]> {
-  if (isDatabaseConfigured()) {
-    await connectToDatabase();
-    const operations = updates
-      .filter((item) => item && item._id)
-      .map((item) => ({
-        updateOne: {
-          filter: { _id: item._id },
-          update: { $set: { order: Number(item.order) || 0 } },
-        },
-      }));
-    if (operations.length > 0) {
-      await ProjectModel.bulkWrite(operations);
-    }
-    return listAll();
-  }
-  const projects = await readFileStore();
+  const projects = await loadAll();
   const orderById = new Map(updates.map((u) => [u._id, Number(u.order) || 0]));
   projects.forEach((project) => {
     if (orderById.has(project._id)) {
       project.order = orderById.get(project._id) as number;
     }
   });
-  await writeFileStore(projects);
+  await saveAll(projects);
   return [...projects].sort(byOrder);
 }
 
 export function toPublicShape(project: StoredProject) {
-  const route =
-    project.route || project.path || (project.id ? `/projects/${project.id}` : '#');
+  const route = project.route || project.path || (project.id ? `/projects/${project.id}` : '#');
   return {
     id: project.id,
     title: project.title,

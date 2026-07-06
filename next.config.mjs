@@ -1,6 +1,5 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  serverExternalPackages: ['mongoose'],
   async redirects() {
     // Legacy v1 routes used mixed-case paths; canonical routes are lowercase.
     return [

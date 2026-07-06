@@ -8,7 +8,7 @@ v2 rewrite, styled with the classic `9a943d9` design system.
 
 - **Next.js 15** (App Router) + **TypeScript** + **React 18**
 - Bespoke CSS design system (no UI framework) — SF Pro type, `#cccccc`/`#232323` palette
-- **MongoDB** via Mongoose (optional — the site runs on a static catalog without it)
+- **Vercel Blob** for admin-edited project persistence (falls back to a local file in dev; static catalog if neither)
 - **JWT** auth (`jsonwebtoken`) + PBKDF2 credential hashing for the admin panel
 - Vercel Analytics + Speed Insights
 
@@ -45,7 +45,7 @@ ship in the code).
 | --- | --- |
 | `ADMIN_USERNAME` / `ADMIN_PASSWORD` | Admin login credentials |
 | `JWT_SECRET` / `REFRESH_TOKEN_SECRET` | Token signing (`openssl rand -hex 32`) |
-| `MONGO_URI` | Enables the database-backed project catalog + admin CRUD |
+| `BLOB_READ_WRITE_TOKEN` | Persists admin project edits to Vercel Blob (auto-set when a Blob store is connected) |
 | `RESEND_API_KEY` | Delivers contact-form messages by email (via Resend) |
 | `CONTACT_TO_EMAIL` / `CONTACT_FROM_EMAIL` | Recipient and verified sender for contact email |
 
