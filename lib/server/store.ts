@@ -1,7 +1,7 @@
 import { promises as fs } from 'fs';
 import path from 'path';
 import crypto from 'crypto';
-import { put, list } from '@vercel/blob';
+import { put, list, del } from '@vercel/blob';
 import { fallbackProjects } from '@/lib/projects';
 
 export interface StoredProject {
@@ -51,17 +51,24 @@ const seedProjects = (): StoredProject[] =>
 // Persistence backends: Vercel Blob in production, a local JSON file in dev.
 // ---------------------------------------------------------------------------
 
-const BLOB_KEY = 'projects.json';
+const BLOB_PATHNAME = 'projects.json';
+const BLOB_PREFIX = 'projects';
 const blobToken = () => process.env.BLOB_READ_WRITE_TOKEN;
 const useBlob = () => Boolean(blobToken());
 
+const newestFirst = (a: { uploadedAt: string | Date }, b: { uploadedAt: string | Date }) =>
+  new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime();
+
+// Each write is a new immutable blob (random suffix), so reads are never served
+// a stale overwrite from the CDN. Reads take the newest; stale blobs are pruned.
 async function blobRead(): Promise<StoredProject[] | null> {
   const token = blobToken() as string;
-  const { blobs } = await list({ token, prefix: BLOB_KEY });
+  const { blobs } = await list({ token, prefix: BLOB_PREFIX });
   if (blobs.length === 0) {
     return null;
   }
-  const res = await fetch(blobs[0].url, { cache: 'no-store' });
+  const newest = [...blobs].sort(newestFirst)[0];
+  const res = await fetch(newest.url, { cache: 'no-store' });
   if (!res.ok) {
     throw new Error(`Blob read failed: ${res.status}`);
   }
@@ -69,13 +76,19 @@ async function blobRead(): Promise<StoredProject[] | null> {
 }
 
 async function blobWrite(projects: StoredProject[]): Promise<void> {
-  await put(BLOB_KEY, JSON.stringify(projects), {
+  const token = blobToken() as string;
+  const before = await list({ token, prefix: BLOB_PREFIX });
+  const { url } = await put(BLOB_PATHNAME, JSON.stringify(projects), {
     access: 'public',
-    addRandomSuffix: false,
-    allowOverwrite: true,
+    addRandomSuffix: true,
     contentType: 'application/json',
-    token: blobToken() as string,
+    cacheControlMaxAge: 0,
+    token,
   });
+  const stale = before.blobs.map((b) => b.url).filter((u) => u !== url);
+  if (stale.length > 0) {
+    await del(stale, { token });
+  }
 }
 
 const DATA_DIR = path.join(process.cwd(), '.data');
