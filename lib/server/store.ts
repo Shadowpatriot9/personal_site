@@ -14,8 +14,8 @@ export interface StoredProject {
   technology: string[];
   tags: string[];
   route: string;
-  path: string;
-  component: string;
+  link: string;
+  body: string;
   dateCreated: string | null;
   order: number;
   published: boolean;
@@ -37,8 +37,8 @@ const seedProjects = (): StoredProject[] =>
     technology: project.technology ?? [],
     tags: project.tags ?? [],
     route: project.route,
-    path: project.route,
-    component: '',
+    link: '',
+    body: '',
     dateCreated: project.dateCreated,
     order: index,
     published: true,
@@ -129,6 +129,19 @@ const byOrder = (a: StoredProject, b: StoredProject) =>
   (a.order ?? 0) - (b.order ?? 0) ||
   new Date(b.dateCreated ?? 0).getTime() - new Date(a.dateCreated ?? 0).getTime();
 
+const toStringList = (value: unknown): string[] => {
+  if (Array.isArray(value)) {
+    return value.map((v) => String(v).trim()).filter(Boolean);
+  }
+  if (typeof value === 'string') {
+    return value
+      .split(',')
+      .map((v) => v.trim())
+      .filter(Boolean);
+  }
+  return [];
+};
+
 const applyInput = (target: StoredProject, input: Record<string, any>) => {
   const stringFields: (keyof StoredProject)[] = [
     'id',
@@ -136,26 +149,23 @@ const applyInput = (target: StoredProject, input: Record<string, any>) => {
     'description',
     'category',
     'status',
-    'route',
-    'path',
-    'component',
+    'link',
+    'body',
   ];
   stringFields.forEach((field) => {
     if (input[field] !== undefined && input[field] !== null) {
       (target as any)[field] = String(input[field]).trim();
     }
   });
-  if (Array.isArray(input.technology)) target.technology = input.technology;
-  if (Array.isArray(input.tags)) target.tags = input.tags;
+  if (input.technology !== undefined) target.technology = toStringList(input.technology);
+  if (input.tags !== undefined) target.tags = toStringList(input.tags);
   if (typeof input.published === 'boolean') target.published = input.published;
   if (typeof input.order === 'number') target.order = input.order;
   if (input.dateCreated !== undefined) target.dateCreated = input.dateCreated;
 
-  if (!target.route && target.path) target.route = target.path;
-  if (!target.path && target.route) target.path = target.route;
-  if (!target.route && target.id) {
+  // Route is always derived from the id — never user-set.
+  if (target.id) {
     target.route = `/projects/${target.id}`;
-    target.path = target.route;
   }
 };
 
@@ -193,8 +203,8 @@ export async function createOne(input: Record<string, any>): Promise<StoredProje
     technology: [],
     tags: [],
     route: '',
-    path: '',
-    component: '',
+    link: '',
+    body: '',
     dateCreated: now(),
     order: projects.length,
     published: true,
@@ -242,13 +252,12 @@ export async function reorder(updates: { _id: string; order: number }[]): Promis
 }
 
 export function toPublicShape(project: StoredProject) {
-  const route = project.route || project.path || (project.id ? `/projects/${project.id}` : '#');
+  const route = project.route || (project.id ? `/projects/${project.id}` : '#');
   return {
     id: project.id,
     title: project.title,
     description: project.description,
     route,
-    path: project.path || route,
     category: project.category || 'General',
     status: project.status || 'Unknown',
     technology: Array.isArray(project.technology) ? project.technology : [],

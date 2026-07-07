@@ -54,7 +54,7 @@ const ProjectsPanel = ({
     if (searchTerm) {
       const lower = searchTerm.toLowerCase();
       next = next.filter((project) =>
-        [project.title, project.description, project.id, project.component, project.path]
+        [project.title, project.description, project.id, project.category, ...(project.tags || [])]
           .filter(Boolean)
           .some((field) => String(field).toLowerCase().includes(lower)),
       );
@@ -93,17 +93,17 @@ const ProjectsPanel = ({
   const activeEditingProject =
     editingProjectId && filteredProjects.find((project) => project._id === editingProjectId);
 
-  const handleCreate = async (project: AdminProject) => {
+  const handleCreate = async (project: Record<string, unknown>) => {
     const order = projects.length;
-    await onCreateProject({ ...project, order });
+    await onCreateProject({ ...project, order } as AdminProject);
     setCreateFormKey((value) => value + 1);
   };
 
-  const handleEditSubmit = async (project: AdminProject) => {
+  const handleEditSubmit = async (project: Record<string, unknown>) => {
     if (!activeEditingProject) {
       return;
     }
-    await onUpdateProject(activeEditingProject._id as string, project);
+    await onUpdateProject(activeEditingProject._id as string, project as AdminProject);
     setEditingProjectId(null);
   };
 
@@ -222,9 +222,9 @@ const ProjectsPanel = ({
                   <div className="row-title">
                     <h3>{project.title}</h3>
                     <p className="row-meta">
-                      <span>ID: {project.id}</span>
-                      <span>Route: {project.path}</span>
-                      <span>Component: {project.component}</span>
+                      <span>/projects/{project.id}</span>
+                      <span>{project.category}</span>
+                      <span>{project.status}</span>
                     </p>
                   </div>
                   <span

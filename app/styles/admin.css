@@ -109,6 +109,26 @@
   gap: 0.75rem;
 }
 
+/* The admin header is always dark — force its controls to read on it. */
+.admin-header .ghost-btn {
+  color: var(--color-headerText);
+  border-color: rgba(255, 255, 255, 0.25);
+}
+
+.admin-header .ghost-btn:hover {
+  border-color: rgba(255, 255, 255, 0.5);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.admin-header .theme-toggle {
+  color: var(--color-headerText);
+  border-color: rgba(255, 255, 255, 0.25);
+}
+
+.admin-header .theme-toggle:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
 .admin-main {
   max-width: 1200px;
   margin: 0 auto;
@@ -172,14 +192,30 @@
 }
 
 .form-group input,
-.form-group textarea {
+.form-group textarea,
+.form-group select {
   padding: 0.7rem;
   border: 1px solid var(--color-border);
-  border-radius: 4px;
+  border-radius: 8px;
   font-size: 0.95rem;
   font-family: var(--font-body);
   background: var(--color-background);
   color: var(--color-text);
+}
+
+.form-group input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.form-group textarea {
+  resize: vertical;
+  line-height: 1.5;
+}
+
+.field-hint {
+  font-size: 0.78rem;
+  color: var(--color-textSecondary);
 }
 
 .checkbox-label {
