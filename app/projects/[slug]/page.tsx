@@ -1,9 +1,62 @@
+import React from 'react';
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import SubPage from '@/components/SubPage';
 import { getOne } from '@/lib/server/store';
 
 export const dynamic = 'force-dynamic';
+
+// Light markdown: "## " → heading, contiguous "- " lines → list, else paragraphs.
+function renderBody(body: string): React.ReactNode[] {
+  const out: React.ReactNode[] = [];
+  let para: string[] = [];
+  let list: string[] = [];
+  let key = 0;
+
+  const flushPara = () => {
+    if (para.length) {
+      out.push(<p key={key++}>{para.join(' ')}</p>);
+      para = [];
+    }
+  };
+  const flushList = () => {
+    if (list.length) {
+      out.push(
+        <ul key={key++}>
+          {list.map((item, i) => (
+            <li key={i}>{item}</li>
+          ))}
+        </ul>,
+      );
+      list = [];
+    }
+  };
+
+  for (const raw of body.split('\n')) {
+    const line = raw.trim();
+    if (!line) {
+      flushPara();
+      flushList();
+    } else if (line.startsWith('## ')) {
+      flushPara();
+      flushList();
+      out.push(
+        <h3 key={key++} className="detail-heading">
+          {line.slice(3)}
+        </h3>,
+      );
+    } else if (line.startsWith('- ')) {
+      flushPara();
+      list.push(line.slice(2));
+    } else {
+      flushList();
+      para.push(line);
+    }
+  }
+  flushPara();
+  flushList();
+  return out;
+}
 
 type Params = { params: Promise<{ slug: string }> };
 
@@ -29,10 +82,7 @@ export default async function ProjectPage({ params }: Params) {
     : null;
 
   const meta = [project.status, project.category, date].filter(Boolean) as string[];
-  const paragraphs = (project.body || '')
-    .split(/\n\s*\n/)
-    .map((p) => p.trim())
-    .filter(Boolean);
+  const body = (project.body || '').trim();
   const tech = Array.isArray(project.technology) ? project.technology : [];
 
   return (
@@ -65,11 +115,7 @@ export default async function ProjectPage({ params }: Params) {
             </div>
           )}
 
-          {paragraphs.length > 0 ? (
-            paragraphs.map((p, i) => <p key={i}>{p}</p>)
-          ) : (
-            <p className="detail-muted">More details coming soon.</p>
-          )}
+          {body ? renderBody(body) : <p className="detail-muted">More details coming soon.</p>}
 
           {project.link && (
             <a

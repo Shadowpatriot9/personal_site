@@ -47,9 +47,4 @@ const SubPage = ({ slug, pageTitle, pageDescription, logData = {}, children }: S
   );
 };
 
-/** Discontinued marker used on archived project pages. */
-export const Discontinued = ({ date }: { date: string }) => (
-  <span className="discontinued-tag">Discontinued · {date}</span>
-);
-
 export default SubPage;
