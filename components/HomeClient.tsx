@@ -7,41 +7,21 @@ import Nav from '@/components/Nav';
 import ProjectSearch from '@/components/ProjectSearch';
 import ProjectGrid from '@/components/ProjectGrid';
 import ContactForm from '@/components/ContactForm';
-import { useProjects } from '@/contexts/ProjectsContext';
 import type { Project } from '@/lib/projects';
 
-function HomeClient() {
-  const {
-    projects,
-    loading: projectsLoading,
-    error: projectsError,
-    refresh: refreshProjects,
-  } = useProjects();
-  const [searchLoading, setSearchLoading] = useState(false);
-  const [filteredProjects, setFilteredProjects] = useState<Project[]>(projects);
+function HomeClient({ initialProjects }: { initialProjects: Project[] }) {
+  const [filteredProjects, setFilteredProjects] = useState<Project[]>(initialProjects);
 
   useEffect(() => {
-    setFilteredProjects(projects);
-  }, [projects]);
-
-  useEffect(() => {
-    logger.pageView('Homepage', {
-      hasProjects: projects.length > 0,
-      projectCount: projects.length,
-    });
-  }, [projects.length]);
-
-  const isProjectLoading = projectsLoading || searchLoading;
+    logger.pageView('Homepage', { projectCount: initialProjects.length });
+  }, [initialProjects.length]);
 
   const projectGridProps = useMemo(
     () => ({
       projects: filteredProjects,
-      loading: isProjectLoading,
-      error: projectsError,
-      onRetry: refreshProjects,
       emptyMessage: 'Try adjusting your search or filters to find more projects.',
     }),
-    [filteredProjects, isProjectLoading, projectsError, refreshProjects],
+    [filteredProjects],
   );
 
   return (
@@ -74,8 +54,8 @@ function HomeClient() {
           </h2>
 
           <ProjectSearch
+            projects={initialProjects}
             onFilteredResults={setFilteredProjects}
-            onLoadingChange={setSearchLoading}
             className="projects-search"
           />
 

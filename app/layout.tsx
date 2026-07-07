@@ -5,7 +5,6 @@ import localFont from 'next/font/local';
 import { Analytics } from '@vercel/analytics/react';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 import { ThemeProvider } from '@/contexts/ThemeContext';
-import { ProjectsProvider } from '@/contexts/ProjectsContext';
 import { baseUrl } from './sitemap';
 
 const sfPro = localFont({
@@ -66,9 +65,7 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${sfPro.variable} ${sf2.variable}`}>
       <body>
-        <ThemeProvider>
-          <ProjectsProvider>{children}</ProjectsProvider>
-        </ThemeProvider>
+        <ThemeProvider>{children}</ThemeProvider>
         <Analytics />
         <SpeedInsights />
       </body>

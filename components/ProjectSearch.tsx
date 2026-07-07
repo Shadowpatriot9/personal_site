@@ -2,7 +2,6 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import { useTheme } from '@/contexts/ThemeContext';
-import { useProjects } from '@/contexts/ProjectsContext';
 import logger from '@/lib/logger';
 import { fallbackProjects, type Project } from '@/lib/projects';
 
@@ -46,22 +45,17 @@ const sortProjects = (projects: Project[], sortBy: string) => {
 };
 
 interface ProjectSearchProps {
+  projects: Project[];
   onFilteredResults?: (projects: Project[]) => void;
-  onLoadingChange?: (loading: boolean) => void;
   className?: string;
 }
 
-const ProjectSearch = ({ onFilteredResults, onLoadingChange, className = '' }: ProjectSearchProps) => {
+const ProjectSearch = ({ projects, onFilteredResults, className = '' }: ProjectSearchProps) => {
   const { theme } = useTheme();
-  const { projects, loading } = useProjects();
 
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [sortBy, setSortBy] = useState('newest');
-
-  useEffect(() => {
-    onLoadingChange?.(loading);
-  }, [loading, onLoadingChange]);
 
   const dataset = useMemo(
     () => (projects && projects.length > 0 ? projects : fallbackProjects),
