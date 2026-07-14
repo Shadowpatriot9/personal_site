@@ -133,6 +133,7 @@ const ProjectForm = ({
             onChange={set('title')}
             required
             placeholder="Project name"
+            autoFocus
           />
         </div>
       </div>
@@ -250,14 +251,14 @@ const ProjectForm = ({
       </div>
 
       <div className="form-actions">
-        <button type="submit" className="primary-btn" disabled={isSubmitting}>
-          {isSubmitting ? 'Saving…' : mode === 'edit' ? 'Save changes' : 'Add project'}
-        </button>
-        {mode === 'edit' && onCancel && (
-          <button type="button" onClick={onCancel} className="ghost-btn">
+        {onCancel && (
+          <button type="button" onClick={onCancel} className="ghost-btn" disabled={isSubmitting}>
             Cancel
           </button>
         )}
+        <button type="submit" className="primary-btn" disabled={isSubmitting}>
+          {isSubmitting ? 'Saving…' : mode === 'edit' ? 'Save changes' : 'Create project'}
+        </button>
       </div>
     </form>
   );

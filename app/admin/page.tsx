@@ -6,11 +6,9 @@ import Link from 'next/link';
 import { useTheme } from '@/contexts/ThemeContext';
 import ThemeSwitcher from '@/components/ThemeSwitcher';
 import ProjectsPanel from '@/components/admin/ProjectsPanel';
-import { ProjectCard } from '@/components/ProjectGrid';
 import type { AdminProject } from '@/components/admin/ProjectForm';
 import logger from '@/lib/logger';
 import apiClient from '@/lib/apiClient';
-import type { Project } from '@/lib/projects';
 
 const STORAGE_KEY = 'adminToken';
 
@@ -158,7 +156,12 @@ const AdminPage = () => {
     [authHeaders],
   );
 
-  const previewProjects = useMemo(() => projects.slice(0, 3), [projects]);
+  const stats = useMemo(() => {
+    const total = projects.length;
+    const published = projects.filter((project) => project.published).length;
+    const categories = new Set(projects.map((project) => project.category).filter(Boolean)).size;
+    return { total, published, drafts: total - published, categories };
+  }, [projects]);
 
   // Avoid a flash of the login form before storage hydration.
   if (!ready) {
@@ -169,7 +172,10 @@ const AdminPage = () => {
     return (
       <div className="admin-login">
         <div className="admin-login-card">
-          <h1>Admin Access</h1>
+          <span className="admin-login-badge" aria-hidden="true">
+            GS
+          </span>
+          <h1>Admin access</h1>
           <p>Sign in with your admin credentials to manage the project catalog.</p>
           <form onSubmit={handleLogin}>
             <label>
@@ -198,16 +204,24 @@ const AdminPage = () => {
   }
 
   return (
-    <div className="admin-dashboard">
-      <header className="admin-header">
-        <div className="admin-header-content">
-          <Link href="/" className="admin-home-link">
-            ← Back to site
-          </Link>
-          <h1>Admin Dashboard</h1>
-          <div className="admin-header-actions">
+    <div className="admin-shell">
+      <header className="admin-topbar">
+        <div className="admin-topbar__inner">
+          <div className="admin-topbar__brand">
+            <Link href="/" className="admin-topbar__mark" aria-label="Home">
+              GS
+            </Link>
+            <span className="admin-topbar__divider" aria-hidden="true">
+              /
+            </span>
+            <span className="admin-topbar__title">Admin</span>
+          </div>
+          <div className="admin-topbar__actions">
+            <Link href="/" className="admin-viewsite-link">
+              View site ↗
+            </Link>
             <ThemeSwitcher />
-            <button type="button" onClick={handleLogout} className="ghost-btn">
+            <button type="button" onClick={handleLogout} className="ghost-btn btn-sm">
               Log out
             </button>
           </div>
@@ -215,40 +229,57 @@ const AdminPage = () => {
       </header>
 
       <main className="admin-main">
-        <section className="admin-section">
-          <h2>Quick Overview</h2>
-          {projects.length === 0 ? (
-            <p>No projects available yet. Create your first project below.</p>
-          ) : (
-            <div className="admin-preview-grid">
-              {previewProjects.map((project) => (
-                <ProjectCard
-                  key={project._id || project.id}
-                  project={project as unknown as Project}
-                  previewMode
-                />
-              ))}
-            </div>
-          )}
-        </section>
+        <div className="admin-page-head">
+          <h1>Projects</h1>
+          <p>Create, edit, reorder, and publish the entries in your portfolio catalog.</p>
+        </div>
 
-        <section className="admin-section">
-          <h2>Manage catalog</h2>
-          {error && (
-            <div className="admin-error" role="alert">
-              {error.message}
-            </div>
-          )}
-          <ProjectsPanel
-            projects={projects}
-            loading={loading}
-            onCreateProject={handleCreateProject}
-            onUpdateProject={handleUpdateProject}
-            onDeleteProject={handleDeleteProject}
-            onTogglePublish={handleTogglePublish}
-            onReorder={handleReorderProjects}
-          />
-        </section>
+        <div className="admin-stats">
+          <div className="stat-card">
+            <span className="stat-card__value">{stats.total}</span>
+            <span className="stat-card__label">
+              <span className="stat-card__dot" />
+              Total projects
+            </span>
+          </div>
+          <div className="stat-card stat-card--success">
+            <span className="stat-card__value">{stats.published}</span>
+            <span className="stat-card__label">
+              <span className="stat-card__dot" />
+              Published
+            </span>
+          </div>
+          <div className="stat-card stat-card--muted">
+            <span className="stat-card__value">{stats.drafts}</span>
+            <span className="stat-card__label">
+              <span className="stat-card__dot" />
+              Drafts
+            </span>
+          </div>
+          <div className="stat-card">
+            <span className="stat-card__value">{stats.categories}</span>
+            <span className="stat-card__label">
+              <span className="stat-card__dot" />
+              Categories
+            </span>
+          </div>
+        </div>
+
+        {error && (
+          <div className="admin-banner admin-banner--error" role="alert">
+            {error.message}
+          </div>
+        )}
+
+        <ProjectsPanel
+          projects={projects}
+          loading={loading}
+          onCreateProject={handleCreateProject}
+          onUpdateProject={handleUpdateProject}
+          onDeleteProject={handleDeleteProject}
+          onTogglePublish={handleTogglePublish}
+          onReorder={handleReorderProjects}
+        />
       </main>
     </div>
   );
