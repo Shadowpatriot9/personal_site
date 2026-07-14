@@ -108,6 +108,17 @@ a.footer-admin:focus-visible {
     backdrop-filter: saturate(180%) blur(20px);
     -webkit-backdrop-filter: saturate(180%) blur(20px);
     border-bottom: 1px solid color-mix(in srgb, var(--color-text) 8%, transparent);
+    /* Hidden until scrolled past the intro; slides in from the top. */
+    transform: translateY(-100%);
+    opacity: 0;
+    pointer-events: none;
+    transition: transform 0.35s cubic-bezier(0.2, 0.7, 0.2, 1), opacity 0.35s ease;
+}
+
+.site-nav--visible {
+    transform: translateY(0);
+    opacity: 1;
+    pointer-events: auto;
 }
 
 .site-nav__inner {
@@ -357,6 +368,18 @@ a.footer-admin:focus-visible {
     margin: 0;
     font-size: 0.85rem;
     color: var(--color-textSecondary);
+}
+
+.footer1__right {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+/* Compact theme toggle to sit neatly beside the Admin link. */
+.footer1__right .theme-toggle {
+    width: 30px;
+    height: 30px;
 }
 
 .footer-admin {

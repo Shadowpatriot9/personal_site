@@ -4,6 +4,7 @@ import React, { useEffect } from 'react';
 import Link from 'next/link';
 import logger from '@/lib/logger';
 import Nav from '@/components/Nav';
+import ThemeSwitcher from '@/components/ThemeSwitcher';
 
 interface SubPageProps {
   slug: string;
@@ -39,9 +40,12 @@ const SubPage = ({ slug, pageTitle, pageDescription, logData = {}, children }: S
         <div className="graphic">
           <p>© {new Date().getFullYear()} Grayden Scovil</p>
         </div>
-        <Link href="/admin" className="footer-admin">
-          Admin
-        </Link>
+        <div className="footer1__right">
+          <Link href="/admin" className="footer-admin">
+            Admin
+          </Link>
+          <ThemeSwitcher />
+        </div>
       </footer>
     </div>
   );

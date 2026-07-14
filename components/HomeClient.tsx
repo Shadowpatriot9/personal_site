@@ -7,6 +7,7 @@ import Nav from '@/components/Nav';
 import ProjectSearch from '@/components/ProjectSearch';
 import ProjectGrid from '@/components/ProjectGrid';
 import ContactForm from '@/components/ContactForm';
+import ThemeSwitcher from '@/components/ThemeSwitcher';
 import type { Project } from '@/lib/projects';
 
 function HomeClient({ initialProjects }: { initialProjects: Project[] }) {
@@ -79,9 +80,12 @@ function HomeClient({ initialProjects }: { initialProjects: Project[] }) {
         <div className="graphic1">
           <p>© {new Date().getFullYear()} Grayden Scovil</p>
         </div>
-        <Link href="/admin" className="footer-admin">
-          Admin
-        </Link>
+        <div className="footer1__right">
+          <Link href="/admin" className="footer-admin">
+            Admin
+          </Link>
+          <ThemeSwitcher />
+        </div>
       </footer>
     </div>
   );
