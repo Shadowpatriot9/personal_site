@@ -2,6 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import ProjectForm, { type AdminProject } from './ProjectForm';
+import { useToast } from './Toast';
 
 const reorderProjects = (
   projects: AdminProject[],
@@ -104,6 +105,12 @@ const ProjectsPanel = ({
   const [dropTargetId, setDropTargetId] = useState<string | null>(null);
   const [confirmingDeleteId, setConfirmingDeleteId] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const { toast } = useToast();
+
+  const errMessage = (error: unknown, fallback: string) =>
+    (error as { data?: { error?: string }; message?: string })?.data?.error ||
+    (error as { message?: string })?.message ||
+    fallback;
 
   const filteredProjects = useMemo(() => {
     let next = [...projects];
@@ -169,6 +176,9 @@ const ProjectsPanel = ({
       const order = projects.length;
       await onCreateProject({ ...project, order } as AdminProject);
       setDrawer({ mode: 'closed' });
+      toast('Project created');
+    } catch (error) {
+      toast(errMessage(error, 'Could not create project'), 'error');
     } finally {
       setSubmitting(false);
     }
@@ -180,14 +190,61 @@ const ProjectsPanel = ({
     try {
       await onUpdateProject(drawer.project._id as string, project as AdminProject);
       setDrawer({ mode: 'closed' });
+      toast('Changes saved');
+    } catch (error) {
+      toast(errMessage(error, 'Could not save changes'), 'error');
     } finally {
       setSubmitting(false);
     }
   };
 
   const handleDelete = async (projectId: string) => {
-    await onDeleteProject(projectId);
-    setConfirmingDeleteId(null);
+    try {
+      await onDeleteProject(projectId);
+      toast('Project deleted');
+    } catch (error) {
+      toast(errMessage(error, 'Could not delete project'), 'error');
+    } finally {
+      setConfirmingDeleteId(null);
+    }
+  };
+
+  const handleTogglePublish = async (projectId: string, next: boolean) => {
+    try {
+      await onTogglePublish(projectId, next);
+      toast(next ? 'Project published' : 'Moved to drafts');
+    } catch (error) {
+      toast(errMessage(error, 'Could not update visibility'), 'error');
+    }
+  };
+
+  // Keyboard-accessible reordering: move a project one slot up/down within the
+  // full custom-ordered catalog (mirrors what drag-and-drop does with a mouse).
+  const moveProject = async (projectId: string, direction: -1 | 1) => {
+    if (isReorderDisabled) return;
+    const ordered = [...projects].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+    const index = ordered.findIndex((project) => project._id === projectId);
+    const target = index + direction;
+    if (index === -1 || target < 0 || target >= ordered.length) return;
+
+    const next = [...ordered];
+    [next[index], next[target]] = [next[target], next[index]];
+    const reordered = next.map((project, i) => ({ ...project, order: i }));
+    try {
+      await onReorder(reordered);
+    } catch (error) {
+      toast(errMessage(error, 'Could not reorder projects'), 'error');
+    }
+  };
+
+  const handleHandleKeyDown = (event: React.KeyboardEvent, projectId: string) => {
+    if (event.key === 'ArrowUp') {
+      event.preventDefault();
+      moveProject(projectId, -1);
+    } else if (event.key === 'ArrowDown') {
+      event.preventDefault();
+      moveProject(projectId, 1);
+    }
   };
 
   const handleDragStart = (event: React.DragEvent, projectId: string) => {
@@ -324,9 +381,14 @@ const ProjectsPanel = ({
                 <button
                   type="button"
                   className="drag-handle"
-                  aria-label="Drag to reorder"
+                  aria-label={`Reorder ${project.title}. Use arrow up and down keys to move.`}
                   disabled={isReorderDisabled}
-                  title={isReorderDisabled ? 'Reordering disabled while filtered' : 'Drag to reorder'}
+                  title={
+                    isReorderDisabled
+                      ? 'Reordering disabled while filtered'
+                      : 'Drag, or focus and use ↑/↓ to reorder'
+                  }
+                  onKeyDown={(event) => handleHandleKeyDown(event, projectId)}
                 >
                   <DragIcon />
                 </button>
@@ -374,7 +436,7 @@ const ProjectsPanel = ({
                     <button
                       type="button"
                       className="ghost-btn btn-sm"
-                      onClick={() => onTogglePublish(projectId, !project.published)}
+                      onClick={() => handleTogglePublish(projectId, !project.published)}
                     >
                       {project.published ? 'Unpublish' : 'Publish'}
                     </button>

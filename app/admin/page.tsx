@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { useTheme } from '@/contexts/ThemeContext';
 import ThemeSwitcher from '@/components/ThemeSwitcher';
 import ProjectsPanel from '@/components/admin/ProjectsPanel';
+import { ToastProvider } from '@/components/admin/Toast';
 import type { AdminProject } from '@/components/admin/ProjectForm';
 import logger from '@/lib/logger';
 import apiClient from '@/lib/apiClient';
@@ -204,84 +205,86 @@ const AdminPage = () => {
   }
 
   return (
-    <div className="admin-shell">
-      <header className="admin-topbar">
-        <div className="admin-topbar__inner">
-          <div className="admin-topbar__brand">
-            <Link href="/" className="admin-topbar__mark" aria-label="Home">
-              GS
-            </Link>
-            <span className="admin-topbar__divider" aria-hidden="true">
-              /
-            </span>
-            <span className="admin-topbar__title">Admin</span>
+    <ToastProvider>
+      <div className="admin-shell">
+        <header className="admin-topbar">
+          <div className="admin-topbar__inner">
+            <div className="admin-topbar__brand">
+              <Link href="/" className="admin-topbar__mark" aria-label="Home">
+                GS
+              </Link>
+              <span className="admin-topbar__divider" aria-hidden="true">
+                /
+              </span>
+              <span className="admin-topbar__title">Admin</span>
+            </div>
+            <div className="admin-topbar__actions">
+              <Link href="/" className="admin-viewsite-link">
+                View site ↗
+              </Link>
+              <ThemeSwitcher />
+              <button type="button" onClick={handleLogout} className="ghost-btn btn-sm">
+                Log out
+              </button>
+            </div>
           </div>
-          <div className="admin-topbar__actions">
-            <Link href="/" className="admin-viewsite-link">
-              View site ↗
-            </Link>
-            <ThemeSwitcher />
-            <button type="button" onClick={handleLogout} className="ghost-btn btn-sm">
-              Log out
-            </button>
-          </div>
-        </div>
-      </header>
+        </header>
 
-      <main className="admin-main">
-        <div className="admin-page-head">
-          <h1>Projects</h1>
-          <p>Create, edit, reorder, and publish the entries in your portfolio catalog.</p>
-        </div>
+        <main className="admin-main">
+          <div className="admin-page-head">
+            <h1>Projects</h1>
+            <p>Create, edit, reorder, and publish the entries in your portfolio catalog.</p>
+          </div>
 
-        <div className="admin-stats">
-          <div className="stat-card">
-            <span className="stat-card__value">{stats.total}</span>
-            <span className="stat-card__label">
-              <span className="stat-card__dot" />
-              Total projects
-            </span>
+          <div className="admin-stats">
+            <div className="stat-card">
+              <span className="stat-card__value">{stats.total}</span>
+              <span className="stat-card__label">
+                <span className="stat-card__dot" />
+                Total projects
+              </span>
+            </div>
+            <div className="stat-card stat-card--success">
+              <span className="stat-card__value">{stats.published}</span>
+              <span className="stat-card__label">
+                <span className="stat-card__dot" />
+                Published
+              </span>
+            </div>
+            <div className="stat-card stat-card--muted">
+              <span className="stat-card__value">{stats.drafts}</span>
+              <span className="stat-card__label">
+                <span className="stat-card__dot" />
+                Drafts
+              </span>
+            </div>
+            <div className="stat-card">
+              <span className="stat-card__value">{stats.categories}</span>
+              <span className="stat-card__label">
+                <span className="stat-card__dot" />
+                Categories
+              </span>
+            </div>
           </div>
-          <div className="stat-card stat-card--success">
-            <span className="stat-card__value">{stats.published}</span>
-            <span className="stat-card__label">
-              <span className="stat-card__dot" />
-              Published
-            </span>
-          </div>
-          <div className="stat-card stat-card--muted">
-            <span className="stat-card__value">{stats.drafts}</span>
-            <span className="stat-card__label">
-              <span className="stat-card__dot" />
-              Drafts
-            </span>
-          </div>
-          <div className="stat-card">
-            <span className="stat-card__value">{stats.categories}</span>
-            <span className="stat-card__label">
-              <span className="stat-card__dot" />
-              Categories
-            </span>
-          </div>
-        </div>
 
-        {error && (
-          <div className="admin-banner admin-banner--error" role="alert">
-            {error.message}
-          </div>
-        )}
+          {error && (
+            <div className="admin-banner admin-banner--error" role="alert">
+              {error.message}
+            </div>
+          )}
 
-        <ProjectsPanel
-          projects={projects}
-          loading={loading}
-          onCreateProject={handleCreateProject}
-          onUpdateProject={handleUpdateProject}
-          onDeleteProject={handleDeleteProject}
-          onTogglePublish={handleTogglePublish}
-          onReorder={handleReorderProjects}
-        />
-      </main>
-    </div>
+          <ProjectsPanel
+            projects={projects}
+            loading={loading}
+            onCreateProject={handleCreateProject}
+            onUpdateProject={handleUpdateProject}
+            onDeleteProject={handleDeleteProject}
+            onTogglePublish={handleTogglePublish}
+            onReorder={handleReorderProjects}
+          />
+        </main>
+      </div>
+    </ToastProvider>
   );
 };
 
