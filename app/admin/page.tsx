@@ -7,6 +7,7 @@ import { useTheme } from '@/contexts/ThemeContext';
 import ThemeSwitcher from '@/components/ThemeSwitcher';
 import ProjectsPanel from '@/components/admin/ProjectsPanel';
 import { ToastProvider } from '@/components/admin/Toast';
+import AdminLogin from '@/components/admin/AdminLogin';
 import type { AdminProject } from '@/components/admin/ProjectForm';
 import logger from '@/lib/logger';
 import apiClient from '@/lib/apiClient';
@@ -83,12 +84,7 @@ const AdminPage = () => {
     return undefined;
   }, [token, fetchProjects]);
 
-  const handleLogin = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    const form = new FormData(event.currentTarget);
-    const username = form.get('username');
-    const password = form.get('password');
-
+  const handleLogin = async (username: string, password: string) => {
     setIsAuthenticating(true);
     setLoginError(null);
 
@@ -170,38 +166,7 @@ const AdminPage = () => {
   }
 
   if (!isAuthenticated) {
-    return (
-      <div className="admin-login">
-        <div className="admin-login-card">
-          <span className="admin-login-badge" aria-hidden="true">
-            GS
-          </span>
-          <h1>Admin access</h1>
-          <p>Sign in with your admin credentials to manage the project catalog.</p>
-          <form onSubmit={handleLogin}>
-            <label>
-              Username
-              <input name="username" type="text" required autoComplete="username" />
-            </label>
-            <label>
-              Password
-              <input name="password" type="password" required autoComplete="current-password" />
-            </label>
-            {loginError && (
-              <div className="admin-error" role="alert">
-                {loginError}
-              </div>
-            )}
-            <button type="submit" className="primary-btn" disabled={isAuthenticating}>
-              {isAuthenticating ? 'Signing in…' : 'Sign in'}
-            </button>
-          </form>
-          <Link href="/" className="admin-back-link">
-            ← Return to site
-          </Link>
-        </div>
-      </div>
-    );
+    return <AdminLogin onLogin={handleLogin} error={loginError} isSubmitting={isAuthenticating} />;
   }
 
   return (
