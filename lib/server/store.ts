@@ -54,7 +54,7 @@ const seedProjects = (): StoredProject[] =>
 const BLOB_PATHNAME = 'projects.json';
 const BLOB_PREFIX = 'projects';
 const blobToken = () => process.env.BLOB_READ_WRITE_TOKEN;
-const useBlob = () => Boolean(blobToken());
+const usingBlob = () => Boolean(blobToken());
 
 const newestFirst = (a: { uploadedAt: string | Date }, b: { uploadedAt: string | Date }) =>
   new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime();
@@ -108,7 +108,7 @@ async function fileWrite(projects: StoredProject[]): Promise<void> {
 }
 
 async function loadAll(): Promise<StoredProject[]> {
-  const existing = await (useBlob() ? blobRead() : fileRead());
+  const existing = await (usingBlob() ? blobRead() : fileRead());
   if (existing) {
     return existing;
   }
@@ -118,7 +118,7 @@ async function loadAll(): Promise<StoredProject[]> {
 }
 
 async function saveAll(projects: StoredProject[]): Promise<void> {
-  await (useBlob() ? blobWrite(projects) : fileWrite(projects));
+  await (usingBlob() ? blobWrite(projects) : fileWrite(projects));
 }
 
 // ---------------------------------------------------------------------------
