@@ -1,30 +1,17 @@
 'use client';
 
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import { uploadImage } from './uploadImage';
 
 interface MediaInputProps {
   cover: string;
   gallery: string[];
   token: string;
+  uploadsEnabled: boolean;
   onCoverChange: (url: string) => void;
+  onCoverFile: (file: File) => void;
   onGalleryChange: (urls: string[]) => void;
 }
-
-const uploadFile = async (file: File, token: string): Promise<string> => {
-  const body = new FormData();
-  body.append('file', file);
-  const res = await fetch('/api/admin/upload', {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${token}` },
-    body,
-  });
-  if (!res.ok) {
-    const data = await res.json().catch(() => ({}));
-    throw new Error(data.error || 'Upload failed');
-  }
-  const data = await res.json();
-  return data.url as string;
-};
 
 const ImageIcon = () => (
   <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -34,28 +21,33 @@ const ImageIcon = () => (
   </svg>
 );
 
-const MediaInput = ({ cover, gallery, token, onCoverChange, onGalleryChange }: MediaInputProps) => {
+const MediaInput = ({
+  cover,
+  gallery,
+  token,
+  uploadsEnabled,
+  onCoverChange,
+  onCoverFile,
+  onGalleryChange,
+}: MediaInputProps) => {
   const coverInputRef = useRef<HTMLInputElement>(null);
   const galleryInputRef = useRef<HTMLInputElement>(null);
+  const thumbRefs = useRef<(HTMLDivElement | null)[]>([]);
   const [coverUrl, setCoverUrl] = useState('');
   const [galleryUrl, setGalleryUrl] = useState('');
-  const [coverBusy, setCoverBusy] = useState(false);
   const [galleryBusy, setGalleryBusy] = useState(false);
   const [dragging, setDragging] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [dragIdx, setDragIdx] = useState<number | null>(null);
+  const [overIdx, setOverIdx] = useState<number | null>(null);
+  const [focusIdx, setFocusIdx] = useState<number | null>(null);
 
-  const handleCoverFile = async (file: File | undefined) => {
-    if (!file) return;
-    setError(null);
-    setCoverBusy(true);
-    try {
-      onCoverChange(await uploadFile(file, token));
-    } catch (err) {
-      setError((err as Error).message);
-    } finally {
-      setCoverBusy(false);
-    }
-  };
+  // Keep keyboard focus on a gallery item after it moves.
+  useEffect(() => {
+    if (focusIdx === null) return;
+    thumbRefs.current[focusIdx]?.focus();
+    setFocusIdx(null);
+  }, [gallery, focusIdx]);
 
   const handleGalleryFiles = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
@@ -64,7 +56,7 @@ const MediaInput = ({ cover, gallery, token, onCoverChange, onGalleryChange }: M
     try {
       const urls: string[] = [];
       for (const file of Array.from(files)) {
-        urls.push(await uploadFile(file, token));
+        urls.push(await uploadImage(file, token));
       }
       onGalleryChange([...gallery, ...urls]);
     } catch (err) {
@@ -91,6 +83,14 @@ const MediaInput = ({ cover, gallery, token, onCoverChange, onGalleryChange }: M
   const removeGalleryItem = (index: number) =>
     onGalleryChange(gallery.filter((_, i) => i !== index));
 
+  const moveGalleryItem = (from: number, to: number) => {
+    if (to < 0 || to >= gallery.length || from === to) return;
+    const next = [...gallery];
+    const [moved] = next.splice(from, 1);
+    next.splice(to, 0, moved);
+    onGalleryChange(next);
+  };
+
   return (
     <div className="media-input">
       {/* Cover */}
@@ -101,17 +101,23 @@ const MediaInput = ({ cover, gallery, token, onCoverChange, onGalleryChange }: M
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={cover} alt="Cover preview" />
             <div className="media-cover__actions">
-              <button type="button" className="subtle-btn btn-sm" onClick={() => coverInputRef.current?.click()}>
-                Replace
-              </button>
+              {uploadsEnabled && (
+                <button
+                  type="button"
+                  className="subtle-btn btn-sm"
+                  onClick={() => coverInputRef.current?.click()}
+                >
+                  Replace
+                </button>
+              )}
               <button type="button" className="subtle-btn btn-sm" onClick={() => onCoverChange('')}>
                 Remove
               </button>
             </div>
           </div>
-        ) : (
+        ) : uploadsEnabled ? (
           <label
-            className={`media-drop${dragging ? ' is-dragging' : ''}${coverBusy ? ' is-busy' : ''}`}
+            className={`media-drop${dragging ? ' is-dragging' : ''}`}
             onDragOver={(e) => {
               e.preventDefault();
               setDragging(true);
@@ -120,22 +126,27 @@ const MediaInput = ({ cover, gallery, token, onCoverChange, onGalleryChange }: M
             onDrop={(e) => {
               e.preventDefault();
               setDragging(false);
-              handleCoverFile(e.dataTransfer.files?.[0]);
+              const file = e.dataTransfer.files?.[0];
+              if (file) onCoverFile(file);
             }}
           >
             <ImageIcon />
-            <span className="media-drop__title">
-              {coverBusy ? 'Uploading…' : 'Drag an image here, or click to browse'}
-            </span>
+            <span className="media-drop__title">Drag an image here, or click to browse</span>
             <span className="media-drop__hint">PNG, JPG, WebP, GIF, AVIF or SVG · up to 8 MB</span>
             <input
               ref={coverInputRef}
               type="file"
               accept="image/*"
               hidden
-              onChange={(e) => handleCoverFile(e.target.files?.[0] ?? undefined)}
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) onCoverFile(file);
+                e.target.value = '';
+              }}
             />
           </label>
+        ) : (
+          <p className="media-note">Image uploads aren’t configured — paste an image URL below.</p>
         )}
         <div className="media-url">
           <input
@@ -161,9 +172,46 @@ const MediaInput = ({ cover, gallery, token, onCoverChange, onGalleryChange }: M
         <span className="media-label">Gallery</span>
         <div className="media-gallery">
           {gallery.map((src, index) => (
-            <div className="media-thumb" key={`${src}-${index}`}>
+            <div
+              className={`media-thumb${dragIdx === index ? ' is-dragging' : ''}${
+                overIdx === index && dragIdx !== index ? ' is-over' : ''
+              }`}
+              key={`${src}-${index}`}
+              ref={(el) => {
+                thumbRefs.current[index] = el;
+              }}
+              tabIndex={0}
+              role="button"
+              aria-label={`Gallery image ${index + 1} of ${gallery.length}. Use arrow keys to reorder.`}
+              draggable
+              onDragStart={() => setDragIdx(index)}
+              onDragOver={(e) => {
+                e.preventDefault();
+                setOverIdx(index);
+              }}
+              onDrop={() => {
+                if (dragIdx !== null) moveGalleryItem(dragIdx, index);
+                setDragIdx(null);
+                setOverIdx(null);
+              }}
+              onDragEnd={() => {
+                setDragIdx(null);
+                setOverIdx(null);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'ArrowLeft') {
+                  e.preventDefault();
+                  moveGalleryItem(index, index - 1);
+                  setFocusIdx(index - 1);
+                } else if (e.key === 'ArrowRight') {
+                  e.preventDefault();
+                  moveGalleryItem(index, index + 1);
+                  setFocusIdx(index + 1);
+                }
+              }}
+            >
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={src} alt={`Gallery item ${index + 1}`} />
+              <img src={src} alt={`Gallery item ${index + 1}`} draggable={false} />
               <button
                 type="button"
                 className="media-thumb__remove"
@@ -177,20 +225,26 @@ const MediaInput = ({ cover, gallery, token, onCoverChange, onGalleryChange }: M
               </button>
             </div>
           ))}
-          <button
-            type="button"
-            className={`media-add${galleryBusy ? ' is-busy' : ''}`}
-            onClick={() => galleryInputRef.current?.click()}
-          >
-            <span>{galleryBusy ? '…' : '+'}</span>
-          </button>
+          {uploadsEnabled && (
+            <button
+              type="button"
+              className={`media-add${galleryBusy ? ' is-busy' : ''}`}
+              onClick={() => galleryInputRef.current?.click()}
+              aria-label="Add gallery images"
+            >
+              <span>{galleryBusy ? '…' : '+'}</span>
+            </button>
+          )}
           <input
             ref={galleryInputRef}
             type="file"
             accept="image/*"
             multiple
             hidden
-            onChange={(e) => handleGalleryFiles(e.target.files)}
+            onChange={(e) => {
+              handleGalleryFiles(e.target.files);
+              e.target.value = '';
+            }}
           />
         </div>
         <div className="media-url">

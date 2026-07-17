@@ -20,6 +20,16 @@ const ALLOWED = new Map<string, string>([
 const UPLOAD_DIR = path.join(process.cwd(), '.data', 'uploads');
 const blobToken = () => process.env.BLOB_READ_WRITE_TOKEN;
 
+// Uploads persist via Blob in production, or the local filesystem in dev.
+const uploadsEnabled = () => Boolean(blobToken()) || process.env.NODE_ENV !== 'production';
+
+export async function GET(request: Request) {
+  if (!verifyRequest(request)) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+  return NextResponse.json({ enabled: uploadsEnabled() });
+}
+
 export async function POST(request: Request) {
   if (!verifyRequest(request)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

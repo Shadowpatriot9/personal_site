@@ -1,9 +1,11 @@
 'use client';
 
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { PROJECT_CATEGORY_OPTIONS, PROJECT_STATUS_OPTIONS, type Project } from '@/lib/projects';
 import { ProjectCard } from '@/components/ProjectGrid';
 import MediaInput from './MediaInput';
+import ImageCropper from './ImageCropper';
+import { uploadImage, checkUploadsEnabled } from './uploadImage';
 import type { AdminProject } from './types';
 
 interface FormState {
@@ -142,6 +144,33 @@ const ProjectEditor = ({
   const [touched, setTouched] = useState<Record<string, boolean>>({});
   const [slugEdited, setSlugEdited] = useState(mode === 'edit');
   const [previewTab, setPreviewTab] = useState<'card' | 'page'>('card');
+  const [uploadsEnabled, setUploadsEnabled] = useState(true);
+  const [cropFile, setCropFile] = useState<File | null>(null);
+  const [coverUploading, setCoverUploading] = useState(false);
+  const [coverError, setCoverError] = useState<string | null>(null);
+  const [previewDragging, setPreviewDragging] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    checkUploadsEnabled(token).then((enabled) => active && setUploadsEnabled(enabled));
+    return () => {
+      active = false;
+    };
+  }, [token]);
+
+  const handleCropConfirm = async (blob: Blob) => {
+    setCoverError(null);
+    setCoverUploading(true);
+    try {
+      const uploadedUrl = await uploadImage(blob, token);
+      setForm((prev) => ({ ...prev, image: uploadedUrl }));
+      setCropFile(null);
+    } catch (err) {
+      setCoverError((err as Error).message);
+    } finally {
+      setCoverUploading(false);
+    }
+  };
 
   const errors = useMemo(() => {
     const next: Partial<Record<FieldKey, string>> = {};
@@ -333,7 +362,12 @@ const ProjectEditor = ({
                 cover={form.image}
                 gallery={form.gallery}
                 token={token}
+                uploadsEnabled={uploadsEnabled}
                 onCoverChange={(url) => setForm((p) => ({ ...p, image: url }))}
+                onCoverFile={(file) => {
+                  setCoverError(null);
+                  setCropFile(file);
+                }}
                 onGalleryChange={(urls) => setForm((p) => ({ ...p, gallery: urls }))}
               />
             </div>
@@ -490,7 +524,30 @@ const ProjectEditor = ({
             </div>
           </div>
 
-          <div className="editor__preview-canvas">
+          <div
+            className={`editor__preview-canvas${previewDragging ? ' is-dropping' : ''}`}
+            onDragOver={(e) => {
+              if (!uploadsEnabled) return;
+              e.preventDefault();
+              setPreviewDragging(true);
+            }}
+            onDragLeave={() => setPreviewDragging(false)}
+            onDrop={(e) => {
+              if (!uploadsEnabled) return;
+              e.preventDefault();
+              setPreviewDragging(false);
+              const file = e.dataTransfer.files?.[0];
+              if (file && file.type.startsWith('image/')) {
+                setCoverError(null);
+                setCropFile(file);
+              }
+            }}
+          >
+            {previewDragging && uploadsEnabled && (
+              <div className="editor__preview-drop" aria-hidden="true">
+                Drop image to set cover
+              </div>
+            )}
             {previewTab === 'card' ? (
               <div className="preview-card-wrap">
                 <ProjectCard project={previewProject} previewMode />
@@ -536,6 +593,21 @@ const ProjectEditor = ({
           </div>
         </aside>
       </div>
+
+      {cropFile && (
+        <ImageCropper
+          file={cropFile}
+          busy={coverUploading}
+          error={coverError}
+          onCancel={() => {
+            if (!coverUploading) {
+              setCropFile(null);
+              setCoverError(null);
+            }
+          }}
+          onConfirm={handleCropConfirm}
+        />
+      )}
     </div>
   );
 };
