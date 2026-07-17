@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useEffect, useMemo, useState } from 'react';
-import ProjectForm, { type AdminProject } from './ProjectForm';
+import React, { useMemo, useState } from 'react';
 import { useToast } from './Toast';
+import type { AdminProject } from './types';
 
 const reorderProjects = (
   projects: AdminProject[],
@@ -49,13 +49,6 @@ const PlusIcon = () => (
   </svg>
 );
 
-const CloseIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-    <line x1="6" y1="6" x2="18" y2="18" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-    <line x1="18" y1="6" x2="6" y2="18" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-  </svg>
-);
-
 const DragIcon = () => (
   <svg width="12" height="16" viewBox="0 0 12 16" fill="currentColor" aria-hidden="true">
     <circle cx="3" cy="3" r="1.4" />
@@ -70,17 +63,12 @@ const DragIcon = () => (
 interface ProjectsPanelProps {
   projects: AdminProject[];
   loading: boolean;
-  onCreateProject: (project: AdminProject) => Promise<void>;
-  onUpdateProject: (projectId: string, project: AdminProject) => Promise<void>;
+  onNew: () => void;
+  onEditProject: (project: AdminProject) => void;
   onDeleteProject: (projectId: string) => Promise<void>;
   onTogglePublish: (projectId: string, published: boolean) => Promise<void>;
   onReorder: (projects: AdminProject[]) => Promise<void>;
 }
-
-type DrawerState =
-  | { mode: 'closed' }
-  | { mode: 'create' }
-  | { mode: 'edit'; project: AdminProject };
 
 const VISIBILITY_FILTERS = [
   { value: 'all', label: 'All' },
@@ -91,8 +79,8 @@ const VISIBILITY_FILTERS = [
 const ProjectsPanel = ({
   projects,
   loading,
-  onCreateProject,
-  onUpdateProject,
+  onNew,
+  onEditProject,
   onDeleteProject,
   onTogglePublish,
   onReorder,
@@ -100,11 +88,9 @@ const ProjectsPanel = ({
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState('order');
   const [publishFilter, setPublishFilter] = useState('all');
-  const [drawer, setDrawer] = useState<DrawerState>({ mode: 'closed' });
   const [draggedId, setDraggedId] = useState<string | null>(null);
   const [dropTargetId, setDropTargetId] = useState<string | null>(null);
   const [confirmingDeleteId, setConfirmingDeleteId] = useState<string | null>(null);
-  const [submitting, setSubmitting] = useState(false);
   const { toast } = useToast();
 
   const errMessage = (error: unknown, fallback: string) =>
@@ -153,50 +139,6 @@ const ProjectsPanel = ({
   }, [projects, publishFilter, searchTerm, sortBy]);
 
   const isReorderDisabled = Boolean(searchTerm || publishFilter !== 'all' || sortBy !== 'order');
-  const isDrawerOpen = drawer.mode !== 'closed';
-
-  // Lock body scroll and wire Escape-to-close while the drawer is open.
-  useEffect(() => {
-    if (!isDrawerOpen) return undefined;
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape' && !submitting) setDrawer({ mode: 'closed' });
-    };
-    window.addEventListener('keydown', onKey);
-    return () => {
-      document.body.style.overflow = previousOverflow;
-      window.removeEventListener('keydown', onKey);
-    };
-  }, [isDrawerOpen, submitting]);
-
-  const handleCreate = async (project: Record<string, unknown>) => {
-    setSubmitting(true);
-    try {
-      const order = projects.length;
-      await onCreateProject({ ...project, order } as AdminProject);
-      setDrawer({ mode: 'closed' });
-      toast('Project created');
-    } catch (error) {
-      toast(errMessage(error, 'Could not create project'), 'error');
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  const handleEditSubmit = async (project: Record<string, unknown>) => {
-    if (drawer.mode !== 'edit') return;
-    setSubmitting(true);
-    try {
-      await onUpdateProject(drawer.project._id as string, project as AdminProject);
-      setDrawer({ mode: 'closed' });
-      toast('Changes saved');
-    } catch (error) {
-      toast(errMessage(error, 'Could not save changes'), 'error');
-    } finally {
-      setSubmitting(false);
-    }
-  };
 
   const handleDelete = async (projectId: string) => {
     try {
@@ -324,7 +266,7 @@ const ProjectsPanel = ({
 
         <div className="toolbar-spacer" />
 
-        <button type="button" className="primary-btn" onClick={() => setDrawer({ mode: 'create' })}>
+        <button type="button" className="primary-btn" onClick={onNew}>
           <PlusIcon />
           New project
         </button>
@@ -393,10 +335,15 @@ const ProjectsPanel = ({
                   <DragIcon />
                 </button>
 
-                <span
-                  className={`row-status-dot${project.published ? ' is-published' : ''}`}
-                  aria-hidden="true"
-                />
+                {project.image ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img className="row-thumb" src={project.image} alt="" />
+                ) : (
+                  <span
+                    className={`row-status-dot${project.published ? ' is-published' : ''}`}
+                    aria-hidden="true"
+                  />
+                )}
 
                 <div className="row-main">
                   <div className="row-title-line">
@@ -445,7 +392,7 @@ const ProjectsPanel = ({
                       className="icon-btn"
                       aria-label={`Edit ${project.title}`}
                       title="Edit"
-                      onClick={() => setDrawer({ mode: 'edit', project })}
+                      onClick={() => onEditProject(project)}
                     >
                       <EditIcon />
                     </button>
@@ -465,60 +412,6 @@ const ProjectsPanel = ({
           })
         )}
       </div>
-
-      {isDrawerOpen && (
-        <>
-          <div
-            className="drawer-overlay"
-            onClick={() => !submitting && setDrawer({ mode: 'closed' })}
-            aria-hidden="true"
-          />
-          <div
-            className="drawer"
-            role="dialog"
-            aria-modal="true"
-            aria-label={drawer.mode === 'edit' ? 'Edit project' : 'Create project'}
-          >
-            <div className="drawer__header">
-              <div>
-                <h2>{drawer.mode === 'edit' ? 'Edit project' : 'New project'}</h2>
-                <p>
-                  {drawer.mode === 'edit'
-                    ? `Editing ${drawer.project.title}`
-                    : 'Add a new entry to your portfolio catalog.'}
-                </p>
-              </div>
-              <button
-                type="button"
-                className="drawer__close"
-                aria-label="Close"
-                onClick={() => !submitting && setDrawer({ mode: 'closed' })}
-              >
-                <CloseIcon />
-              </button>
-            </div>
-            <div className="drawer__body">
-              {drawer.mode === 'edit' ? (
-                <ProjectForm
-                  key={drawer.project._id}
-                  mode="edit"
-                  initialData={drawer.project}
-                  isSubmitting={submitting}
-                  onSubmit={handleEditSubmit}
-                  onCancel={() => setDrawer({ mode: 'closed' })}
-                />
-              ) : (
-                <ProjectForm
-                  mode="create"
-                  isSubmitting={submitting}
-                  onSubmit={handleCreate}
-                  onCancel={() => setDrawer({ mode: 'closed' })}
-                />
-              )}
-            </div>
-          </div>
-        </>
-      )}
     </section>
   );
 };

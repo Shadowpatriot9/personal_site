@@ -19,7 +19,14 @@ const ProjectCardContent = ({ project }: { project: Project }) => {
   const formattedDate = formatDate(project?.dateCreated || project?.updatedAt);
 
   return (
-    <div className="project-card">
+    <div className={`project-card${project?.image ? ' has-cover' : ''}`}>
+      {project?.image && (
+        <div className="project-card__cover">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={project.image} alt="" loading="lazy" />
+        </div>
+      )}
+
       <div className="project-card__top">
         <span className="project-card__status">{status}</span>
         <span className="project-card__category">{project?.category || 'Project'}</span>

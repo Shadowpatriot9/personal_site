@@ -84,6 +84,7 @@ export default async function ProjectPage({ params }: Params) {
   const meta = [project.status, project.category, date].filter(Boolean) as string[];
   const body = (project.body || '').trim();
   const tech = Array.isArray(project.technology) ? project.technology : [];
+  const gallery = Array.isArray(project.gallery) ? project.gallery.filter(Boolean) : [];
 
   return (
     <SubPage slug={project.id} pageTitle={project.title} pageDescription={project.description}>
@@ -92,6 +93,13 @@ export default async function ProjectPage({ params }: Params) {
           <h1>{project.title}</h1>
           <p>{project.description}</p>
         </section>
+
+        {project.image && (
+          <figure className="detail-cover">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={project.image} alt={`${project.title} cover`} />
+          </figure>
+        )}
 
         <section className="section" id="brief">
           {meta.length > 0 && (
@@ -116,6 +124,15 @@ export default async function ProjectPage({ params }: Params) {
           )}
 
           {body ? renderBody(body) : <p className="detail-muted">More details coming soon.</p>}
+
+          {gallery.length > 0 && (
+            <div className="detail-gallery">
+              {gallery.map((src, i) => (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img key={`${src}-${i}`} src={src} alt={`${project.title} gallery image ${i + 1}`} loading="lazy" />
+              ))}
+            </div>
+          )}
 
           {project.link && (
             <a

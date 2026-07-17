@@ -11,6 +11,8 @@ export interface Project {
   path?: string;
   link?: string;
   body?: string;
+  image?: string;
+  gallery?: string[];
   dateCreated: string | null;
   updatedAt?: string | null;
   raw?: Record<string, unknown>;
@@ -212,10 +214,14 @@ export const normalizeProject = (source: any): Project | null => {
     status: source.status || source.stage || 'Unknown',
     tags,
     technology,
+    image: source.image || '',
+    gallery: Array.isArray(source.gallery) ? source.gallery : [],
     dateCreated: source.dateCreated || source.createdAt || null,
     updatedAt: source.updatedAt || null,
     route: derivedRoute,
     path: source.path || derivedRoute,
+    link: source.link || undefined,
+    body: source.body || undefined,
     raw: source,
   };
 };

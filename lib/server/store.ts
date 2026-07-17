@@ -16,6 +16,8 @@ export interface StoredProject {
   route: string;
   link: string;
   body: string;
+  image: string;
+  gallery: string[];
   dateCreated: string | null;
   order: number;
   published: boolean;
@@ -39,6 +41,8 @@ const seedProjects = (): StoredProject[] =>
     route: project.route,
     link: project.link ?? '',
     body: project.body ?? '',
+    image: project.image ?? '',
+    gallery: Array.isArray(project.gallery) ? project.gallery : [],
     dateCreated: project.dateCreated,
     order: index,
     published: true,
@@ -151,6 +155,7 @@ const applyInput = (target: StoredProject, input: Record<string, any>) => {
     'status',
     'link',
     'body',
+    'image',
   ];
   stringFields.forEach((field) => {
     if (input[field] !== undefined && input[field] !== null) {
@@ -159,6 +164,15 @@ const applyInput = (target: StoredProject, input: Record<string, any>) => {
   });
   if (input.technology !== undefined) target.technology = toStringList(input.technology);
   if (input.tags !== undefined) target.tags = toStringList(input.tags);
+  if (input.gallery !== undefined) {
+    // Gallery arrives as an array of URLs; fall back to newline-splitting a string.
+    target.gallery = Array.isArray(input.gallery)
+      ? input.gallery.map((v: unknown) => String(v).trim()).filter(Boolean)
+      : String(input.gallery)
+          .split('\n')
+          .map((v) => v.trim())
+          .filter(Boolean);
+  }
   if (typeof input.published === 'boolean') target.published = input.published;
   if (typeof input.order === 'number') target.order = input.order;
   if (input.dateCreated !== undefined) target.dateCreated = input.dateCreated;
@@ -205,6 +219,8 @@ export async function createOne(input: Record<string, any>): Promise<StoredProje
     route: '',
     link: '',
     body: '',
+    image: '',
+    gallery: [],
     dateCreated: now(),
     order: projects.length,
     published: true,
@@ -262,6 +278,8 @@ export function toPublicShape(project: StoredProject) {
     status: project.status || 'Unknown',
     technology: Array.isArray(project.technology) ? project.technology : [],
     tags: Array.isArray(project.tags) ? project.tags : [],
+    image: project.image || '',
+    gallery: Array.isArray(project.gallery) ? project.gallery : [],
     dateCreated: project.dateCreated,
     updatedAt: project.updatedAt,
     order: project.order ?? 0,
