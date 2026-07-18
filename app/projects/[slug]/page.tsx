@@ -115,50 +115,56 @@ export default async function ProjectPage({ params }: Params) {
           </figure>
         )}
 
-        <section className="section" id="brief">
-          {meta.length > 0 && (
-            <p className="detail-meta">
-              {meta.map((m, i) => (
-                <span key={m}>
-                  {i > 0 && <span className="detail-dot">·</span>}
-                  {m}
-                </span>
-              ))}
-            </p>
-          )}
+        <div className="detail-body" id="brief">
+          {(meta.length > 0 || tech.length > 0) && (
+            <div className="detail-brief">
+              {meta.length > 0 && (
+                <p className="detail-meta">
+                  {meta.map((m, i) => (
+                    <span key={m}>
+                      {i > 0 && <span className="detail-dot">·</span>}
+                      {m}
+                    </span>
+                  ))}
+                </p>
+              )}
 
-          {tech.length > 0 && (
-            <div className="detail-tags">
-              {tech.map((t) => (
-                <span key={t} className="detail-tag">
-                  {t}
-                </span>
-              ))}
+              {tech.length > 0 && (
+                <div className="detail-tags">
+                  {tech.map((t) => (
+                    <span key={t} className="detail-tag">
+                      {t}
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 
-          {body ? renderBody(body) : <p className="detail-muted">More details coming soon.</p>}
+          <article className="detail-article">
+            {body ? renderBody(body) : <p className="detail-muted">More details coming soon.</p>}
 
-          {gallery.length > 0 && (
-            <div className="detail-gallery">
-              {gallery.map((src, i) => (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img key={`${src}-${i}`} src={src} alt={`${project.title} gallery image ${i + 1}`} loading="lazy" />
-              ))}
-            </div>
-          )}
+            {gallery.length > 0 && (
+              <div className="detail-gallery">
+                {gallery.map((src, i) => (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img key={`${src}-${i}`} src={src} alt={`${project.title} gallery image ${i + 1}`} loading="lazy" />
+                ))}
+              </div>
+            )}
 
-          {project.link && (
-            <a
-              className="detail-link"
-              href={project.link}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Visit project ↗
-            </a>
-          )}
-        </section>
+            {project.link && (
+              <a
+                className="detail-link"
+                href={project.link}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Visit project ↗
+              </a>
+            )}
+          </article>
+        </div>
       </div>
 
       {(prevProject || nextProject) && (

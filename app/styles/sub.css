@@ -50,53 +50,34 @@
     max-width: 60ch;
 }
 
-/* Content cards */
-.subpage .section {
+/* Editorial article layout — open reading column, no card */
+.detail-body {
     display: flex;
     flex-direction: column;
-    padding: 28px;
-    background: var(--color-cardBg);
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius);
-    box-shadow: var(--shadow-1);
     opacity: 0;
     animation: reveal 0.6s cubic-bezier(0.2, 0.7, 0.2, 1) 0.1s forwards;
+}
+
+.detail-brief {
+    padding-bottom: 22px;
+    margin-bottom: 26px;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.detail-article {
     font-size: 1.0625rem;
     line-height: 1.62;
     color: var(--color-text);
+    max-width: 68ch;
 }
 
-.subpage .section h2,
-.subpage .section h3 {
+.detail-article p {
     margin: 0 0 14px;
-    font-family: var(--font-display);
-    font-size: 1.25rem;
-    font-weight: 600;
-    letter-spacing: -0.01em;
     color: var(--color-text);
 }
 
-.subpage .section p {
-    margin: 0 0 12px;
-    color: var(--color-text);
-}
-
-.subpage .section ul {
-    margin: 8px 0;
-    padding-left: 22px;
-}
-
-.subpage .section li {
-    margin: 4px 0;
-}
-
-.subpage .section a {
+.detail-article a:not(.detail-link) {
     color: var(--color-primary);
-}
-
-.subpage #brief h2,
-.subpage #brief h3 {
-    display: inline-block;
 }
 
 /* Data-driven detail page */
@@ -132,43 +113,55 @@
     color: var(--color-textSecondary);
 }
 
-.subpage .section h3.detail-heading {
-    margin: 22px 0 10px;
-    font-size: 1.05rem;
+.detail-brief .detail-meta {
+    margin-bottom: 12px;
+}
+
+.detail-brief .detail-tags,
+.detail-brief .detail-meta:only-child {
+    margin-bottom: 0;
+}
+
+.detail-article h3.detail-heading {
+    margin: 26px 0 10px;
+    font-family: var(--font-display);
+    font-size: 1.1rem;
     font-weight: 600;
-    letter-spacing: -0.01em;
+    letter-spacing: -0.015em;
     color: var(--color-text);
 }
 
-.subpage .section h3.detail-heading:first-child {
+.detail-article h3.detail-heading:first-child {
     margin-top: 0;
 }
 
-.subpage .section ul {
-    margin: 4px 0 14px;
+.detail-article ul {
+    margin: 4px 0 16px;
     padding-left: 20px;
 }
 
-.subpage .section li {
-    margin: 3px 0;
+.detail-article li {
+    margin: 4px 0;
     color: var(--color-text);
 }
 
-.subpage .section a.detail-link {
+.detail-article .detail-link {
     display: inline-flex;
     align-items: center;
-    margin-top: 8px;
-    padding: 9px 18px;
+    margin-top: 20px;
+    padding: 10px 20px;
     background: var(--color-text);
     color: var(--color-background);
     border-radius: var(--radius-pill);
     font-size: 0.9rem;
     font-weight: 500;
     width: fit-content;
+    transition: opacity 0.2s var(--ease), transform 0.2s var(--ease-out);
 }
 
-.subpage .section a.detail-link:hover {
-    opacity: 0.9;
+.detail-article .detail-link:hover {
+    opacity: 0.92;
+    transform: translateY(-1px);
 }
 
 /* Back to projects */
@@ -271,9 +264,5 @@
 @media (max-width: 720px) {
     .subpage main {
         padding: 44px 20px 56px;
-    }
-
-    .subpage .section {
-        padding: 22px;
     }
 }
