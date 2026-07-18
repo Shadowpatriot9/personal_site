@@ -30,9 +30,12 @@ const SubPage = ({ slug, pageTitle, pageDescription, logData = {}, children }: S
 
   return (
     <div className="subpage" id="body2">
+      <a href="#main-content" className="skip-link">
+        Skip to content
+      </a>
       <Nav />
 
-      <main role="main">
+      <main role="main" id="main-content">
         <div className="container">{children}</div>
       </main>
 

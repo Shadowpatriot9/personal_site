@@ -699,6 +699,27 @@ a:hover .project-card.has-cover .project-card__cover img {
     }
 }
 
+/* Skip link — hidden until keyboard-focused. */
+.skip-link {
+    position: fixed;
+    top: 10px;
+    left: 10px;
+    z-index: 900;
+    padding: 10px 16px;
+    border-radius: var(--radius-sm);
+    background: var(--color-text);
+    color: var(--color-background);
+    font-size: 0.9rem;
+    font-weight: 500;
+    transform: translateY(-150%);
+    transition: transform 0.2s var(--ease-out);
+}
+
+.skip-link:focus-visible {
+    transform: translateY(0);
+    outline: none;
+}
+
 @media (prefers-reduced-motion: reduce) {
     *,
     *::before,

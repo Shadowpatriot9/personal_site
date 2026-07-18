@@ -1,8 +1,9 @@
 import React from 'react';
+import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import SubPage from '@/components/SubPage';
-import { getOne } from '@/lib/server/store';
+import { getOne, listPublished } from '@/lib/server/store';
 
 export const dynamic = 'force-dynamic';
 
@@ -86,8 +87,21 @@ export default async function ProjectPage({ params }: Params) {
   const tech = Array.isArray(project.technology) ? project.technology : [];
   const gallery = Array.isArray(project.gallery) ? project.gallery.filter(Boolean) : [];
 
+  // Neighbouring projects (by display order) for prev/next navigation.
+  const published = await listPublished();
+  const index = published.findIndex((p) => p.id === project.id);
+  const prevProject = index > 0 ? published[index - 1] : null;
+  const nextProject = index >= 0 && index < published.length - 1 ? published[index + 1] : null;
+
   return (
     <SubPage slug={project.id} pageTitle={project.title} pageDescription={project.description}>
+      <Link href="/#projects" className="detail-back">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M15 5l-7 7 7 7" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+        Projects
+      </Link>
+
       <div className="grid-1">
         <section id="title">
           <h1>{project.title}</h1>
@@ -146,6 +160,27 @@ export default async function ProjectPage({ params }: Params) {
           )}
         </section>
       </div>
+
+      {(prevProject || nextProject) && (
+        <nav className="detail-nav" aria-label="More projects">
+          {prevProject ? (
+            <Link href={`/projects/${prevProject.id}`} className="detail-nav__item detail-nav__item--prev">
+              <span className="detail-nav__dir">← Previous</span>
+              <span className="detail-nav__title">{prevProject.title}</span>
+            </Link>
+          ) : (
+            <span />
+          )}
+          {nextProject ? (
+            <Link href={`/projects/${nextProject.id}`} className="detail-nav__item detail-nav__item--next">
+              <span className="detail-nav__dir">Next →</span>
+              <span className="detail-nav__title">{nextProject.title}</span>
+            </Link>
+          ) : (
+            <span />
+          )}
+        </nav>
+      )}
     </SubPage>
   );
 }

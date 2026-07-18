@@ -27,6 +27,9 @@ function HomeClient({ initialProjects }: { initialProjects: Project[] }) {
 
   return (
     <div id="body1">
+      <a href="#main-content" className="skip-link">
+        Skip to content
+      </a>
       <Nav />
 
       <main className="main1" id="main-content" role="main">
