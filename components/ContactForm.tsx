@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useTheme } from '@/contexts/ThemeContext';
 import apiClient from '@/lib/apiClient';
 
 const defaultFormData = {
@@ -17,8 +16,13 @@ interface ContactResponse {
   error?: string;
 }
 
+const Chevron = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
+
 const ContactForm = ({ className = '' }: { className?: string }) => {
-  const { theme } = useTheme();
   const [formData, setFormData] = useState(defaultFormData);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [response, setResponse] = useState<ContactResponse | null>(null);
@@ -73,100 +77,36 @@ const ContactForm = ({ className = '' }: { className?: string }) => {
         </li>
       </ul>
 
-      <div style={{ marginTop: '24px' }}>
-        <button
-          type="button"
-          onClick={toggleForm}
-          style={{
-            background: theme.text,
-            color: theme.background,
-            border: 'none',
-            borderRadius: 'var(--radius-pill)',
-            padding: '11px 22px',
-            cursor: 'pointer',
-            fontSize: '14px',
-            fontWeight: 500,
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            transition: 'all 0.3s ease',
-          }}
-          onMouseOver={(event) => {
-            event.currentTarget.style.transform = 'translateY(-2px)';
-          }}
-          onMouseOut={(event) => {
-            event.currentTarget.style.transform = 'translateY(0)';
-          }}
-        >
-          {showForm ? 'Hide contact form' : 'Send a message'}
-          <span
-            style={{
-              transition: 'transform 0.3s ease',
-              transform: showForm ? 'rotate(180deg)' : 'rotate(0deg)',
-            }}
-          >
-            ▼
-          </span>
-        </button>
-      </div>
+      <button
+        type="button"
+        onClick={toggleForm}
+        className={`contact-cta${showForm ? ' is-open' : ''}`}
+        aria-expanded={showForm}
+      >
+        {showForm ? 'Hide contact form' : 'Send a message'}
+        <span className="contact-cta__chevron">
+          <Chevron />
+        </span>
+      </button>
 
       {showForm && (
-        <div
-          style={{
-            marginTop: '20px',
-            background: theme.surface,
-            border: `1px solid ${theme.border}`,
-            borderRadius: '12px',
-            padding: '24px',
-            boxShadow: `0 4px 12px ${theme.shadow}`,
-          }}
-        >
-          <h3 style={{ color: theme.text, marginTop: 0, marginBottom: '20px' }}>
-            Send me a message
-          </h3>
+        <div className="contact-panel">
+          <h3 className="contact-panel__title">Send me a message</h3>
 
           {response && (
             <div
-              style={{
-                padding: '16px',
-                borderRadius: '8px',
-                marginBottom: '20px',
-                background: response.success ? `${theme.success}20` : `${theme.danger}20`,
-                border: `1px solid ${response.success ? theme.success : theme.danger}`,
-                color: response.success ? theme.success : theme.danger,
-              }}
+              className={`contact-note ${response.success ? 'is-success' : 'is-error'}`}
+              role="alert"
             >
-              <div style={{ fontWeight: 600, marginBottom: '4px' }}>
-                {response.success ? 'Message sent' : 'Error'}
-              </div>
-              <div style={{ fontSize: '14px' }}>
-                {response.success ? response.message : response.error}
-              </div>
+              <strong>{response.success ? 'Message sent' : 'Something went wrong'}</strong>
+              <span>{response.success ? response.message : response.error}</span>
             </div>
           )}
 
           <form onSubmit={handleSubmit}>
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: '1fr 1fr',
-                gap: '16px',
-                marginBottom: '16px',
-              }}
-            >
-              <div>
-                <label
-                  htmlFor="contact-name"
-                  style={{
-                    display: 'block',
-                    marginBottom: '6px',
-                    color: theme.text,
-                    fontSize: '14px',
-                    fontWeight: 500,
-                  }}
-                >
-                  Name *
-                </label>
+            <div className="contact-grid">
+              <div className="contact-field">
+                <label htmlFor="contact-name">Name</label>
                 <input
                   id="contact-name"
                   name="name"
@@ -174,29 +114,11 @@ const ContactForm = ({ className = '' }: { className?: string }) => {
                   value={formData.name}
                   onChange={handleInputChange}
                   required
-                  style={{
-                    width: '100%',
-                    padding: '12px',
-                    borderRadius: '6px',
-                    border: `1px solid ${theme.border}`,
-                    background: theme.background,
-                    color: theme.text,
-                  }}
+                  autoComplete="name"
                 />
               </div>
-              <div>
-                <label
-                  htmlFor="contact-email"
-                  style={{
-                    display: 'block',
-                    marginBottom: '6px',
-                    color: theme.text,
-                    fontSize: '14px',
-                    fontWeight: 500,
-                  }}
-                >
-                  Email *
-                </label>
+              <div className="contact-field">
+                <label htmlFor="contact-email">Email</label>
                 <input
                   id="contact-email"
                   name="email"
@@ -204,61 +126,24 @@ const ContactForm = ({ className = '' }: { className?: string }) => {
                   value={formData.email}
                   onChange={handleInputChange}
                   required
-                  style={{
-                    width: '100%',
-                    padding: '12px',
-                    borderRadius: '6px',
-                    border: `1px solid ${theme.border}`,
-                    background: theme.background,
-                    color: theme.text,
-                  }}
+                  autoComplete="email"
                 />
               </div>
             </div>
 
-            <div style={{ marginBottom: '16px' }}>
-              <label
-                htmlFor="contact-subject"
-                style={{
-                  display: 'block',
-                  marginBottom: '6px',
-                  color: theme.text,
-                  fontSize: '14px',
-                  fontWeight: 500,
-                }}
-              >
-                Subject
-              </label>
+            <div className="contact-field">
+              <label htmlFor="contact-subject">Subject</label>
               <input
                 id="contact-subject"
                 name="subject"
                 type="text"
                 value={formData.subject}
                 onChange={handleInputChange}
-                style={{
-                  width: '100%',
-                  padding: '12px',
-                  borderRadius: '6px',
-                  border: `1px solid ${theme.border}`,
-                  background: theme.background,
-                  color: theme.text,
-                }}
               />
             </div>
 
-            <div style={{ marginBottom: '16px' }}>
-              <label
-                htmlFor="contact-message"
-                style={{
-                  display: 'block',
-                  marginBottom: '6px',
-                  color: theme.text,
-                  fontSize: '14px',
-                  fontWeight: 500,
-                }}
-              >
-                Message *
-              </label>
+            <div className="contact-field">
+              <label htmlFor="contact-message">Message</label>
               <textarea
                 id="contact-message"
                 name="message"
@@ -266,47 +151,14 @@ const ContactForm = ({ className = '' }: { className?: string }) => {
                 onChange={handleInputChange}
                 required
                 rows={4}
-                style={{
-                  width: '100%',
-                  padding: '12px',
-                  borderRadius: '6px',
-                  border: `1px solid ${theme.border}`,
-                  background: theme.background,
-                  color: theme.text,
-                }}
               />
             </div>
 
-            <div style={{ display: 'flex', gap: '12px' }}>
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                style={{
-                  background: theme.text,
-                  color: theme.background,
-                  border: 'none',
-                  borderRadius: 'var(--radius-pill)',
-                  padding: '11px 22px',
-                  cursor: 'pointer',
-                  fontSize: '14px',
-                  fontWeight: 600,
-                }}
-              >
+            <div className="contact-actions">
+              <button type="submit" className="contact-submit" disabled={isSubmitting}>
                 {isSubmitting ? 'Sending…' : 'Send message'}
               </button>
-              <button
-                type="button"
-                onClick={toggleForm}
-                style={{
-                  background: 'transparent',
-                  color: theme.textSecondary,
-                  border: `1px solid ${theme.border}`,
-                  borderRadius: '8px',
-                  padding: '12px 24px',
-                  cursor: 'pointer',
-                  fontSize: '14px',
-                }}
-              >
+              <button type="button" className="contact-cancel" onClick={toggleForm}>
                 Cancel
               </button>
             </div>

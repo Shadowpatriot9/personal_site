@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
-import { useTheme } from '@/contexts/ThemeContext';
 import logger from '@/lib/logger';
 import { fallbackProjects, type Project } from '@/lib/projects';
 
@@ -51,8 +50,6 @@ interface ProjectSearchProps {
 }
 
 const ProjectSearch = ({ projects, onFilteredResults, className = '' }: ProjectSearchProps) => {
-  const { theme } = useTheme();
-
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [sortBy, setSortBy] = useState('newest');
@@ -94,30 +91,21 @@ const ProjectSearch = ({ projects, onFilteredResults, className = '' }: ProjectS
     });
   }, [filteredProjects, onFilteredResults, searchTerm, selectedCategory, sortBy]);
 
-  const inputStyle: React.CSSProperties = {
-    background: theme.cardBg,
-    color: theme.text,
-    border: `1px solid ${theme.border}`,
-    borderRadius: 'var(--radius-pill)',
-    fontSize: '0.9rem',
-    fontFamily: 'inherit',
-  };
-
   return (
-    <div className={`project-search ${className}`} style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
+    <div className={`project-search ${className}`}>
       <input
+        className="project-search__input"
         type="search"
         value={searchTerm}
         onChange={(event) => setSearchTerm(event.target.value)}
         placeholder="Search projects"
         aria-label="Search projects"
-        style={{ ...inputStyle, flex: '1 1 220px', padding: '10px 16px' }}
       />
       <select
+        className="project-search__select"
         value={selectedCategory}
         onChange={(event) => setSelectedCategory(event.target.value)}
         aria-label="Filter by category"
-        style={{ ...inputStyle, padding: '10px 14px', cursor: 'pointer' }}
       >
         {categories.map((category) => (
           <option key={category} value={category}>
@@ -126,10 +114,10 @@ const ProjectSearch = ({ projects, onFilteredResults, className = '' }: ProjectS
         ))}
       </select>
       <select
+        className="project-search__select"
         value={sortBy}
         onChange={(event) => setSortBy(event.target.value)}
         aria-label="Sort projects"
-        style={{ ...inputStyle, padding: '10px 14px', cursor: 'pointer' }}
       >
         <option value="newest">Newest</option>
         <option value="oldest">Oldest</option>
