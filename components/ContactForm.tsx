@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import apiClient from '@/lib/apiClient';
+import type { ContactLink } from '@/lib/siteContent';
 
 const defaultFormData = {
   name: '',
@@ -22,7 +23,13 @@ const Chevron = () => (
   </svg>
 );
 
-const ContactForm = ({ className = '' }: { className?: string }) => {
+const ContactForm = ({
+  links = [],
+  className = '',
+}: {
+  links?: ContactLink[];
+  className?: string;
+}) => {
   const [formData, setFormData] = useState(defaultFormData);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [response, setResponse] = useState<ContactResponse | null>(null);
@@ -61,21 +68,22 @@ const ContactForm = ({ className = '' }: { className?: string }) => {
 
   return (
     <div className={`contact-form ${className}`}>
-      <ul className="contact-links">
-        <li>
-          <a href="mailto:gscovil9@gmail.com">gscovil9@gmail.com</a>
-        </li>
-        <li>
-          <a href="https://www.linkedin.com/in/gscovil/" target="_blank" rel="noopener noreferrer">
-            linkedin.com/in/gscovil
-          </a>
-        </li>
-        <li>
-          <a href="https://github.com/Shadowpatriot9" target="_blank" rel="noopener noreferrer">
-            github.com/Shadowpatriot9
-          </a>
-        </li>
-      </ul>
+      {links.length > 0 && (
+        <ul className="contact-links">
+          {links.map((link) => (
+            <li key={`${link.label}-${link.href}`}>
+              <a
+                href={link.href}
+                {...(link.href.startsWith('mailto:')
+                  ? {}
+                  : { target: '_blank', rel: 'noopener noreferrer' })}
+              >
+                {link.label}
+              </a>
+            </li>
+          ))}
+        </ul>
+      )}
 
       <button
         type="button"

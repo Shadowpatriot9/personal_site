@@ -7,9 +7,11 @@ import { useTheme } from '@/contexts/ThemeContext';
 import ThemeSwitcher from '@/components/ThemeSwitcher';
 import ProjectsPanel from '@/components/admin/ProjectsPanel';
 import ProjectEditor from '@/components/admin/ProjectEditor';
+import SitePanel from '@/components/admin/SitePanel';
 import { ToastProvider, useToast } from '@/components/admin/Toast';
 import AdminLogin from '@/components/admin/AdminLogin';
 import type { AdminProject } from '@/components/admin/types';
+import type { SiteContent } from '@/lib/siteContent';
 import logger from '@/lib/logger';
 import apiClient from '@/lib/apiClient';
 
@@ -33,6 +35,9 @@ interface WorkspaceProps {
   loading: boolean;
   error: Error | null;
   token: string;
+  siteContent: SiteContent | null;
+  siteSaving: boolean;
+  onSaveSite: (content: SiteContent) => Promise<void>;
   onLogout: () => void;
   onCreate: (payload: AdminProject) => Promise<void>;
   onUpdate: (projectId: string, payload: AdminProject) => Promise<void>;
@@ -47,6 +52,9 @@ const AdminWorkspace = ({
   loading,
   error,
   token,
+  siteContent,
+  siteSaving,
+  onSaveSite,
   onLogout,
   onCreate,
   onUpdate,
@@ -57,6 +65,7 @@ const AdminWorkspace = ({
   const { toast } = useToast();
   const [editing, setEditing] = useState<EditorState>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [view, setView] = useState<'projects' | 'site'>('projects');
 
   // One quiet line of counts under the title, instead of a stats dashboard.
   const summary = useMemo(() => {
@@ -142,34 +151,62 @@ const AdminWorkspace = ({
       </header>
 
       <main className="admin-main">
-        <div className="admin-head">
-          <div className="admin-head__text">
-            <h1>Projects</h1>
-            <p className="admin-head__meta">{summary || ' '}</p>
-          </div>
+        <div className="segmented admin-view-tabs" role="group" aria-label="Admin sections">
           <button
             type="button"
-            className="primary-btn"
-            onClick={() => setEditing({ mode: 'create' })}
+            aria-pressed={view === 'projects'}
+            onClick={() => setView('projects')}
           >
-            New project
+            Projects
+          </button>
+          <button type="button" aria-pressed={view === 'site'} onClick={() => setView('site')}>
+            Site
           </button>
         </div>
 
-        {error && (
-          <div className="admin-banner admin-banner--error" role="alert">
-            {error.message}
-          </div>
-        )}
+        {view === 'projects' ? (
+          <>
+            <div className="admin-head">
+              <div className="admin-head__text">
+                <h1>Projects</h1>
+                <p className="admin-head__meta">{summary || ' '}</p>
+              </div>
+              <button
+                type="button"
+                className="primary-btn"
+                onClick={() => setEditing({ mode: 'create' })}
+              >
+                New project
+              </button>
+            </div>
 
-        <ProjectsPanel
-          projects={projects}
-          loading={loading}
-          onNew={() => setEditing({ mode: 'create' })}
-          onEditProject={(project) => setEditing({ mode: 'edit', project })}
-          onTogglePublish={onTogglePublish}
-          onReorder={onReorder}
-        />
+            {error && (
+              <div className="admin-banner admin-banner--error" role="alert">
+                {error.message}
+              </div>
+            )}
+
+            <ProjectsPanel
+              projects={projects}
+              loading={loading}
+              onNew={() => setEditing({ mode: 'create' })}
+              onEditProject={(project) => setEditing({ mode: 'edit', project })}
+              onTogglePublish={onTogglePublish}
+              onReorder={onReorder}
+            />
+          </>
+        ) : (
+          <>
+            <div className="admin-head">
+              <div className="admin-head__text">
+                <h1>Site</h1>
+                <p className="admin-head__meta">The homepage introduction and contact links.</p>
+              </div>
+            </div>
+
+            <SitePanel content={siteContent} saving={siteSaving} onSave={onSaveSite} />
+          </>
+        )}
       </main>
     </div>
   );
@@ -181,6 +218,8 @@ const AdminPage = () => {
   const [projects, setProjects] = useState<AdminProject[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
+  const [siteContent, setSiteContent] = useState<SiteContent | null>(null);
+  const [siteSaving, setSiteSaving] = useState(false);
   const [loginError, setLoginError] = useState<string | null>(null);
   const [isAuthenticating, setIsAuthenticating] = useState(false);
   const [ready, setReady] = useState(false);
@@ -239,6 +278,33 @@ const AdminPage = () => {
     return undefined;
   }, [token, fetchProjects]);
 
+  const fetchSiteContent = useCallback(
+    async (signal?: AbortSignal) => {
+      if (!token) return;
+      try {
+        const { data } = await apiClient.get('/api/admin/site-content', {
+          headers: authHeaders,
+          signal,
+        });
+        setSiteContent(data.content ?? null);
+      } catch (fetchError: any) {
+        if (fetchError?.name === 'AbortError') return;
+        // Expired tokens are already handled by the projects fetch.
+        logger.error('admin-site-content-fetch', fetchError);
+      }
+    },
+    [authHeaders, token],
+  );
+
+  useEffect(() => {
+    if (token) {
+      const controller = new AbortController();
+      fetchSiteContent(controller.signal);
+      return () => controller.abort();
+    }
+    return undefined;
+  }, [token, fetchSiteContent]);
+
   const handleLogin = async (username: string, password: string) => {
     setIsAuthenticating(true);
     setLoginError(null);
@@ -262,8 +328,25 @@ const AdminPage = () => {
   const handleLogout = () => {
     setToken('');
     setProjects([]);
+    setSiteContent(null);
     window.localStorage.removeItem(STORAGE_KEY);
   };
+
+  const handleSaveSiteContent = useCallback(
+    async (content: SiteContent) => {
+      setSiteSaving(true);
+      try {
+        const { data } = await apiClient.put('/api/admin/site-content', {
+          headers: authHeaders,
+          body: content,
+        });
+        setSiteContent(data.content ?? content);
+      } finally {
+        setSiteSaving(false);
+      }
+    },
+    [authHeaders],
+  );
 
   const handleCreateProject = useCallback(
     async (payload: AdminProject) => {
@@ -324,6 +407,9 @@ const AdminPage = () => {
         loading={loading}
         error={error}
         token={token}
+        siteContent={siteContent}
+        siteSaving={siteSaving}
+        onSaveSite={handleSaveSiteContent}
         onLogout={handleLogout}
         onCreate={handleCreateProject}
         onUpdate={handleUpdateProject}

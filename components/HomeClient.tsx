@@ -9,8 +9,15 @@ import ProjectGrid from '@/components/ProjectGrid';
 import ContactForm from '@/components/ContactForm';
 import ThemeSwitcher from '@/components/ThemeSwitcher';
 import type { Project } from '@/lib/projects';
+import type { SiteContent } from '@/lib/siteContent';
 
-function HomeClient({ initialProjects }: { initialProjects: Project[] }) {
+function HomeClient({
+  initialProjects,
+  content,
+}: {
+  initialProjects: Project[];
+  content: SiteContent;
+}) {
   const [filteredProjects, setFilteredProjects] = useState<Project[]>(initialProjects);
 
   useEffect(() => {
@@ -35,16 +42,10 @@ function HomeClient({ initialProjects }: { initialProjects: Project[] }) {
       <main className="main1" id="main-content" role="main">
         <section className="section1 reveal" id="about" aria-labelledby="about-heading">
           <h1 className="intro-name" id="about-heading">
-            Grayden Scovil
+            {content.name}
           </h1>
-          <p className="intro-tagline">
-            I build software and hardware — home servers, operating systems, simulators, and the
-            occasional overambitious hardware experiment. Based in Colorado.
-          </p>
-          <p className="intro-note">
-            Some shipped, some archived, all mine. A few are below — reach out if you want to see
-            more.
-          </p>
+          {content.tagline && <p className="intro-tagline">{content.tagline}</p>}
+          {content.note && <p className="intro-note">{content.note}</p>}
         </section>
 
         <section
@@ -75,13 +76,13 @@ function HomeClient({ initialProjects }: { initialProjects: Project[] }) {
           <h2 className="section-header" id="contact-heading">
             Contact
           </h2>
-          <ContactForm />
+          <ContactForm links={content.contactLinks} />
         </section>
       </main>
 
       <footer className="footer1" role="contentinfo">
         <div className="graphic1">
-          <p>© {new Date().getFullYear()} Grayden Scovil</p>
+          <p>© {new Date().getFullYear()} {content.name}</p>
         </div>
         <div className="footer1__right">
           <Link href="/admin" className="footer-admin">

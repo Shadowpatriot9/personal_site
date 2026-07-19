@@ -1,6 +1,8 @@
 import HomeClient from '@/components/HomeClient';
 import { listPublished, toPublicShape } from '@/lib/server/store';
 import { fallbackProjects, type Project } from '@/lib/projects';
+import { getSiteContent } from '@/lib/server/siteContent';
+import { defaultSiteContent, type SiteContent } from '@/lib/siteContent';
 
 export const dynamic = 'force-dynamic';
 
@@ -12,5 +14,13 @@ export default async function Page() {
   } catch {
     projects = fallbackProjects;
   }
-  return <HomeClient initialProjects={projects} />;
+
+  let content: SiteContent;
+  try {
+    content = await getSiteContent();
+  } catch {
+    content = defaultSiteContent;
+  }
+
+  return <HomeClient initialProjects={projects} content={content} />;
 }
