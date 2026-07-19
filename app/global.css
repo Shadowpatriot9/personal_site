@@ -136,7 +136,14 @@ a.footer-admin:focus-visible {
     justify-content: space-between;
 }
 
+/* Links stretch to the full bar height so every tap target clears 44pt
+   (Apple HIG minimum) while the type stays small. */
 .site-nav__mark {
+    display: inline-flex;
+    align-items: center;
+    align-self: stretch;
+    padding: 0 10px;
+    margin-left: -10px;
     font-family: var(--font-display);
     font-weight: 600;
     font-size: 1.05rem;
@@ -146,14 +153,22 @@ a.footer-admin:focus-visible {
 
 .site-nav__right {
     display: flex;
-    align-items: center;
-    gap: 22px;
+    align-items: stretch;
+    align-self: stretch;
+    gap: 6px;
 }
 
 .site-nav__link {
+    display: inline-flex;
+    align-items: center;
+    padding: 0 10px;
     font-size: 0.9rem;
     color: var(--color-textSecondary);
     transition: color 0.2s ease;
+}
+
+.site-nav__right .site-nav__link:last-child {
+    margin-right: -10px;
 }
 
 .site-nav__link:hover {
@@ -740,7 +755,7 @@ a:hover .project-card.has-cover .project-card__cover img {
     }
 
     .site-nav__right {
-        gap: 16px;
+        gap: 2px;
     }
 
     .main1 {

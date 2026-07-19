@@ -30,25 +30,6 @@ const SearchIcon = () => (
   </svg>
 );
 
-const EditIcon = () => (
-  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-    <path d="M4 20h4L18.5 9.5a2 2 0 0 0 0-2.8l-1.2-1.2a2 2 0 0 0-2.8 0L4 16v4z" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round" />
-  </svg>
-);
-
-const TrashIcon = () => (
-  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-    <path d="M5 7h14M10 7V5a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v2M6 7l1 12a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1l1-12" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
-  </svg>
-);
-
-const PlusIcon = () => (
-  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-    <line x1="12" y1="5" x2="12" y2="19" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-    <line x1="5" y1="12" x2="19" y2="12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-  </svg>
-);
-
 const DragIcon = () => (
   <svg width="12" height="16" viewBox="0 0 12 16" fill="currentColor" aria-hidden="true">
     <circle cx="3" cy="3" r="1.4" />
@@ -65,7 +46,6 @@ interface ProjectsPanelProps {
   loading: boolean;
   onNew: () => void;
   onEditProject: (project: AdminProject) => void;
-  onDeleteProject: (projectId: string) => Promise<void>;
   onTogglePublish: (projectId: string, published: boolean) => Promise<void>;
   onReorder: (projects: AdminProject[]) => Promise<void>;
 }
@@ -81,7 +61,6 @@ const ProjectsPanel = ({
   loading,
   onNew,
   onEditProject,
-  onDeleteProject,
   onTogglePublish,
   onReorder,
 }: ProjectsPanelProps) => {
@@ -90,7 +69,6 @@ const ProjectsPanel = ({
   const [publishFilter, setPublishFilter] = useState('all');
   const [draggedId, setDraggedId] = useState<string | null>(null);
   const [dropTargetId, setDropTargetId] = useState<string | null>(null);
-  const [confirmingDeleteId, setConfirmingDeleteId] = useState<string | null>(null);
   const { toast } = useToast();
 
   const errMessage = (error: unknown, fallback: string) =>
@@ -139,17 +117,6 @@ const ProjectsPanel = ({
   }, [projects, publishFilter, searchTerm, sortBy]);
 
   const isReorderDisabled = Boolean(searchTerm || publishFilter !== 'all' || sortBy !== 'order');
-
-  const handleDelete = async (projectId: string) => {
-    try {
-      await onDeleteProject(projectId);
-      toast('Project deleted');
-    } catch (error) {
-      toast(errMessage(error, 'Could not delete project'), 'error');
-    } finally {
-      setConfirmingDeleteId(null);
-    }
-  };
 
   const handleTogglePublish = async (projectId: string, next: boolean) => {
     try {
@@ -233,7 +200,7 @@ const ProjectsPanel = ({
             type="search"
             value={searchTerm}
             onChange={(event) => setSearchTerm(event.target.value)}
-            placeholder="Search projects…"
+            placeholder="Search projects"
           />
         </div>
 
@@ -250,32 +217,26 @@ const ProjectsPanel = ({
           ))}
         </div>
 
-        <div className="toolbar-sort">
-          <label htmlFor="projects-sort">Sort</label>
-          <select
-            id="projects-sort"
-            value={sortBy}
-            onChange={(event) => setSortBy(event.target.value)}
-          >
-            <option value="order">Custom order</option>
-            <option value="alphabetical">Alphabetical</option>
-            <option value="newest">Last updated</option>
-            <option value="oldest">Oldest first</option>
-          </select>
-        </div>
-
-        <div className="toolbar-spacer" />
-
-        <button type="button" className="primary-btn" onClick={onNew}>
-          <PlusIcon />
-          New project
-        </button>
+        <label htmlFor="projects-sort" className="sr-only">
+          Sort projects
+        </label>
+        <select
+          id="projects-sort"
+          className="toolbar-sort"
+          value={sortBy}
+          onChange={(event) => setSortBy(event.target.value)}
+        >
+          <option value="order">Custom order</option>
+          <option value="alphabetical">Alphabetical</option>
+          <option value="newest">Last updated</option>
+          <option value="oldest">Oldest first</option>
+        </select>
       </div>
 
       {isReorderDisabled && !loading && filteredProjects.length > 0 && (
-        <div className="reorder-note" role="note">
-          Clear search, filters, and set sort to “Custom order” to drag-reorder.
-        </div>
+        <p className="reorder-note" role="note">
+          Clear search and filters, and sort by “Custom order”, to reorder.
+        </p>
       )}
 
       <div className="projects-list" role="list">
@@ -290,25 +251,27 @@ const ProjectsPanel = ({
             {projects.length === 0 ? (
               <>
                 <strong>No projects yet</strong>
-                Create your first project to populate the catalog.
+                <p>Your portfolio catalog is empty.</p>
+                <button type="button" className="ghost-btn" onClick={onNew}>
+                  New project
+                </button>
               </>
             ) : (
               <>
                 <strong>No matches</strong>
-                No projects match the current search or filters.
+                <p>No projects match the current search or filters.</p>
               </>
             )}
           </div>
         ) : (
           filteredProjects.map((project) => {
             const projectId = project._id as string;
-            const isConfirming = confirmingDeleteId === projectId;
             return (
               <article
                 key={projectId}
-                className={`project-row${draggedId === projectId ? ' is-dragging' : ''}${
-                  dropTargetId === projectId ? ' is-drop-target' : ''
-                }`}
+                className={`project-row${project.published ? '' : ' is-draft'}${
+                  draggedId === projectId ? ' is-dragging' : ''
+                }${dropTargetId === projectId ? ' is-drop-target' : ''}`}
                 draggable={!isReorderDisabled}
                 onDragStart={(event) => handleDragStart(event, projectId)}
                 onDragOver={(event) => handleDragOver(event, projectId)}
@@ -318,7 +281,6 @@ const ProjectsPanel = ({
                 }}
                 onDrop={(event) => handleDrop(event, projectId)}
                 role="listitem"
-                aria-label={`${project.title} management row`}
               >
                 <button
                   type="button"
@@ -327,7 +289,7 @@ const ProjectsPanel = ({
                   disabled={isReorderDisabled}
                   title={
                     isReorderDisabled
-                      ? 'Reordering disabled while filtered'
+                      ? 'Reordering is off while filtered'
                       : 'Drag, or focus and use ↑/↓ to reorder'
                   }
                   onKeyDown={(event) => handleHandleKeyDown(event, projectId)}
@@ -339,74 +301,39 @@ const ProjectsPanel = ({
                   // eslint-disable-next-line @next/next/no-img-element
                   <img className="row-thumb" src={project.image} alt="" />
                 ) : (
-                  <span
-                    className={`row-status-dot${project.published ? ' is-published' : ''}`}
-                    aria-hidden="true"
-                  />
+                  <span className="row-tile" aria-hidden="true">
+                    {(project.title || '?').charAt(0)}
+                  </span>
                 )}
 
                 <div className="row-main">
-                  <div className="row-title-line">
-                    <h3>{project.title}</h3>
+                  {/* Stretched button: the whole row opens the editor. */}
+                  <button
+                    type="button"
+                    className="row-open"
+                    aria-label={`Edit ${project.title}`}
+                    onClick={() => onEditProject(project)}
+                  >
+                    <span className="row-title">{project.title}</span>
                     <span className="row-slug">/projects/{project.id}</span>
-                  </div>
+                  </button>
                   <p className="row-desc">{project.description}</p>
                 </div>
 
-                <div className="row-meta">
-                  <span className="chip">{project.category}</span>
-                  <span className={`status-pill ${project.published ? 'published' : 'draft'}`}>
-                    {project.published ? 'Published' : 'Draft'}
-                  </span>
+                <div className="row-side">
+                  <span className="row-cat">{project.category}</span>
+                  {!project.published && <span className="row-draft">Draft</span>}
+                  <label className="row-switch" onClick={(event) => event.stopPropagation()}>
+                    <input
+                      type="checkbox"
+                      role="switch"
+                      checked={Boolean(project.published)}
+                      onChange={() => handleTogglePublish(projectId, !project.published)}
+                      aria-label={`Publish ${project.title}`}
+                    />
+                    <span className="switch" aria-hidden="true" />
+                  </label>
                 </div>
-
-                {isConfirming ? (
-                  <div className="row-confirm">
-                    <span>Delete?</span>
-                    <button
-                      type="button"
-                      className="ghost-btn btn-sm"
-                      onClick={() => setConfirmingDeleteId(null)}
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      type="button"
-                      className="danger-btn is-solid btn-sm"
-                      onClick={() => handleDelete(projectId)}
-                    >
-                      Delete
-                    </button>
-                  </div>
-                ) : (
-                  <div className="row-actions">
-                    <button
-                      type="button"
-                      className="ghost-btn btn-sm"
-                      onClick={() => handleTogglePublish(projectId, !project.published)}
-                    >
-                      {project.published ? 'Unpublish' : 'Publish'}
-                    </button>
-                    <button
-                      type="button"
-                      className="icon-btn"
-                      aria-label={`Edit ${project.title}`}
-                      title="Edit"
-                      onClick={() => onEditProject(project)}
-                    >
-                      <EditIcon />
-                    </button>
-                    <button
-                      type="button"
-                      className="icon-btn is-danger"
-                      aria-label={`Delete ${project.title}`}
-                      title="Delete"
-                      onClick={() => setConfirmingDeleteId(projectId)}
-                    >
-                      <TrashIcon />
-                    </button>
-                  </div>
-                )}
               </article>
             );
           })

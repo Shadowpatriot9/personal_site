@@ -58,12 +58,17 @@ const AdminWorkspace = ({
   const [editing, setEditing] = useState<EditorState>(null);
   const [isSaving, setIsSaving] = useState(false);
 
-  const stats = useMemo(() => {
+  // One quiet line of counts under the title, instead of a stats dashboard.
+  const summary = useMemo(() => {
+    if (loading && projects.length === 0) return '';
     const total = projects.length;
     const published = projects.filter((project) => project.published).length;
-    const categories = new Set(projects.map((project) => project.category).filter(Boolean)).size;
-    return { total, published, drafts: total - published, categories };
-  }, [projects]);
+    const drafts = total - published;
+    if (total === 0) return 'No projects yet';
+    const parts = [`${total} ${total === 1 ? 'project' : 'projects'}`, `${published} published`];
+    if (drafts > 0) parts.push(`${drafts} ${drafts === 1 ? 'draft' : 'drafts'}`);
+    return parts.join(' · ');
+  }, [loading, projects]);
 
   const handleSave = async (payload: Record<string, unknown>) => {
     if (!editing) return;
@@ -84,6 +89,19 @@ const AdminWorkspace = ({
     }
   };
 
+  // Deleting lives in the editor (a deliberate, rare action) rather than on
+  // every list row.
+  const handleDeleteCurrent = async () => {
+    if (!editing || editing.mode !== 'edit') return;
+    try {
+      await onDelete(editing.project._id as string);
+      toast('Project deleted');
+      setEditing(null);
+    } catch (err) {
+      toast(errMessage(err, 'Could not delete project'), 'error');
+    }
+  };
+
   if (editing) {
     return (
       <ProjectEditor
@@ -93,6 +111,7 @@ const AdminWorkspace = ({
         isSaving={isSaving}
         onSave={handleSave}
         onCancel={() => !isSaving && setEditing(null)}
+        onDelete={editing.mode === 'edit' ? handleDeleteCurrent : undefined}
       />
     );
   }
@@ -112,7 +131,7 @@ const AdminWorkspace = ({
           </div>
           <div className="admin-topbar__actions">
             <Link href="/" className="admin-viewsite-link">
-              View site ↗
+              View site<span aria-hidden="true"> ↗</span>
             </Link>
             <ThemeSwitcher />
             <button type="button" onClick={onLogout} className="ghost-btn btn-sm">
@@ -123,40 +142,18 @@ const AdminWorkspace = ({
       </header>
 
       <main className="admin-main">
-        <div className="admin-page-head">
-          <h1>Projects</h1>
-          <p>Create, edit, reorder, and publish the entries in your portfolio catalog.</p>
-        </div>
-
-        <div className="admin-stats">
-          <div className="stat-card">
-            <span className="stat-card__value">{stats.total}</span>
-            <span className="stat-card__label">
-              <span className="stat-card__dot" />
-              Total projects
-            </span>
+        <div className="admin-head">
+          <div className="admin-head__text">
+            <h1>Projects</h1>
+            <p className="admin-head__meta">{summary || ' '}</p>
           </div>
-          <div className="stat-card stat-card--success">
-            <span className="stat-card__value">{stats.published}</span>
-            <span className="stat-card__label">
-              <span className="stat-card__dot" />
-              Published
-            </span>
-          </div>
-          <div className="stat-card stat-card--muted">
-            <span className="stat-card__value">{stats.drafts}</span>
-            <span className="stat-card__label">
-              <span className="stat-card__dot" />
-              Drafts
-            </span>
-          </div>
-          <div className="stat-card">
-            <span className="stat-card__value">{stats.categories}</span>
-            <span className="stat-card__label">
-              <span className="stat-card__dot" />
-              Categories
-            </span>
-          </div>
+          <button
+            type="button"
+            className="primary-btn"
+            onClick={() => setEditing({ mode: 'create' })}
+          >
+            New project
+          </button>
         </div>
 
         {error && (
@@ -170,7 +167,6 @@ const AdminWorkspace = ({
           loading={loading}
           onNew={() => setEditing({ mode: 'create' })}
           onEditProject={(project) => setEditing({ mode: 'edit', project })}
-          onDeleteProject={onDelete}
           onTogglePublish={onTogglePublish}
           onReorder={onReorder}
         />

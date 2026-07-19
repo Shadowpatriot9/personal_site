@@ -129,6 +129,7 @@ interface ProjectEditorProps {
   isSaving?: boolean;
   onSave: (payload: Record<string, unknown>) => void | Promise<void>;
   onCancel: () => void;
+  onDelete?: () => void | Promise<void>;
 }
 
 const ProjectEditor = ({
@@ -138,6 +139,7 @@ const ProjectEditor = ({
   isSaving = false,
   onSave,
   onCancel,
+  onDelete,
 }: ProjectEditorProps) => {
   const initial = useRef(toFormState(initialData));
   const [form, setForm] = useState<FormState>(initial.current);
@@ -149,6 +151,18 @@ const ProjectEditor = ({
   const [coverUploading, setCoverUploading] = useState(false);
   const [coverError, setCoverError] = useState<string | null>(null);
   const [previewDragging, setPreviewDragging] = useState(false);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const handleDelete = async () => {
+    if (!onDelete) return;
+    setIsDeleting(true);
+    try {
+      await onDelete();
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   useEffect(() => {
     let active = true;
@@ -261,8 +275,9 @@ const ProjectEditor = ({
             </svg>
           </button>
           <nav className="editor__crumb" aria-label="Breadcrumb">
-            <span>Projects</span>
-            <span className="editor__crumb-sep">/</span>
+            <span className="editor__crumb-root">
+              Projects<span className="editor__crumb-sep"> / </span>
+            </span>
             <span className="editor__crumb-current">
               {mode === 'edit' ? form.title || 'Untitled' : 'New project'}
             </span>
@@ -274,11 +289,16 @@ const ProjectEditor = ({
             {form.published ? 'Published' : 'Draft'}
           </span>
           {dirty && <span className="editor__dirty">Unsaved</span>}
-          <button type="button" className="ghost-btn btn-sm" onClick={onCancel} disabled={isSaving}>
+          <button
+            type="button"
+            className="ghost-btn btn-sm editor__cancel"
+            onClick={onCancel}
+            disabled={isSaving}
+          >
             Cancel
           </button>
           <button type="button" className="primary-btn btn-sm" onClick={handleSave} disabled={isSaving}>
-            {isSaving ? 'Saving…' : mode === 'edit' ? 'Save changes' : 'Publish project'}
+            {isSaving ? 'Saving…' : mode === 'edit' ? 'Save' : 'Create'}
           </button>
         </div>
       </header>
@@ -496,6 +516,47 @@ const ProjectEditor = ({
               )}
             </div>
           </section>
+
+          {/* Delete — deliberate, tucked at the end rather than on every list row */}
+          {mode === 'edit' && onDelete && (
+            <section className="editor-section editor-section--danger">
+              <div className="editor-section__head">
+                <h2>Delete project</h2>
+                <p>Removes it from the site and the catalog. This can’t be undone.</p>
+              </div>
+              <div className="editor-section__fields">
+                {confirmingDelete ? (
+                  <div className="editor-danger__confirm">
+                    <span>Delete “{form.title || 'this project'}”?</span>
+                    <button
+                      type="button"
+                      className="ghost-btn btn-sm"
+                      onClick={() => setConfirmingDelete(false)}
+                      disabled={isDeleting}
+                    >
+                      Keep
+                    </button>
+                    <button
+                      type="button"
+                      className="danger-btn is-solid btn-sm"
+                      onClick={handleDelete}
+                      disabled={isDeleting}
+                    >
+                      {isDeleting ? 'Deleting…' : 'Delete'}
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    className="danger-btn editor-danger__trigger"
+                    onClick={() => setConfirmingDelete(true)}
+                  >
+                    Delete project…
+                  </button>
+                )}
+              </div>
+            </section>
+          )}
         </div>
 
         {/* Live preview */}
