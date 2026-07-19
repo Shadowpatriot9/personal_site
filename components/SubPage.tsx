@@ -11,6 +11,11 @@ interface SubPageProps {
   pageTitle: string;
   pageDescription?: string;
   logData?: Record<string, unknown>;
+  /** Editable site content passed down from server pages. */
+  siteName?: string;
+  footer?: string;
+  projectsLabel?: string;
+  contactLabel?: string;
   children: React.ReactNode;
 }
 
@@ -18,7 +23,17 @@ interface SubPageProps {
  * Shared shell for project sub-pages: nav, content column, footer.
  * Children provide the grid-1/grid-2/grid-3 content sections.
  */
-const SubPage = ({ slug, pageTitle, pageDescription, logData = {}, children }: SubPageProps) => {
+const SubPage = ({
+  slug,
+  pageTitle,
+  pageDescription,
+  logData = {},
+  siteName = 'Grayden Scovil',
+  footer = '',
+  projectsLabel = 'Projects',
+  contactLabel = 'Contact',
+  children,
+}: SubPageProps) => {
   useEffect(() => {
     logger.pageView(`${pageTitle} Project Page`, {
       project: slug,
@@ -33,7 +48,7 @@ const SubPage = ({ slug, pageTitle, pageDescription, logData = {}, children }: S
       <a href="#main-content" className="skip-link">
         Skip to content
       </a>
-      <Nav />
+      <Nav projectsLabel={projectsLabel} contactLabel={contactLabel} />
 
       <main role="main" id="main-content">
         <div className="container">{children}</div>
@@ -41,7 +56,7 @@ const SubPage = ({ slug, pageTitle, pageDescription, logData = {}, children }: S
 
       <footer role="contentinfo">
         <div className="graphic">
-          <p>© {new Date().getFullYear()} Grayden Scovil</p>
+          <p>{footer || `© ${new Date().getFullYear()} ${siteName}`}</p>
         </div>
         <div className="footer1__right">
           <Link href="/admin" className="footer-admin">

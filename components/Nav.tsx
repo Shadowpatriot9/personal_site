@@ -11,7 +11,12 @@ import Link from 'next/link';
  * on its own, then slides in once the intro section scrolls out of view. On
  * pages without an intro section (`#about`) it is visible immediately.
  */
-const Nav = () => {
+interface NavProps {
+  projectsLabel?: string;
+  contactLabel?: string;
+}
+
+const Nav = ({ projectsLabel = 'Projects', contactLabel = 'Contact' }: NavProps) => {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
@@ -48,10 +53,10 @@ const Nav = () => {
 
         <div className="site-nav__right">
           <Link href="/#projects" className="site-nav__link">
-            Projects
+            {projectsLabel}
           </Link>
           <Link href="/#contact" className="site-nav__link">
-            Contact
+            {contactLabel}
           </Link>
         </div>
       </div>

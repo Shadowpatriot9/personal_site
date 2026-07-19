@@ -37,7 +37,7 @@ function HomeClient({
       <a href="#main-content" className="skip-link">
         Skip to content
       </a>
-      <Nav />
+      <Nav projectsLabel={content.projectsHeading} contactLabel={content.contactHeading} />
 
       <main className="main1" id="main-content" role="main">
         <section className="section1 reveal" id="about" aria-labelledby="about-heading">
@@ -55,7 +55,7 @@ function HomeClient({
           style={{ animationDelay: '0.05s' }}
         >
           <h2 className="section-header" id="projects-heading">
-            Projects
+            {content.projectsHeading}
           </h2>
 
           <ProjectSearch
@@ -74,7 +74,7 @@ function HomeClient({
           style={{ animationDelay: '0.1s' }}
         >
           <h2 className="section-header" id="contact-heading">
-            Contact
+            {content.contactHeading}
           </h2>
           <ContactForm links={content.contactLinks} />
         </section>
@@ -82,7 +82,7 @@ function HomeClient({
 
       <footer className="footer1" role="contentinfo">
         <div className="graphic1">
-          <p>© {new Date().getFullYear()} {content.name}</p>
+          <p>{content.footer || `© ${new Date().getFullYear()} ${content.name}`}</p>
         </div>
         <div className="footer1__right">
           <Link href="/admin" className="footer-admin">

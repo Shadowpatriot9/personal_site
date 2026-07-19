@@ -4,6 +4,8 @@ import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import SubPage from '@/components/SubPage';
 import { getOne, listPublished } from '@/lib/server/store';
+import { getSiteContent } from '@/lib/server/siteContent';
+import { defaultSiteContent, type SiteContent } from '@/lib/siteContent';
 
 export const dynamic = 'force-dynamic';
 
@@ -109,13 +111,28 @@ export default async function ProjectPage({ params }: Params) {
   const prevProject = index > 0 ? published[index - 1] : null;
   const nextProject = index >= 0 && index < published.length - 1 ? published[index + 1] : null;
 
+  let content: SiteContent;
+  try {
+    content = await getSiteContent();
+  } catch {
+    content = defaultSiteContent;
+  }
+
   return (
-    <SubPage slug={project.id} pageTitle={project.title} pageDescription={project.description}>
+    <SubPage
+      slug={project.id}
+      pageTitle={project.title}
+      pageDescription={project.description}
+      siteName={content.name}
+      footer={content.footer}
+      projectsLabel={content.projectsHeading}
+      contactLabel={content.contactHeading}
+    >
       <Link href="/#projects" className="detail-back">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
           <path d="M15 5l-7 7 7 7" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
-        Projects
+        {content.projectsHeading}
       </Link>
 
       <div className="grid-1">

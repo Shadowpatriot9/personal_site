@@ -86,6 +86,10 @@ const withDefaults = (input: Partial<SiteContent>): SiteContent => ({
   name: clip(input.name, 80) || defaultSiteContent.name,
   tagline: input.tagline === undefined ? defaultSiteContent.tagline : clip(input.tagline, 500),
   note: input.note === undefined ? defaultSiteContent.note : clip(input.note, 500),
+  // Headings are structural (anchors, nav labels) — empty falls back too.
+  projectsHeading: clip(input.projectsHeading, 60) || defaultSiteContent.projectsHeading,
+  contactHeading: clip(input.contactHeading, 60) || defaultSiteContent.contactHeading,
+  footer: input.footer === undefined ? defaultSiteContent.footer : clip(input.footer, 200),
   contactLinks:
     input.contactLinks === undefined ? defaultSiteContent.contactLinks : toLinks(input.contactLinks),
 });
@@ -104,6 +108,9 @@ export async function saveSiteContent(input: Record<string, unknown>): Promise<S
     name: input.name as string,
     tagline: (input.tagline ?? '') as string,
     note: (input.note ?? '') as string,
+    projectsHeading: (input.projectsHeading ?? '') as string,
+    contactHeading: (input.contactHeading ?? '') as string,
+    footer: (input.footer ?? '') as string,
     contactLinks: (input.contactLinks ?? []) as ContactLink[],
   });
   await (usingBlob() ? blobWrite(content) : fileWrite(content));

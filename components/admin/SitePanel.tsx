@@ -48,7 +48,9 @@ const SitePanel = ({ content, saving, onSave }: SitePanelProps) => {
     return next;
   }, [form]);
 
-  const set = (field: 'name' | 'tagline' | 'note') =>
+  const set = (
+    field: 'name' | 'tagline' | 'note' | 'projectsHeading' | 'contactHeading' | 'footer',
+  ) =>
     (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
       setForm((prev) => (prev ? { ...prev, [field]: event.target.value } : prev));
 
@@ -83,6 +85,9 @@ const SitePanel = ({ content, saving, onSave }: SitePanelProps) => {
       name: form.name.trim(),
       tagline: form.tagline.trim(),
       note: form.note.trim(),
+      projectsHeading: form.projectsHeading.trim(),
+      contactHeading: form.contactHeading.trim(),
+      footer: form.footer.trim(),
       contactLinks: form.contactLinks
         .map((link) => ({ label: link.label.trim(), href: link.href.trim() }))
         .filter((link) => link.label && link.href),
@@ -158,6 +163,38 @@ const SitePanel = ({ content, saving, onSave }: SitePanelProps) => {
 
         <section className="site-card__section">
           <div className="editor-section__head">
+            <h2>Sections</h2>
+            <p>Headings for the two homepage sections — the nav links use them too.</p>
+          </div>
+          <div className="editor-section__fields">
+            <div className="form-row">
+              <div className="form-group">
+                <label htmlFor="site-projects-heading">Projects section</label>
+                <input
+                  id="site-projects-heading"
+                  type="text"
+                  value={form.projectsHeading}
+                  onChange={set('projectsHeading')}
+                  placeholder="Projects"
+                />
+              </div>
+              <div className="form-group">
+                <label htmlFor="site-contact-heading">Contact section</label>
+                <input
+                  id="site-contact-heading"
+                  type="text"
+                  value={form.contactHeading}
+                  onChange={set('contactHeading')}
+                  placeholder="Contact"
+                />
+              </div>
+            </div>
+            <span className="field-hint">Left empty, they fall back to “Projects” and “Contact”.</span>
+          </div>
+        </section>
+
+        <section className="site-card__section">
+          <div className="editor-section__head">
             <h2>Contact links</h2>
             <p>Listed in the Contact section, in this order.</p>
           </div>
@@ -208,6 +245,31 @@ const SitePanel = ({ content, saving, onSave }: SitePanelProps) => {
             <button type="button" className="ghost-btn btn-sm site-card__add" onClick={addLink}>
               Add link
             </button>
+          </div>
+        </section>
+
+        <section className="site-card__section">
+          <div className="editor-section__head">
+            <h2>Footer</h2>
+            <p>The line in the bottom-left corner of every page.</p>
+          </div>
+          <div className="editor-section__fields">
+            <div className="form-group">
+              <label htmlFor="site-footer" className="sr-only">
+                Footer text
+              </label>
+              <input
+                id="site-footer"
+                type="text"
+                value={form.footer}
+                onChange={set('footer')}
+                placeholder={`© ${new Date().getFullYear()} ${form.name.trim() || 'Grayden Scovil'}`}
+              />
+              <span className="field-hint">
+                Left empty, it shows “© {new Date().getFullYear()}{' '}
+                {form.name.trim() || 'Grayden Scovil'}” with the year kept current.
+              </span>
+            </div>
           </div>
         </section>
 
