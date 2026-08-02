@@ -4,12 +4,8 @@
   "note": "Some shipped, some archived, all mine. A few are below — reach out if you want to see more.",
   "projectsHeading": "Projects",
   "contactHeading": "Contact",
-  "footer": "© 2026 Grayden Scovil — git-store test",
+  "footer": "",
   "contactLinks": [
-    {
-      "label": "gscovil9@gmail.com",
-      "href": "mailto:gscovil9@gmail.com"
-    },
     {
       "label": "linkedin.com/in/gscovil",
       "href": "https://www.linkedin.com/in/gscovil/"
