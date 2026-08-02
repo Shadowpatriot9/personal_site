@@ -1,8 +1,7 @@
-import { promises as fs } from 'fs';
-import path from 'path';
 import crypto from 'crypto';
-import { put, list, del } from '@vercel/blob';
+import { readJsonFresh, writeJson } from '@/lib/server/storage';
 import { fallbackProjects } from '@/lib/projects';
+import bundledProjects from '@/data/projects.json';
 
 export interface StoredProject {
   _id: string;
@@ -25,6 +24,8 @@ export interface StoredProject {
   createdAt: string;
   updatedAt: string;
 }
+
+const DATA_PATH = 'data/projects.json';
 
 const now = () => new Date().toISOString();
 
@@ -52,77 +53,21 @@ const seedProjects = (): StoredProject[] =>
   }));
 
 // ---------------------------------------------------------------------------
-// Persistence backends: Vercel Blob in production, a local JSON file in dev.
+// Two read paths, one write path (see lib/server/storage.ts):
+//  - Public pages are static and read the bundled data/projects.json snapshot,
+//    baked in at build time. Zero runtime storage calls.
+//  - Admin routes read the latest commit and write new ones; each write
+//    triggers a redeploy that refreshes the static snapshot.
 // ---------------------------------------------------------------------------
 
-const BLOB_PATHNAME = 'projects.json';
-const BLOB_PREFIX = 'projects';
-const blobToken = () => process.env.BLOB_READ_WRITE_TOKEN;
-const usingBlob = () => Boolean(blobToken());
-
-const newestFirst = (a: { uploadedAt: string | Date }, b: { uploadedAt: string | Date }) =>
-  new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime();
-
-// Each write is a new immutable blob (random suffix), so reads are never served
-// a stale overwrite from the CDN. Reads take the newest; stale blobs are pruned.
-async function blobRead(): Promise<StoredProject[] | null> {
-  const token = blobToken() as string;
-  const { blobs } = await list({ token, prefix: BLOB_PREFIX });
-  if (blobs.length === 0) {
-    return null;
-  }
-  const newest = [...blobs].sort(newestFirst)[0];
-  const res = await fetch(newest.url, { cache: 'no-store' });
-  if (!res.ok) {
-    throw new Error(`Blob read failed: ${res.status}`);
-  }
-  return (await res.json()) as StoredProject[];
-}
-
-async function blobWrite(projects: StoredProject[]): Promise<void> {
-  const token = blobToken() as string;
-  const before = await list({ token, prefix: BLOB_PREFIX });
-  const { url } = await put(BLOB_PATHNAME, JSON.stringify(projects), {
-    access: 'public',
-    addRandomSuffix: true,
-    contentType: 'application/json',
-    cacheControlMaxAge: 0,
-    token,
-  });
-  const stale = before.blobs.map((b) => b.url).filter((u) => u !== url);
-  if (stale.length > 0) {
-    await del(stale, { token });
-  }
-}
-
-const DATA_DIR = path.join(process.cwd(), '.data');
-const DATA_FILE = path.join(DATA_DIR, 'projects.json');
-
-async function fileRead(): Promise<StoredProject[] | null> {
-  try {
-    return JSON.parse(await fs.readFile(DATA_FILE, 'utf8')) as StoredProject[];
-  } catch {
-    return null;
-  }
-}
-
-async function fileWrite(projects: StoredProject[]): Promise<void> {
-  await fs.mkdir(DATA_DIR, { recursive: true });
-  await fs.writeFile(DATA_FILE, JSON.stringify(projects, null, 2), 'utf8');
-}
+const bundled = (): StoredProject[] => bundledProjects as unknown as StoredProject[];
 
 async function loadAll(): Promise<StoredProject[]> {
-  const existing = await (usingBlob() ? blobRead() : fileRead());
-  if (existing) {
-    return existing;
-  }
-  const seeded = seedProjects();
-  await saveAll(seeded);
-  return seeded;
+  return (await readJsonFresh<StoredProject[]>(DATA_PATH)) ?? seedProjects();
 }
 
 async function saveAll(projects: StoredProject[]): Promise<void> {
-  await (usingBlob() ? blobWrite(projects) : fileWrite(projects));
+  await writeJson(DATA_PATH, projects, 'admin: update projects');
 }
 
 // ---------------------------------------------------------------------------
@@ -132,6 +77,8 @@ async function saveAll(projects: StoredProject[]): Promise<void> {
 const byOrder = (a: StoredProject, b: StoredProject) =>
   (a.order ?? 0) - (b.order ?? 0) ||
   new Date(b.dateCreated ?? 0).getTime() - new Date(a.dateCreated ?? 0).getTime();
+
+const isPublished = (p: StoredProject) => p.published !== false && p.isArchived !== true;
 
 const toStringList = (value: unknown): string[] => {
   if (Array.isArray(value)) {
@@ -187,17 +134,25 @@ const find = (projects: StoredProject[], identifier: string) =>
   projects.find((p) => p._id === identifier || p.id === identifier);
 
 // ---------------------------------------------------------------------------
-// Public API
+// Public (static) reads — served from the build-time snapshot
+// ---------------------------------------------------------------------------
+
+export async function listPublished(): Promise<StoredProject[]> {
+  return bundled().filter(isPublished).sort(byOrder);
+}
+
+export async function getPublished(identifier: string): Promise<StoredProject | null> {
+  const project = find(bundled(), identifier);
+  return project && isPublished(project) ? project : null;
+}
+
+// ---------------------------------------------------------------------------
+// Admin reads and writes — always against the latest commit
 // ---------------------------------------------------------------------------
 
 export async function listAll(): Promise<StoredProject[]> {
   const projects = await loadAll();
   return [...projects].sort(byOrder);
-}
-
-export async function listPublished(): Promise<StoredProject[]> {
-  const all = await listAll();
-  return all.filter((p) => p.published !== false && p.isArchived !== true);
 }
 
 export async function getOne(identifier: string): Promise<StoredProject | null> {

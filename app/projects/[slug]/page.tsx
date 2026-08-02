@@ -3,11 +3,18 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import SubPage from '@/components/SubPage';
-import { getOne, listPublished } from '@/lib/server/store';
+import { getPublished, listPublished } from '@/lib/server/store';
 import { getSiteContent } from '@/lib/server/siteContent';
 import { defaultSiteContent, type SiteContent } from '@/lib/siteContent';
 
-export const dynamic = 'force-dynamic';
+// Statically generated from the bundled data snapshot. New projects get a
+// page on the redeploy that publishes their data.
+export const dynamicParams = false;
+
+export async function generateStaticParams() {
+  const published = await listPublished();
+  return published.map((project) => ({ slug: project.id }));
+}
 
 // Light markdown: "## " → heading, contiguous "- " lines → list, else paragraphs.
 function renderBody(body: string): React.ReactNode[] {
@@ -65,7 +72,7 @@ type Params = { params: Promise<{ slug: string }> };
 
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { slug } = await params;
-  const project = await getOne(slug);
+  const project = await getPublished(slug);
   if (!project) {
     return { title: 'Project not found' };
   }
@@ -90,7 +97,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
 
 export default async function ProjectPage({ params }: Params) {
   const { slug } = await params;
-  const project = await getOne(slug);
+  const project = await getPublished(slug);
 
   if (!project || project.published === false || project.isArchived) {
     notFound();

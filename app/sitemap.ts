@@ -1,4 +1,4 @@
-import { fallbackProjects } from '@/lib/projects';
+import { listPublished } from '@/lib/server/store';
 
 export const baseUrl = 'https://mgds.me';
 
@@ -10,8 +10,9 @@ export default async function sitemap() {
     lastModified,
   }));
 
-  const projectRoutes = fallbackProjects.map((project) => ({
-    url: `${baseUrl}${project.route}`,
+  const published = await listPublished();
+  const projectRoutes = published.map((project) => ({
+    url: `${baseUrl}/projects/${project.id}`,
     lastModified,
   }));
 

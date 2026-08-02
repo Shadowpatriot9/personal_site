@@ -1,8 +1,6 @@
 import { NextResponse } from 'next/server';
-import { promises as fs } from 'fs';
-import path from 'path';
 import crypto from 'crypto';
-import { put } from '@vercel/blob';
+import { writeBinary, canWrite } from '@/lib/server/storage';
 import { verifyRequest } from '@/lib/server/auth';
 
 export const dynamic = 'force-dynamic';
@@ -17,17 +15,11 @@ const ALLOWED = new Map<string, string>([
   ['image/avif', 'avif'],
 ]);
 
-const UPLOAD_DIR = path.join(process.cwd(), '.data', 'uploads');
-const blobToken = () => process.env.BLOB_READ_WRITE_TOKEN;
-
-// Uploads persist via Blob in production, or the local filesystem in dev.
-const uploadsEnabled = () => Boolean(blobToken()) || process.env.NODE_ENV !== 'production';
-
 export async function GET(request: Request) {
   if (!verifyRequest(request)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
-  return NextResponse.json({ enabled: uploadsEnabled() });
+  return NextResponse.json({ enabled: canWrite() });
 }
 
 export async function POST(request: Request) {
@@ -55,21 +47,12 @@ export async function POST(request: Request) {
 
     const filename = `${crypto.randomUUID()}.${ext}`;
 
-    // Production: persist to Vercel Blob. Local dev: write under .data/uploads
-    // and serve it back through /api/uploads/[name].
-    if (blobToken()) {
-      const { url } = await put(`project-media/${filename}`, file, {
-        access: 'public',
-        contentType: file.type,
-        token: blobToken(),
-      });
-      return NextResponse.json({ url }, { status: 201 });
-    }
-
-    await fs.mkdir(UPLOAD_DIR, { recursive: true });
+    // Committed under public/uploads (GitHub API in prod, working tree in dev)
+    // and served as a static file. In prod it goes live with the next deploy —
+    // the same one that publishes the project data referencing it.
     const buffer = Buffer.from(await file.arrayBuffer());
-    await fs.writeFile(path.join(UPLOAD_DIR, filename), buffer);
-    return NextResponse.json({ url: `/api/uploads/${filename}` }, { status: 201 });
+    await writeBinary(`public/uploads/${filename}`, buffer, `admin: upload ${filename}`);
+    return NextResponse.json({ url: `/uploads/${filename}` }, { status: 201 });
   } catch (error) {
     console.error('Upload failed:', error);
     return NextResponse.json({ error: 'Upload failed' }, { status: 500 });

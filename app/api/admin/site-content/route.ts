@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { verifyRequest } from '@/lib/server/auth';
-import { getSiteContent, saveSiteContent } from '@/lib/server/siteContent';
+import { getSiteContentFresh, saveSiteContent } from '@/lib/server/siteContent';
 
 export const dynamic = 'force-dynamic';
 
@@ -9,7 +9,7 @@ const unauthorized = () => NextResponse.json({ error: 'Unauthorized' }, { status
 export async function GET(request: Request) {
   if (!verifyRequest(request)) return unauthorized();
   try {
-    const content = await getSiteContent();
+    const content = await getSiteContentFresh();
     return NextResponse.json({ content });
   } catch (error) {
     console.error('Failed to load site content:', error);

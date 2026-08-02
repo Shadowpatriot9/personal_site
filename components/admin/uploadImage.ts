@@ -21,7 +21,7 @@ export const uploadImage = async (
   return data.url as string;
 };
 
-// Whether the server can persist uploads (Blob store connected, or local dev).
+// Whether the server can persist uploads (GitHub token configured, or local dev).
 export const checkUploadsEnabled = async (token: string): Promise<boolean> => {
   try {
     const res = await fetch('/api/admin/upload', {

@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { listPublished, toPublicShape } from '@/lib/server/store';
 import { fallbackProjects } from '@/lib/projects';
 
-export const dynamic = 'force-dynamic';
+// Serves the same build-time data snapshot as the static pages.
 
 export async function GET() {
   try {

@@ -8,7 +8,7 @@
 /out/
 /build
 
-# local file-backed project store (dev fallback when MONGO_URI is unset)
+# legacy local store location (data now lives in data/ and public/uploads/)
 /.data
 
 # testing
