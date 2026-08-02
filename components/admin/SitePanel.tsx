@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useToast } from './Toast';
 import type { ContactLink, SiteContent } from '@/lib/siteContent';
 
@@ -13,13 +13,30 @@ const XIcon = () => (
 
 const isValidHref = (value: string) => /^(https?:\/\/|mailto:)/i.test(value);
 
+/** A textarea that grows with its content so text edits feel like editing the page. */
+const GrowingTextarea = (props: React.TextareaHTMLAttributes<HTMLTextAreaElement>) => {
+  const ref = useRef<HTMLTextAreaElement>(null);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = `${el.scrollHeight}px`;
+  }, [props.value]);
+  return <textarea ref={ref} rows={1} {...props} />;
+};
+
 interface SitePanelProps {
   content: SiteContent | null;
   saving: boolean;
   onSave: (content: SiteContent) => Promise<void>;
 }
 
-/** Edits the homepage introduction and contact links. */
+/**
+ * Edits the homepage content in place: the panel is a canvas laid out like
+ * the homepage itself (same typography classes), and every piece of text is
+ * an invisible field you click into and edit where it lives. A floating
+ * Save bar appears once something has changed.
+ */
 const SitePanel = ({ content, saving, onSave }: SitePanelProps) => {
   const { toast } = useToast();
   const [form, setForm] = useState<SiteContent | null>(null);
@@ -75,10 +92,16 @@ const SitePanel = ({ content, saving, onSave }: SitePanelProps) => {
         : prev,
     );
 
+  const revert = () => {
+    setForm(content ? JSON.parse(JSON.stringify(content)) : null);
+    setShowErrors(false);
+  };
+
   const handleSave = async () => {
     if (!form) return;
     if (Object.keys(errors).length > 0) {
       setShowErrors(true);
+      toast('Fix the highlighted fields first', 'error');
       return;
     }
     const cleaned: SiteContent = {
@@ -106,7 +129,7 @@ const SitePanel = ({ content, saving, onSave }: SitePanelProps) => {
 
   if (!form) {
     return (
-      <div className="site-card" aria-busy="true">
+      <div className="site-canvas" aria-busy="true">
         <div className="skeleton-row" />
         <div className="skeleton-row" />
         <div className="skeleton-row" />
@@ -115,6 +138,8 @@ const SitePanel = ({ content, saving, onSave }: SitePanelProps) => {
   }
 
   const err = (key: string) => (showErrors ? errors[key] : undefined);
+  const year = new Date().getFullYear();
+  const derivedFooter = `© ${year} ${form.name.trim() || 'Grayden Scovil'}`;
 
   return (
     <section className="site-panel" aria-labelledby="site-panel-heading">
@@ -122,168 +147,181 @@ const SitePanel = ({ content, saving, onSave }: SitePanelProps) => {
         Edit site content
       </h2>
 
-      <div className="site-card">
-        <section className="site-card__section">
-          <div className="editor-section__head">
-            <h2>Introduction</h2>
-            <p>The name and summary at the top of the homepage.</p>
+      <p className="site-canvas__lead">
+        This is your homepage — click any text to edit it where it lives.
+      </p>
+
+      <div className="site-canvas">
+        {/* Faux nav: read-only, follows the section headings live. */}
+        <div className="site-canvas__nav" aria-hidden="true">
+          <span className="site-canvas__nav-mark">GS</span>
+          <span>{form.projectsHeading.trim() || 'Projects'}</span>
+          <span>{form.contactHeading.trim() || 'Contact'}</span>
+        </div>
+
+        <div className="site-canvas__page">
+          {/* Intro */}
+          <div className="site-canvas__block">
+            <label htmlFor="site-name" className="sr-only">
+              Name
+            </label>
+            <input
+              id="site-name"
+              type="text"
+              className={`intro-name inline-field${err('name') ? ' inline-field--error' : ''}`}
+              value={form.name}
+              onChange={set('name')}
+              placeholder="Your name"
+            />
+            {err('name') && <span className="inline-error">{err('name')}</span>}
+
+            <label htmlFor="site-tagline" className="sr-only">
+              Summary
+            </label>
+            <GrowingTextarea
+              id="site-tagline"
+              className="intro-tagline inline-field"
+              value={form.tagline}
+              onChange={set('tagline')}
+              placeholder="A sentence or two about what you do — leave empty to hide it"
+            />
+
+            <label htmlFor="site-note" className="sr-only">
+              Note
+            </label>
+            <GrowingTextarea
+              id="site-note"
+              className="intro-note inline-field"
+              value={form.note}
+              onChange={set('note')}
+              placeholder="An optional quieter line — leave empty to hide it"
+            />
           </div>
-          <div className="editor-section__fields">
-            <div className={`form-group${err('name') ? ' has-error' : ''}`}>
-              <label htmlFor="site-name">Name</label>
-              <input id="site-name" type="text" value={form.name} onChange={set('name')} />
-              {err('name') && <span className="field-error">{err('name')}</span>}
+
+          {/* Projects section */}
+          <div className="site-canvas__block">
+            <label htmlFor="site-projects-heading" className="sr-only">
+              Projects section heading
+            </label>
+            <input
+              id="site-projects-heading"
+              type="text"
+              className="section-header inline-field"
+              value={form.projectsHeading}
+              onChange={set('projectsHeading')}
+              placeholder="Projects"
+            />
+            <div className="site-canvas__ghost">
+              Your project cards render here — edit them in the Projects tab.
             </div>
-
-            <div className="form-group">
-              <label htmlFor="site-tagline">Summary</label>
-              <textarea
-                id="site-tagline"
-                rows={3}
-                value={form.tagline}
-                onChange={set('tagline')}
-                placeholder="A sentence or two about what you do"
-              />
-              <span className="field-hint">Shown under your name. Leave empty to hide it.</span>
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="site-note">Note</label>
-              <textarea
-                id="site-note"
-                rows={2}
-                value={form.note}
-                onChange={set('note')}
-                placeholder="An optional quieter line under the summary"
-              />
-              <span className="field-hint">Leave empty to hide it.</span>
-            </div>
           </div>
-        </section>
 
-        <section className="site-card__section">
-          <div className="editor-section__head">
-            <h2>Sections</h2>
-            <p>Headings for the two homepage sections — the nav links use them too.</p>
-          </div>
-          <div className="editor-section__fields">
-            <div className="form-row">
-              <div className="form-group">
-                <label htmlFor="site-projects-heading">Projects section</label>
-                <input
-                  id="site-projects-heading"
-                  type="text"
-                  value={form.projectsHeading}
-                  onChange={set('projectsHeading')}
-                  placeholder="Projects"
-                />
-              </div>
-              <div className="form-group">
-                <label htmlFor="site-contact-heading">Contact section</label>
-                <input
-                  id="site-contact-heading"
-                  type="text"
-                  value={form.contactHeading}
-                  onChange={set('contactHeading')}
-                  placeholder="Contact"
-                />
-              </div>
-            </div>
-            <span className="field-hint">Left empty, they fall back to “Projects” and “Contact”.</span>
-          </div>
-        </section>
+          {/* Contact section */}
+          <div className="site-canvas__block">
+            <label htmlFor="site-contact-heading" className="sr-only">
+              Contact section heading
+            </label>
+            <input
+              id="site-contact-heading"
+              type="text"
+              className="section-header inline-field"
+              value={form.contactHeading}
+              onChange={set('contactHeading')}
+              placeholder="Contact"
+            />
 
-        <section className="site-card__section">
-          <div className="editor-section__head">
-            <h2>Contact links</h2>
-            <p>Listed in the Contact section, in this order.</p>
-          </div>
-          <div className="editor-section__fields">
-            {form.contactLinks.map((link, index) => (
-              <div className="link-row" key={index}>
-                <div className={`form-group link-row__label${err(`link-label-${index}`) ? ' has-error' : ''}`}>
-                  <label htmlFor={`link-label-${index}`} className="sr-only">
-                    Link {index + 1} label
-                  </label>
-                  <input
-                    id={`link-label-${index}`}
-                    type="text"
-                    value={link.label}
-                    onChange={(event) => setLink(index, 'label', event.target.value)}
-                    placeholder="Label"
-                  />
-                  {err(`link-label-${index}`) && (
-                    <span className="field-error">{err(`link-label-${index}`)}</span>
-                  )}
-                </div>
-                <div className={`form-group link-row__href${err(`link-href-${index}`) ? ' has-error' : ''}`}>
-                  <label htmlFor={`link-href-${index}`} className="sr-only">
-                    Link {index + 1} URL
-                  </label>
-                  <input
-                    id={`link-href-${index}`}
-                    type="text"
-                    value={link.href}
-                    onChange={(event) => setLink(index, 'href', event.target.value)}
-                    placeholder="https://… or mailto:…"
-                  />
-                  {err(`link-href-${index}`) && (
-                    <span className="field-error">{err(`link-href-${index}`)}</span>
-                  )}
-                </div>
-                <button
-                  type="button"
-                  className="link-row__remove"
-                  aria-label={`Remove link ${link.label || index + 1}`}
-                  onClick={() => removeLink(index)}
-                >
-                  <XIcon />
-                </button>
-              </div>
-            ))}
+            <ul className="site-canvas__links">
+              {form.contactLinks.map((link, index) => (
+                <li className="site-canvas__link" key={index}>
+                  <div className="site-canvas__link-fields">
+                    <label htmlFor={`link-label-${index}`} className="sr-only">
+                      Link {index + 1} label
+                    </label>
+                    <input
+                      id={`link-label-${index}`}
+                      type="text"
+                      className={`inline-field site-canvas__link-label${err(`link-label-${index}`) ? ' inline-field--error' : ''}`}
+                      value={link.label}
+                      onChange={(event) => setLink(index, 'label', event.target.value)}
+                      placeholder="Label"
+                    />
+                    <label htmlFor={`link-href-${index}`} className="sr-only">
+                      Link {index + 1} URL
+                    </label>
+                    <input
+                      id={`link-href-${index}`}
+                      type="text"
+                      className={`inline-field site-canvas__link-href${err(`link-href-${index}`) ? ' inline-field--error' : ''}`}
+                      value={link.href}
+                      onChange={(event) => setLink(index, 'href', event.target.value)}
+                      placeholder="https://… or mailto:…"
+                    />
+                    {(err(`link-label-${index}`) || err(`link-href-${index}`)) && (
+                      <span className="inline-error">
+                        {err(`link-label-${index}`) || err(`link-href-${index}`)}
+                      </span>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    className="site-canvas__link-remove"
+                    aria-label={`Remove link ${link.label || index + 1}`}
+                    onClick={() => removeLink(index)}
+                  >
+                    <XIcon />
+                  </button>
+                </li>
+              ))}
+            </ul>
 
-            <button type="button" className="ghost-btn btn-sm site-card__add" onClick={addLink}>
-              Add link
+            <button type="button" className="site-canvas__add" onClick={addLink}>
+              + Add a link
             </button>
           </div>
-        </section>
 
-        <section className="site-card__section">
-          <div className="editor-section__head">
-            <h2>Footer</h2>
-            <p>The line in the bottom-left corner of every page.</p>
-          </div>
-          <div className="editor-section__fields">
-            <div className="form-group">
-              <label htmlFor="site-footer" className="sr-only">
-                Footer text
-              </label>
-              <input
-                id="site-footer"
-                type="text"
-                value={form.footer}
-                onChange={set('footer')}
-                placeholder={`© ${new Date().getFullYear()} ${form.name.trim() || 'Grayden Scovil'}`}
-              />
-              <span className="field-hint">
-                Left empty, it shows “© {new Date().getFullYear()}{' '}
-                {form.name.trim() || 'Grayden Scovil'}” with the year kept current.
+          {/* Footer */}
+          <div className="site-canvas__block site-canvas__block--footer">
+            <label htmlFor="site-footer" className="sr-only">
+              Footer text
+            </label>
+            <input
+              id="site-footer"
+              type="text"
+              className="inline-field site-canvas__footer-field"
+              value={form.footer}
+              onChange={set('footer')}
+              placeholder={derivedFooter}
+            />
+            {!form.footer.trim() && (
+              <span className="site-canvas__footer-hint">
+                Left as is, the footer shows “{derivedFooter}” with the year kept current.
               </span>
-            </div>
+            )}
           </div>
-        </section>
-
-        <div className="site-card__footer">
-          {dirty && <span className="site-card__dirty">Unsaved changes</span>}
-          <button
-            type="button"
-            className="primary-btn"
-            onClick={handleSave}
-            disabled={saving || !dirty}
-          >
-            {saving ? 'Saving…' : 'Save'}
-          </button>
         </div>
+      </div>
+
+      {/* Floating save bar — appears only when something changed. */}
+      <div className={`site-savebar${dirty ? ' is-visible' : ''}`} aria-hidden={!dirty}>
+        <span className="site-savebar__note">Unsaved changes</span>
+        <button
+          type="button"
+          className="ghost-btn btn-sm"
+          onClick={revert}
+          disabled={saving}
+          tabIndex={dirty ? 0 : -1}
+        >
+          Revert
+        </button>
+        <button
+          type="button"
+          className="primary-btn btn-sm"
+          onClick={handleSave}
+          disabled={saving || !dirty}
+          tabIndex={dirty ? 0 : -1}
+        >
+          {saving ? 'Saving…' : 'Save'}
+        </button>
       </div>
     </section>
   );

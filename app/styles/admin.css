@@ -790,97 +790,6 @@
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 28%, transparent);
 }
 
-/**************************************/
-/* Site content editor                 */
-/* Same grouped-card language as the   */
-/* projects list.                      */
-/**************************************/
-
-.site-card {
-  background: var(--color-cardBg);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius);
-  overflow: hidden;
-}
-
-.site-card__section {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  padding: 24px;
-  border-bottom: 1px solid color-mix(in srgb, var(--color-text) 7%, transparent);
-}
-
-.site-card__footer {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 14px;
-  padding: 14px 24px;
-}
-
-.site-card__dirty {
-  font-size: 0.82rem;
-  color: var(--color-textSecondary);
-}
-
-.site-card__add {
-  align-self: flex-start;
-}
-
-/* Contact link editing rows */
-.link-row {
-  display: grid;
-  grid-template-columns: minmax(0, 2fr) minmax(0, 3fr) auto;
-  grid-template-areas: 'label href remove';
-  gap: 10px;
-  align-items: start;
-}
-
-.link-row__label {
-  grid-area: label;
-}
-
-.link-row__href {
-  grid-area: href;
-}
-
-.link-row__remove {
-  grid-area: remove;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 38px;
-  height: 41px;
-  border: none;
-  border-radius: var(--radius-sm);
-  background: transparent;
-  color: var(--color-textSecondary);
-  cursor: pointer;
-  transition: background 0.18s ease, color 0.18s ease;
-}
-
-.link-row__remove:hover {
-  background: color-mix(in srgb, var(--color-danger) 10%, transparent);
-  color: var(--color-danger);
-}
-
-@media (max-width: 720px) {
-  .site-card__section {
-    padding: 20px 16px;
-  }
-
-  .site-card__footer {
-    padding: 12px 16px;
-  }
-
-  .link-row {
-    grid-template-columns: minmax(0, 1fr) auto;
-    grid-template-areas:
-      'label remove'
-      'href href';
-  }
-}
 
 /**************************************/
 /* Empty / loading states              */
@@ -2044,5 +1953,275 @@
   .skeleton-row,
   .cropper-overlay {
     animation: none;
+  }
+}
+
+/**************************************/
+/* Site content editor                 */
+/* An edit-in-place canvas laid out    */
+/* like the homepage: every text is an */
+/* invisible field you click into.     */
+/**************************************/
+
+.site-canvas__lead {
+  margin: 0 0 14px;
+  font-size: 0.88rem;
+  color: var(--color-textSecondary);
+}
+
+.site-canvas {
+  background: var(--color-background);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+/* Faux nav strip: read-only, mirrors how the headings feed the real nav. */
+.site-canvas__nav {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 12px 28px;
+  border-bottom: 1px solid color-mix(in srgb, var(--color-text) 8%, transparent);
+  background: color-mix(in srgb, var(--color-cardBg) 72%, transparent);
+  font-size: 0.82rem;
+  color: var(--color-textSecondary);
+}
+
+.site-canvas__nav-mark {
+  font-family: var(--font-display);
+  font-weight: 700;
+  color: var(--color-text);
+  margin-right: auto;
+}
+
+.site-canvas__page {
+  max-width: 620px;
+  padding: 40px 28px 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 44px;
+}
+
+.site-canvas__block {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+/* The invisible field: inherits the page typography of whatever class it
+   sits with, and only reveals itself as editable on hover/focus. */
+.inline-field {
+  display: block;
+  width: 100%;
+  background: transparent;
+  border: none;
+  outline: none;
+  resize: none;
+  overflow: hidden;
+  font-family: inherit;
+  color: inherit;
+  padding: 3px 8px;
+  margin-left: -8px;
+  border-radius: 9px;
+  transition: background 0.16s var(--ease), box-shadow 0.16s var(--ease);
+}
+
+.inline-field::placeholder {
+  color: color-mix(in srgb, var(--color-textSecondary) 55%, transparent);
+}
+
+.inline-field:hover {
+  background: color-mix(in srgb, var(--color-text) 4%, transparent);
+}
+
+.inline-field:focus {
+  background: var(--color-cardBg);
+  box-shadow:
+    inset 0 0 0 1.5px color-mix(in srgb, var(--color-primary) 45%, transparent),
+    var(--shadow-1);
+}
+
+.inline-field--error,
+.inline-field--error:focus {
+  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--color-danger) 55%, transparent);
+}
+
+.inline-error {
+  font-size: 0.8rem;
+  color: var(--color-danger);
+  margin-top: 2px;
+}
+
+/* Typography overrides where the homepage classes carry margins. */
+.site-canvas .intro-name {
+  margin-bottom: 10px;
+}
+
+.site-canvas .intro-tagline {
+  margin-bottom: 8px;
+  max-width: 100%;
+}
+
+.site-canvas .intro-note {
+  max-width: 100%;
+}
+
+.site-canvas .section-header {
+  margin-bottom: 14px;
+}
+
+/* Where the project cards would be. */
+.site-canvas__ghost {
+  align-self: stretch;
+  border: 1.5px dashed color-mix(in srgb, var(--color-text) 16%, transparent);
+  border-radius: var(--radius-sm);
+  padding: 22px 18px;
+  font-size: 0.85rem;
+  color: var(--color-textSecondary);
+  text-align: center;
+}
+
+/* Contact links, styled like the homepage list. */
+.site-canvas__links {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.site-canvas__link {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.site-canvas__link-fields {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.site-canvas__link-label {
+  font-size: 1.0625rem;
+  color: var(--color-text);
+}
+
+.site-canvas__link-href {
+  font-size: 0.82rem;
+  color: var(--color-textSecondary);
+}
+
+.site-canvas__link-remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  margin-top: 3px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-textSecondary);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.16s var(--ease), background 0.16s var(--ease), color 0.16s var(--ease);
+}
+
+.site-canvas__link:hover .site-canvas__link-remove,
+.site-canvas__link:focus-within .site-canvas__link-remove {
+  opacity: 1;
+}
+
+.site-canvas__link-remove:focus-visible {
+  opacity: 1;
+}
+
+.site-canvas__link-remove:hover {
+  background: color-mix(in srgb, var(--color-danger) 10%, transparent);
+  color: var(--color-danger);
+}
+
+.site-canvas__add {
+  margin-top: 10px;
+  border: none;
+  background: none;
+  padding: 3px 0;
+  font-size: 0.92rem;
+  color: var(--color-textSecondary);
+  cursor: pointer;
+  width: fit-content;
+  border-bottom: 1px dashed color-mix(in srgb, var(--color-text) 25%, transparent);
+  transition: color 0.16s var(--ease), border-color 0.16s var(--ease);
+}
+
+.site-canvas__add:hover {
+  color: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+/* Footer line. */
+.site-canvas__block--footer {
+  border-top: 1px solid color-mix(in srgb, var(--color-text) 8%, transparent);
+  padding-top: 18px;
+  gap: 4px;
+}
+
+.site-canvas__footer-field {
+  font-size: 0.88rem;
+  color: var(--color-textSecondary);
+}
+
+.site-canvas__footer-hint {
+  font-size: 0.78rem;
+  color: color-mix(in srgb, var(--color-textSecondary) 70%, transparent);
+}
+
+/* Floating save bar — slides in when there are unsaved changes. */
+.site-savebar {
+  position: sticky;
+  bottom: 18px;
+  margin-top: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: fit-content;
+  margin-left: auto;
+  margin-right: auto;
+  padding: 8px 10px 8px 18px;
+  background: var(--color-cardBg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  box-shadow: var(--shadow-2);
+  opacity: 0;
+  transform: translateY(8px);
+  pointer-events: none;
+  transition: opacity 0.2s var(--ease-out), transform 0.2s var(--ease-out);
+}
+
+.site-savebar.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+.site-savebar__note {
+  font-size: 0.84rem;
+  color: var(--color-textSecondary);
+}
+
+@media (max-width: 720px) {
+  .site-canvas__nav {
+    padding: 10px 18px;
+  }
+
+  .site-canvas__page {
+    padding: 28px 18px 20px;
+    gap: 36px;
   }
 }
